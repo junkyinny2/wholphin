@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="SeerrRequestTask" extends="Task">
+  <interface>
+    <field id="serverUrl" type="string" value="" />
+    <field id="apiKey" type="string" value="" />
+    <field id="endpoint" type="string" value="" />
+    <field id="queryParams" type="assocarray" />
+    <field id="requestBody" type="assocarray" />
+    <field id="httpMethod" type="string" value="GET" />
+    <field id="responseData" type="assocarray" />
+    <field id="responseArray" type="array" />
+    <field id="loadStatus" type="string" value="" />
+  </interface>
+</component>

@@ -1,0 +1,276 @@
+' Wholphin Roku - Base HTTP request infrastructure for Jellyfin API
+
+' Build a full URL from a path and query parameters
+function buildURL(path as String, params = {} as Object) as String
+    serverUrl = session.server.GetUrl()
+    if serverUrl = "" then return ""
+    
+    ' Ensure path starts with /
+    if path.Left(1) <> "/" then path = "/" + path
+    
+    url = serverUrl + path
+    
+    ' Append query parameters
+    if params.Count() > 0 then
+        parts = []
+        for each key in params
+            value = params[key]
+            if value <> invalid then
+                ' Convert to string and URL encode
+                strVal = value.ToStr()
+                parts.Push(key + "=" + HttpEncode(strVal))
+            end if
+        end for
+        url = url + "?" + parts.Join("&")
+    end if
+    
+    return url
+end function
+
+' URL-encode a string
+function HttpEncode(str as String) as String
+    ' Roku provides a simple way via transfer encoding
+    transfer = CreateObject("roUrlTransfer")
+    return transfer.Escape(str)
+end function
+
+' Build the authorization header for Jellyfin API requests
+function buildAuthHeader() as String
+    appInfo = m.global.appInfo
+    deviceInfo = m.global.deviceInfo
+    userId = session.user.GetId()
+    token = chainLookupReturn(m.global.session.user, ["accessToken"], "")
+    
+    header = "MediaBrowser Client=" + HttpEncode(appInfo.displayName)
+    header = header + ", Device=" + HttpEncode(deviceInfo.modelDisplay)
+    header = header + ", DeviceId=" + HttpEncode(deviceInfo.model)
+    header = header + ", Version=" + HttpEncode(appInfo.version)
+    
+    if userId <> "" then
+        header = header + ", UserId=" + HttpEncode(userId)
+    end if
+    
+    if token <> "" then
+        header = header + ", Token=" + HttpEncode(token)
+    end if
+    
+    return header
+end function
+
+' Create an authenticated API request object
+function APIRequest(url as String, params = {} as Object) as Object
+    fullUrl = buildURL(url, params)
+    if fullUrl = "" then return invalid
+    
+    req = CreateObject("roUrlTransfer")
+    req.SetUrl(fullUrl)
+    req.SetRequest("GET")
+    
+    ' Set headers
+    req.SetHeaders({
+        "Authorization": buildAuthHeader()
+        "Content-Type":  "application/json"
+        "Accept":        "application/json"
+    })
+    
+    ' Set certificate handling for HTTPS
+    if Left(fullUrl, 8) = "https://" then
+        req.SetCertificatesFile("common:/certs/ca-bundle.crt")
+        req.InitClientCertificates()
+        req.SetMinimumVersionTLS(1.2)
+    end if
+    
+    ' Set timeout
+    req.SetTimeout(30000)
+    req.RetainBodyOnErrors(true)
+    
+    return req
+end function
+
+' Perform a GET request and parse JSON response
+function getJson(req as Object) as Object
+    if req = invalid then return invalid
+    
+    port = CreateObject("roMessagePort")
+    req.SetPort(port)
+    
+    if req.AsyncGetToString() then
+        msg = wait(30000, port)
+        if type(msg) = "roUrlEvent" then
+            responseCode = msg.GetResponseCode()
+            if responseCode >= 200 and responseCode < 300 then
+                body = msg.GetString()
+                if body <> "" then
+                    return ParseJson(body)
+                end if
+            else
+                ' Log error
+                print "[Wholphin] HTTP Error: " + responseCode.ToStr() + " for " + req.GetUrl()
+                errorBody = msg.GetFailureReason()
+                if errorBody <> "" then print errorBody
+            end if
+        else if msg = invalid then
+            print "[Wholphin] Request timed out"
+        end if
+    end if
+    
+    return invalid
+end function
+
+' Perform a POST request with JSON body and parse response
+function postJson(req as Object, data as Object) as Object
+    if req = invalid then return invalid
+    
+    port = CreateObject("roMessagePort")
+    req.SetPort(port)
+    req.SetRequest("POST")
+    
+    jsonData = FormatJson(data)
+    
+    if req.AsyncPostFromString(jsonData) then
+        msg = wait(30000, port)
+        if type(msg) = "roUrlEvent" then
+            responseCode = msg.GetResponseCode()
+            if responseCode >= 200 and responseCode < 300 then
+                body = msg.GetString()
+                if body <> "" then
+                    return ParseJson(body)
+                end if
+            else
+                print "[Wholphin] HTTP POST Error: " + responseCode.ToStr()
+            end if
+        else if msg = invalid then
+            print "[Wholphin] POST request timed out"
+        end if
+    end if
+    
+    return invalid
+end function
+
+' Perform a POST request with JSON body (no response expected)
+function postVoid(req as Object, data as Object) as Boolean
+    if req = invalid then return false
+    
+    port = CreateObject("roMessagePort")
+    req.SetPort(port)
+    req.SetRequest("POST")
+    
+    jsonData = FormatJson(data)
+    
+    if req.AsyncPostFromString(jsonData) then
+        msg = wait(30000, port)
+        if type(msg) = "roUrlEvent" then
+            responseCode = msg.GetResponseCode()
+            return responseCode >= 200 and responseCode < 300
+        end if
+    end if
+    
+    return false
+end function
+
+' Perform a DELETE request
+function deleteVoid(req as Object) as Boolean
+    if req = invalid then return false
+    
+    port = CreateObject("roMessagePort")
+    req.SetPort(port)
+    req.SetRequest("DELETE")
+    
+    if req.AsyncPostFromString("") then
+        msg = wait(30000, port)
+        if type(msg) = "roUrlEvent" then
+            responseCode = msg.GetResponseCode()
+            return responseCode >= 200 and responseCode < 300
+        end if
+    end if
+    
+    return false
+end function
+
+' Get raw response string (for non-JSON responses like subtitle files)
+function getString(req as Object) as String
+    if req = invalid then return ""
+    
+    port = CreateObject("roMessagePort")
+    req.SetPort(port)
+    
+    if req.AsyncGetToString() then
+        msg = wait(30000, port)
+        if type(msg) = "roUrlEvent" then
+            responseCode = msg.GetResponseCode()
+            if responseCode >= 200 and responseCode < 300 then
+                return msg.GetString()
+            end if
+        end if
+    end if
+    
+    return ""
+end function
+
+' Make an unauthenticated request (for server discovery)
+function getJsonPublic(url as String) as Object
+    req = CreateObject("roUrlTransfer")
+    req.SetUrl(url)
+    req.SetRequest("GET")
+    req.SetHeaders({
+        "Content-Type": "application/json"
+        "Accept":       "application/json"
+    })
+    
+    if Left(url, 8) = "https://" then
+        req.SetCertificatesFile("common:/certs/ca-bundle.crt")
+        req.InitClientCertificates()
+    end if
+    
+    req.SetTimeout(10000)
+    
+    port = CreateObject("roMessagePort")
+    req.SetPort(port)
+    
+    if req.AsyncGetToString() then
+        msg = wait(10000, port)
+        if type(msg) = "roUrlEvent" then
+            responseCode = msg.GetResponseCode()
+            if responseCode >= 200 and responseCode < 300 then
+                body = msg.GetString()
+                if body <> "" then return ParseJson(body)
+            end if
+        end if
+    end if
+    
+    return invalid
+end function
+
+' PostForm for quick connect
+function postForm(url as String, formData as Object) as Object
+    req = CreateObject("roUrlTransfer")
+    req.SetUrl(url)
+    req.SetRequest("POST")
+    req.SetHeaders({
+        "Content-Type": "application/x-www-form-urlencoded"
+        "Accept":       "application/json"
+    })
+    
+    ' Build form body
+    parts = []
+    for each key in formData
+        parts.Push(key + "=" + HttpEncode(formData[key].ToStr()))
+    end for
+    body = parts.Join("&")
+    
+    port = CreateObject("roMessagePort")
+    req.SetPort(port)
+    
+    if req.AsyncPostFromString(body) then
+        msg = wait(15000, port)
+        if type(msg) = "roUrlEvent" then
+            responseCode = msg.GetResponseCode()
+            if responseCode >= 200 and responseCode < 300 then
+                respBody = msg.GetString()
+                if respBody <> "" then return ParseJson(respBody)
+            end if
+        end if
+    end if
+    
+    return invalid
+end function

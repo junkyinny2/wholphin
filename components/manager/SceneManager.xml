@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="SceneManager" extends="Group">
+  <interface>
+    <field id="sceneStack" type="array" value="" />
+    <field id="activeScene" type="node" alwaysNotify="true" />
+    <field id="sceneCount" type="int" value="0" alwaysNotify="true" />
+  </interface>
+  
+  <script type="text/brightscript" uri="pkg:/components/manager/SceneManager.bs" />
+</component>

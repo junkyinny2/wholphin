@@ -1,0 +1,373 @@
+' Wholphin Roku - Scene creation and login flow
+
+' ============================================================
+' Login Flow
+' ============================================================
+
+' Main login flow - blocks until user is authenticated
+function LoginFlow() as Boolean
+    ' Check for saved server
+    savedServer = get_setting("server", "")
+    
+    if savedServer <> "" then
+        ' Try to connect to saved server
+        session.server.Populate({ Url: savedServer })
+        serverData = ServerInfo()
+        if serverData <> invalid then
+            ' Server is reachable - populate server info
+            session.server.Populate({
+                Id:       chainLookupReturn(serverData, ["Id"], "")
+                ServerName: chainLookupReturn(serverData, ["Name"], "")
+                Url:      savedServer
+                Version:  chainLookupReturn(serverData, ["Version"], "")
+            })
+        else
+            ' Server not reachable - show server selection
+            savedServer = ""
+        end if
+    end if
+    
+    ' If no server configured, show server entry screen
+    if savedServer = "" then
+        success = CreateServerGroup()
+        if not success then return false
+        
+        ' Server should now be set in session
+        savedServer = session.server.GetUrl()
+        if savedServer = "" then return false
+    end if
+    
+    ' Check for saved user
+    lastUserId = get_setting("last_userId", "")
+    savedToken = ""
+    
+    if lastUserId <> "" then
+        savedToken = get_user_setting(lastUserId, "accessToken", "")
+    end if
+    
+    if savedToken <> "" then
+        ' Validate saved token
+        set_setting("server", session.server.GetUrl()) ' Ensure server is saved
+        session.user.Populate({ AccessToken: savedToken, User: { Id: lastUserId } })
+        
+        myInfo = AboutMe()
+        if myInfo <> invalid then
+            ' Token is valid
+            session.user.UpdateFromAboutMe(myInfo)
+            
+            ' Send capabilities
+            caps = getDeviceCapabilities()
+            api.sessions.PostCapabilities(caps)
+            
+            return true
+        else
+            ' Token expired - clear and re-auth
+            savedToken = ""
+            session.user.Clear()
+        end if
+    end if
+    
+    ' Need to authenticate - show user selection
+    return ShowLoginScreen()
+end function
+
+' Show the login screen flow
+function ShowLoginScreen() as Boolean
+    ' Get public users
+    publicUsers = GetPublicUsers()
+    
+    ' Check for Quick Connect availability
+    quickConnectEnabled = false
+    quickConnectData = initQuickConnect()
+    if quickConnectData <> invalid then
+        quickConnectEnabled = chainLookupReturn(quickConnectData, ["Enabled"], false)
+    end if
+    
+    ' Show user selection screen
+    userSelect = CreateObject("roSGNode", "UserSelect")
+    userSelect.users = publicUsers
+    userSelect.quickConnectEnabled = quickConnectEnabled
+    m.global.sceneManager.callFunc("pushScene", userSelect)
+    
+    ' Wait for user selection
+    ' (In the event loop, UserSelect will trigger authentication)
+    
+    return true
+end function
+
+' Process user selection - called when a user is selected
+function ProcessUserSelection(userData as Object) as Boolean
+    username = chainLookupReturn(userData, ["Name"], "")
+    userId = chainLookupReturn(userData, ["Id"], "")
+    hasPassword = chainLookupReturn(userData, ["HasPassword"], true)
+    isPublic = chainLookupReturn(userData, ["IsPublic"], false)
+    
+    if username = "" then return false
+    
+    ' Check if we have saved credentials for this user
+    savedPw = get_user_setting(userId, "password", "")
+    
+    if isPublic and not hasPassword then
+        ' Public user with no password - try passwordless auth
+        return AuthenticateUser(username, "")
+    else if savedPw <> "" then
+        ' Try saved password
+        return AuthenticateUser(username, savedPw)
+    else
+        ' Need to show sign-in screen
+        return ShowSignInScreen(username)
+    end if
+end function
+
+' Show the sign-in screen for password entry
+function ShowSignInScreen(username as String) as Boolean
+    signIn = CreateObject("roSGNode", "SigninScene")
+    signIn.username = username
+    m.global.sceneManager.callFunc("pushScene", signIn)
+    return true
+end function
+
+' Attempt to authenticate a user
+function AuthenticateUser(username as String, password as String) as Boolean
+    authResult = get_token(username, password)
+    if authResult = invalid then return false
+    
+    ' Check if authentication succeeded
+    accessToken = chainLookupReturn(authResult, ["AccessToken"], "")
+    if accessToken = "" then return false
+    
+    ' Populate session
+    session.user.Populate(authResult)
+    
+    ' Save credentials
+    userId = chainLookupReturn(authResult, ["User", "Id"], "")
+    if userId <> "" then
+        set_user_setting(userId, "accessToken", accessToken)
+        if password <> "" then
+            set_user_setting(userId, "password", password)
+        end if
+        set_setting("last_userId", userId)
+    end if
+    
+    ' Save server
+    set_setting("server", session.server.GetUrl())
+    saveServer(session.server.GetUrl())
+    
+    ' Send capabilities
+    caps = getDeviceCapabilities()
+    api.sessions.PostCapabilities(caps)
+    
+    ' Get full user info
+    myInfo = AboutMe()
+    if myInfo <> invalid then
+        session.user.UpdateFromAboutMe(myInfo)
+    end if
+    
+    return true
+end function
+
+' ============================================================
+' Server Selection
+' ============================================================
+
+' Show server selection/entry screen
+function CreateServerGroup() as Boolean
+    serverScreen = CreateObject("roSGNode", "SetServerScreen")
+    serverScreen.savedServers = getSavedServers()
+    gaa = getGlobalAA()
+    if gaa.sceneManager = invalid then
+        ? "[CreateServerGroup] ERROR: sceneManager is invalid!"
+        return false
+    end if
+    gaa.sceneManager.callFunc("pushScene", serverScreen)
+    return true
+end function
+
+' Called when a server URL is confirmed
+function ProcessServerUrl(serverUrl as String) as Boolean
+    if serverUrl = "" then return false
+    
+    ' Infer URL if needed
+    if Left(serverUrl, 4) <> "http" then
+        serverUrl = inferServerUrl(serverUrl)
+    end if
+    
+    ' Remove trailing slash
+    if Right(serverUrl, 1) = "/" then
+        serverUrl = serverUrl.Left(Len(serverUrl) - 1)
+    end if
+    
+    ' Test connection
+    session.server.Populate({ Url: serverUrl })
+    serverData = ServerInfo()
+    if serverData = invalid then
+        ' Connection failed
+        show_dialog(translateText("Connection Failed"), translateText("Unable to connect to server. Please check the URL and try again."))
+        session.server.Clear()
+        return false
+    end if
+    
+    ' Check minimum version
+    version = chainLookupReturn(serverData, ["Version"], "")
+    if not serverVersionMeetsMinimumRequirements(version) then
+        show_dialog(translateText("Unsupported Server Version"), translateText("This server version is not supported. Please upgrade to Jellyfin 10.8 or later."))
+        session.server.Clear()
+        return false
+    end if
+    
+    ' Populate server info
+    session.server.Populate({
+        Id:       chainLookupReturn(serverData, ["Id"], "")
+        ServerName: chainLookupReturn(serverData, ["Name"], "")
+        Url:      serverUrl
+        Version:  version
+        OperatingSystem: chainLookupReturn(serverData, ["OperatingSystem"], "")
+    })
+    
+    ' Save server
+    set_setting("server", serverUrl)
+    saveServer(serverUrl)
+    
+    return true
+end function
+
+' ============================================================
+' Scene Factory Functions
+' ============================================================
+
+' Create and push the home screen group
+function CreateHomeGroup() as Object
+    home = CreateObject("roSGNode", "Home")
+    m.global.sceneManager.callFunc("pushScene", home)
+    return home
+end function
+
+' Create movie details screen
+function CreateMovieDetailsGroup(movie as Object, preloadedMetadata = invalid as Dynamic) as Object
+    details = CreateObject("roSGNode", "MovieDetails")
+    details.movie = movie
+    
+    if preloadedMetadata <> invalid then
+        details.metaData = preloadedMetadata
+    end if
+    
+    m.global.sceneManager.callFunc("pushScene", details)
+    return details
+end function
+
+' Create TV series details screen
+function CreateSeriesDetailsGroup(seriesId as String) as Object
+    series = CreateObject("roSGNode", "TVSeriesDetails")
+    series.id = seriesId
+    m.global.sceneManager.callFunc("pushScene", series)
+    return series
+end function
+
+' Create season details screen (episode list)
+function CreateSeasonDetailsGroup(series as Object, season as Object) as Object
+    seasonDetails = CreateObject("roSGNode", "TVSeasonDetails")
+    seasonDetails.seriesData = series
+    seasonDetails.seasonData = season
+    m.global.sceneManager.callFunc("pushScene", seasonDetails)
+    return seasonDetails
+end function
+
+' Create music artist view
+function CreateArtistView(artist as Object) as Object
+    artistView = CreateObject("roSGNode", "ArtistView")
+    artistView.artist = artist
+    m.global.sceneManager.callFunc("pushScene", artistView)
+    return artistView
+end function
+
+' Create music album view
+function CreateAlbumView(album as Object) as Object
+    albumView = CreateObject("roSGNode", "AlbumView")
+    albumView.album = album
+    m.global.sceneManager.callFunc("pushScene", albumView)
+    return albumView
+end function
+
+' Create playlist view
+function CreatePlaylistView(playlist as Object) as Object
+    playlistView = CreateObject("roSGNode", "AlbumView")
+    playlistView.album = playlist
+    m.global.sceneManager.callFunc("pushScene", playlistView)
+    return playlistView
+end function
+
+' Create search page
+function CreateSearchPage() as Object
+    search = CreateObject("roSGNode", "searchResults")
+    m.global.sceneManager.callFunc("pushScene", search)
+    return search
+end function
+
+' Create person detail view
+function CreatePersonView(personData as Object) as Object
+    personView = CreateObject("roSGNode", "PersonDetails")
+    personView.person = personData
+    m.global.sceneManager.callFunc("pushScene", personView)
+    return personView
+end function
+
+' Create a visual library scene (grid browser for movies, TV shows, etc.)
+function CreateVisualLibraryScene(libraryItem as Object, mediaType as String) as Object
+    library = CreateObject("roSGNode", "VisualLibraryScene")
+    library.libraryData = libraryItem
+    library.mediaType = mediaType
+    m.global.sceneManager.callFunc("pushScene", library)
+    return library
+end function
+
+' Create music library view
+function CreateMusicLibraryView(libraryItem as Object) as Object
+    library = CreateObject("roSGNode", "MusicLibraryView")
+    library.libraryData = libraryItem
+    m.global.sceneManager.callFunc("pushScene", library)
+    return library
+end function
+
+' Create other library view (folders, channels)
+function CreateOtherLibrary(libraryItem as Object) as Object
+    library = CreateObject("roSGNode", "OtherLibrary")
+    library.libraryData = libraryItem
+    m.global.sceneManager.callFunc("pushScene", library)
+    return library
+end function
+
+' Create Live TV library view
+function CreateLiveTVLibraryView(libraryItem as Object) as Object
+    library = CreateObject("roSGNode", "LiveTVLibraryView")
+    library.libraryData = libraryItem
+    m.global.sceneManager.callFunc("pushScene", library)
+    return library
+end function
+
+' Create audiobook library view
+function CreateBookLibraryView(libraryItem as Object) as Object
+    library = CreateObject("roSGNode", "AudioBookLibraryView")
+    library.libraryData = libraryItem
+    m.global.sceneManager.callFunc("pushScene", library)
+    return library
+end function
+
+' Create settings screen
+function CreateSettingsScreen() as Object
+    settings = CreateObject("roSGNode", "SettingsView")
+    m.global.sceneManager.callFunc("pushScene", settings)
+    settings.callFunc("loadSettings")
+    return settings
+end function
+
+' Create discover screen (Seerr/Overseerr)
+function CreateDiscoverPage() as Object
+    discover = CreateObject("roSGNode", "DiscoverPage")
+    config = m.global.session.user.settings
+    if config <> invalid
+        discover.serverUrl = chainLookupReturn(config, "discover.serverUrl", "")
+        discover.apiKey = chainLookupReturn(config, "discover.apiKey", "")
+    end if
+    m.global.sceneManager.callFunc("pushScene", discover)
+    return discover
+end function

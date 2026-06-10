@@ -1,0 +1,45 @@
+' Wholphin Roku - Season grid for TV series
+
+sub Init()
+    m.seasonMarkupGrid = m.top.findNode("seasonMarkupGrid")
+
+    m.top.observeField("seasons", m.port)
+    m.seasonMarkupGrid.observeField("itemSelected", m.port)
+    m.seasonMarkupGrid.observeField("focusedItem", m.port)
+end sub
+
+function onSeasonsChange() as Void
+    seasons = m.top.seasons
+    if seasons = invalid or seasons.Count() = 0 then return
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for each season in seasons
+        child = content.CreateChild("ContentNode")
+
+        seasonId = chainLookupReturn(season, ["Id"], "")
+        child.id = seasonId
+        child.title = chainLookupReturn(season, ["Name"], "")
+        child.type = "Season"
+        child.json = season
+        child.seriesId = m.top.seriesId
+
+        img = PosterImage(seasonId, { maxHeight: 340, maxWidth: 196 })
+        if img <> invalid then
+            child.HDPosterUrl = img.url
+            child.SDPosterUrl = img.url
+        end if
+    end for
+
+    m.seasonMarkupGrid.content = content
+end function
+
+function onItemSelected() as Void
+    focused = m.seasonMarkupGrid.focusedItem
+    if focused = invalid then return
+    m.top.selectedSeason = focused
+    m.top.seasonSelected = focused
+end function
+
+function onFocusedItem() as Void
+    ' Handle focus changes for preview
+end function

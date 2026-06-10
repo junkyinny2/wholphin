@@ -1,0 +1,131 @@
+' Wholphin Roku - Server entry screen logic
+
+sub Init()
+    m.serverInputText = m.top.findNode("serverInputText")
+    m.serverList = m.top.findNode("serverList")
+    m.savedServersLabel = m.top.findNode("savedServersLabel")
+    m.discoveredServerList = m.top.findNode("discoveredServerList")
+    m.discoveredLabel = m.top.findNode("discoveredLabel")
+    m.btnConnect = m.top.findNode("btnConnect")
+    m.btnDiscover = m.top.findNode("btnDiscover")
+    m.btnManualEntry = m.top.findNode("btnManualEntry")
+
+    m.top.observeField("savedServers", m.port)
+    m.btnConnect.observeField("buttonSelected", m.port)
+    m.btnDiscover.observeField("buttonSelected", m.port)
+    m.btnManualEntry.observeField("buttonSelected", m.port)
+    m.serverList.observeField("itemSelected", m.port)
+    m.discoveredServerList.observeField("itemSelected", m.port)
+end sub
+
+function onSavedServersChange() as Void
+    servers = m.top.savedServers
+    if servers = invalid or servers.Count() = 0 then return
+
+    m.savedServersLabel.visible = true
+    m.serverList.visible = true
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for each server in servers
+        child = content.CreateChild("ContentNode")
+        child.title = chainLookupReturn(server, ["name"], "")
+        child.url = chainLookupReturn(server, ["url"], "")
+    end for
+    m.serverList.content = content
+end function
+
+function onButtonSelected() as Void
+    btn = m.top.lastEventNode
+    if btn = invalid then return
+
+    if btn.id = "btnConnect" then
+        url = m.top.serverUrl
+        if url = "" then url = m.serverInputText.text
+        if url <> "" then
+            ProcessServerUrl(url)
+        end if
+    else if btn.id = "btnDiscover" then
+        startDiscovery()
+    else if btn.id = "btnManualEntry" then
+        showKeyboard()
+    end if
+end function
+
+function startDiscovery() as Void
+    m.top.isDiscovering = true
+
+    task = CreateObject("roSGNode", "ServerDiscoveryTask")
+    task.observeField("discoveredServers", m.port)
+    task.observeField("loadStatus", m.port)
+    task.control = "RUN"
+
+    m.btnDiscover.buttonText = translateText("Searching...")
+end function
+
+function onDiscoveryComplete() as Void
+    task = m.top.lastEventNode
+    if task = invalid then return
+
+    servers = task.discoveredServers
+    m.top.isDiscovering = false
+    m.btnDiscover.buttonText = translateText("Auto Discover")
+
+    if servers = invalid or servers.Count() = 0 then
+        show_dialog(translateText("No Servers Found"), translateText("No Jellyfin servers were found on your network. You can enter the server URL manually."))
+        return
+    end if
+
+    m.discoveredLabel.visible = true
+    m.discoveredServerList.visible = true
+    m.savedServersLabel.visible = false
+    m.serverList.visible = false
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for each server in servers
+        child = content.CreateChild("ContentNode")
+        child.title = chainLookupReturn(server, ["Name"], "") + " (" + chainLookupReturn(server, ["Address"], "") + ")"
+        child.url = chainLookupReturn(server, ["Url"], "")
+    end for
+    m.discoveredServerList.content = content
+    m.discoveredServerList.setFocus(true)
+end function
+
+function showKeyboard() as Void
+    keyboard = CreateObject("roSGNode", "KeyboardDialog")
+    keyboard.title = translateText("Enter Server URL")
+    keyboard.text = m.serverInputText.text
+    keyboard.buttons = [translateText("OK"), translateText("Cancel")]
+    keyboard.observeField("text", m.port)
+    m.scene.dialog = keyboard
+end function
+
+function onKeyboardText() as Void
+    dialog = m.top.lastEventNode
+    if dialog = invalid then return
+
+    m.top.serverUrl = dialog.text
+    m.serverInputText.text = dialog.text
+end function
+
+function onServerListItemSelected() as Void
+    focused = m.serverList.focusedItem
+    if focused = invalid then return
+    url = focused.url
+    if url <> "" then
+        ProcessServerUrl(url)
+    end if
+end function
+
+function onDiscoveredServerSelected() as Void
+    focused = m.discoveredServerList.focusedItem
+    if focused = invalid then return
+    url = focused.url
+    if url <> "" then
+        ProcessServerUrl(url)
+    end if
+end function
+
+function onBackPressed() as Boolean
+    m.global.sceneManager.callFunc("popScene")
+    return true
+end function

@@ -1,0 +1,101 @@
+' Wholphin Roku - Async task for loading home screen items
+
+sub Init()
+    m.top.functionName = "loadItems"
+end sub
+
+sub loadItems()
+    itemsToLoad = m.top.itemsToLoad
+    userId = m.top.userId
+    if itemsToLoad = "" then
+        m.top.loadStatus = "error"
+        return
+    end if
+
+    result = invalid
+
+    if itemsToLoad = "hero" then
+        result = api.items.GetLatest(userId, {
+            Limit:     "10"
+            Fields:    "PrimaryImageAspectRatio,BasicSyncInfo"
+            ImageTypeLimit: "1"
+        })
+        if result = invalid or result.Count() = 0 then
+            result = api.items.Get({
+                userId:    userId
+                Limit:     "10"
+                Filters:   "IsResumable"
+                SortBy:    "DatePlayed"
+                SortOrder: "Descending"
+                Recursive: "true"
+                Fields:    "PrimaryImageAspectRatio,BasicSyncInfo"
+                ImageTypeLimit: "1"
+            })
+            if result <> invalid then result = result.Items
+        end if
+
+    else if itemsToLoad = "resume" then
+        result = api.items.Get({
+            userId:    userId
+            Limit:     "20"
+            Filters:   "IsResumable"
+            SortBy:    "DatePlayed"
+            SortOrder: "Descending"
+            Recursive: "true"
+            Fields:    "PrimaryImageAspectRatio,BasicSyncInfo"
+            ImageTypeLimit: "1"
+        })
+        if result <> invalid then result = result.Items
+
+    else if itemsToLoad = "nextup" then
+        result = api.shows.GetNextUp({
+            userId:    userId
+            Limit:     "20"
+            Fields:    "PrimaryImageAspectRatio,BasicSyncInfo"
+            ImageTypeLimit: "1"
+        })
+        if result <> invalid then result = result.Items
+
+    else if itemsToLoad = "latestmedia" then
+        result = api.items.GetLatest(userId, {
+            Limit:     "20"
+            Fields:    "PrimaryImageAspectRatio,BasicSyncInfo"
+            ImageTypeLimit: "1"
+        })
+
+    else if itemsToLoad = "favorites" then
+        result = api.items.Get({
+            userId:    userId
+            Limit:     "20"
+            Filters:   "IsFavorite"
+            SortBy:    "SortName"
+            SortOrder: "Ascending"
+            Recursive: "true"
+            Fields:    "PrimaryImageAspectRatio,BasicSyncInfo"
+            ImageTypeLimit: "1"
+        })
+        if result <> invalid then result = result.Items
+
+    else if itemsToLoad = "libraryitems" then
+        params = {
+            userId:     userId
+            Limit:      "100"
+            Recursive:  "true"
+            SortBy:     "SortName"
+            SortOrder:  "Ascending"
+            Fields:     "PrimaryImageAspectRatio,BasicSyncInfo"
+            ImageTypeLimit: "1"
+        }
+        if m.top.parentId <> "" then params.parentId = m.top.parentId
+        result = api.items.Get(params)
+        if result <> invalid then result = result.Items
+    end if
+
+    if result <> invalid then
+        m.top.loadedItems = result
+        m.top.loadStatus = "loaded"
+    else
+        m.top.loadedItems = []
+        m.top.loadStatus = "error"
+    end if
+end sub

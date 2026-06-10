@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="PosterItem" extends="Group">
+  <interface>
+    <field id="itemContent" type="node" alwaysNotify="true" />
+    <field id="posterUrl" type="string" value="" />
+    <field id="title" type="string" value="" />
+    <field id="availabilityStatus" type="integer" value="1" />
+  </interface>
+  <children>
+    <Poster id="posterImage" width="260" height="390" loadDisplayMode="scaleToZoom" failedBitmapUri="pkg:/images/default_poster.png" />
+    <Rectangle id="availBadge" width="40" height="24" translation="[210, 8]" color="#00FF00" visible="false" />
+    <Label id="titleLabel" translation="[0, 395]" width="260" height="40" font="font:SmallestSystemFont" wrap="true" maxLines="2" />
+  </children>
+</component>

@@ -1,0 +1,22 @@
+{
+  "name": "wholphin-roku",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Wholphin Roku - A Jellyfin client for Roku",
+  "scripts": {
+    "build": "node -e \"require('roku-deploy').createPackage({rootDir:'.', outDir:'out', outFile:'Wholphin.zip', files:['manifest','source/**/*.*','components/**/*.*','images/**/*.*','locale/**/*.*','settings/*.*']}).then(()=>console.log('BUILD OK')).catch(e=>{console.error(e.message);process.exit(1)})\"",
+    "deploy": "powershell -File deploy_roku.ps1",
+    "clean": "rimraf build/ out/",
+    "check": "bsc --project bsconfig.json",
+    "lint": "bslint --project bsconfig.json"
+  },
+  "devDependencies": {
+    "@rokucommunity/bslint": "^0.8.38",
+    "brighterscript": "^0.70.3",
+    "rimraf": "^6.1.3",
+    "roku-deploy": "^3.16.1"
+  },
+  "dependencies": {
+    "archiver": "^8.0.0"
+  }
+}

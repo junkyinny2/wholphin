@@ -1,0 +1,63 @@
+' Wholphin Roku - Media stream (audio/subtitle) dropdown selector
+
+sub Init()
+    m.dropdownTitle = m.top.findNode("dropdownTitle")
+    m.dropdownList = m.top.findNode("dropdownList")
+
+    m.top.observeField("tracks", m.port)
+    m.top.observeField("title", m.port)
+    m.top.observeField("selectedIndex", m.port)
+    m.dropdownList.observeField("itemSelected", m.port)
+end sub
+
+function onTracksChange() as Void
+    tracks = m.top.tracks
+    if tracks = invalid then return
+
+    content = CreateObject("roSGNode", "ContentNode")
+
+    offNode = content.CreateChild("ContentNode")
+    offNode.title = translateText("Off")
+    offNode.index = -1
+
+    for i = 0 to tracks.Count() - 1
+        track = tracks[i]
+        child = content.CreateChild("ContentNode")
+        child.title = chainLookupReturn(track, ["DisplayTitle"], translateText("Track ") + (i + 1).ToStr())
+        child.index = chainLookupReturn(track, ["Index"], i)
+        child.id = chainLookupReturn(track, ["Id"], "")
+        language = chainLookupReturn(track, ["Language"], "")
+        if language <> "" then
+            child.title = child.title + " (" + language + ")"
+        end if
+    end for
+
+    m.dropdownList.content = content
+    m.dropdownList.setFocus(true)
+end function
+
+function onTitleChange() as Void
+    if m.dropdownTitle <> invalid then
+        m.dropdownTitle.text = m.top.title
+    end if
+end function
+
+function onSelectedIndexChange() as Void
+    idx = m.top.selectedIndex
+    content = m.dropdownList.content
+    if content = invalid then return
+
+    for i = 0 to content.GetChildCount() - 1
+        child = content.GetChild(i)
+        if child <> invalid and child.index = idx then
+            m.dropdownList.focusedItem = child
+            exit for
+        end if
+    end for
+end function
+
+function onTrackSelected() as Void
+    focused = m.dropdownList.focusedItem
+    if focused = invalid then return
+    m.top.selectedIndex = focused.index
+end function

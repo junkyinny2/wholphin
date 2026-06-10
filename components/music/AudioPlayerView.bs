@@ -1,0 +1,272 @@
+' Wholphin Roku - Full-screen audio player
+
+sub Init()
+    m.albumArt = m.top.findNode("albumArt")
+    m.trackTitle = m.top.findNode("trackTitle")
+    m.trackArtist = m.top.findNode("trackArtist")
+    m.trackAlbum = m.top.findNode("trackAlbum")
+    m.audioProgressBg = m.top.findNode("audioProgressBg")
+    m.audioProgressFill = m.top.findNode("audioProgressFill")
+    m.audioCurrentTime = m.top.findNode("audioCurrentTime")
+    m.audioTotalTime = m.top.findNode("audioTotalTime")
+    m.btnShuffle = m.top.findNode("btnShuffle")
+    m.btnPrev = m.top.findNode("btnPrev")
+    m.btnNext = m.top.findNode("btnNext")
+    m.btnPlayPauseAudio = m.top.findNode("btnPlayPauseAudio")
+    m.btnRepeat = m.top.findNode("btnRepeat")
+    m.trackListGrid = m.top.findNode("trackListGrid")
+
+    m.top.observeField("albumData", m.port)
+    m.top.observeField("currentTrackIndex", m.port)
+    m.trackListGrid.observeField("itemSelected", m.port)
+
+    m.audioPlayer = m.global.audioPlayer
+    if m.audioPlayer <> invalid then
+        m.audioPlayer.observeField("state", m.port)
+        m.audioPlayer.observeField("position", m.port)
+    end if
+
+    m.progressTimer = CreateObject("roSGNode", "Timer")
+    m.progressTimer.repeat = true
+    m.progressTimer.duration = 1
+    m.progressTimer.observeField("fire", m.port)
+
+    ? "[AudioPlayerView] Init complete"
+end sub
+
+function onAlbumDataChange() as Void
+    ? "[AudioPlayerView] onAlbumDataChange"
+    album = m.top.albumData
+    if album = invalid then
+        ? "[AudioPlayerView] albumData is invalid"
+        return
+    end if
+
+    albumId = chainLookupReturn(album, ["id"], "")
+    if albumId = "" then
+        albumId = chainLookupReturn(album, ["Id"], "")
+    end if
+    ? "[AudioPlayerView] albumId="; albumId
+
+    jsonData = chainLookupReturn(album, ["json"], album)
+
+    img = PosterImage(albumId, { maxHeight: 500, maxWidth: 500 })
+    if img <> invalid then
+        m.albumArt.uri = img.url
+        ? "[AudioPlayerView] poster url="; img.url
+    else
+        ? "[AudioPlayerView] no poster image"
+    end if
+
+    artist = chainLookupReturn(jsonData, ["AlbumArtist"], "")
+    if artist = "" then artist = chainLookupReturn(jsonData, ["Artists", 0], "")
+    m.trackArtist.text = artist
+
+    m.trackAlbum.text = chainLookupReturn(jsonData, ["Name"], "")
+
+    loadTracks(albumId)
+end function
+
+function loadTracks(albumId as String) as Void
+    ? "[AudioPlayerView] loadTracks albumId="; albumId
+    tracksData = api.items.GetByFolder(albumId, {
+        userId: session.user.GetId()
+        SortBy: "SortName"
+        SortOrder: "Ascending"
+        Fields: "PrimaryImageAspectRatio,BasicSyncInfo"
+        ImageTypeLimit: "1"
+    })
+
+    if tracksData = invalid then
+        ? "[AudioPlayerView] tracksData is invalid"
+        return
+    end if
+    tracks = chainLookupReturn(tracksData, ["Items"], [])
+    if tracks = invalid or tracks.Count() = 0 then
+        ? "[AudioPlayerView] no tracks found"
+        return
+    end if
+    ? "[AudioPlayerView] found "; tracks.Count(); " tracks"
+
+    m.top.trackList = tracks
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for each track in tracks
+        child = content.CreateChild("ContentNode")
+        child.id = chainLookupReturn(track, ["Id"], "")
+        child.title = chainLookupReturn(track, ["Name"], "")
+        child.type = "Audio"
+        child.json = track
+        img = PosterImage(child.id)
+        if img <> invalid then
+            child.HDPosterUrl = img.url
+        end if
+    end for
+    m.trackListGrid.content = content
+    ? "[AudioPlayerView] track list grid populated"
+end function
+
+function onCurrentTrackIndexChange() as Void
+    ? "[AudioPlayerView] onCurrentTrackIndexChange"
+    tracks = m.top.trackList
+    index = m.top.currentTrackIndex
+    if tracks = invalid or index >= tracks.Count() then
+        ? "[AudioPlayerView] invalid track index "; index
+        return
+    end if
+
+    track = tracks[index]
+    m.trackTitle.text = chainLookupReturn(track, ["Name"], "")
+    playTrack(index)
+end function
+
+function playTrack(index as Integer) as Void
+    ? "[AudioPlayerView] playTrack index="; index
+    tracks = m.top.trackList
+    if tracks = invalid or index >= tracks.Count() then
+        ? "[AudioPlayerView] invalid tracks/index"
+        return
+    end if
+
+    track = tracks[index]
+    trackId = chainLookupReturn(track, ["Id"], "")
+    if trackId = "" then
+        ? "[AudioPlayerView] no trackId"
+        return
+    end if
+    ? "[AudioPlayerView] trackId="; trackId
+
+    streamData = AudioStream(trackId)
+    if streamData = invalid then
+        ? "[AudioPlayerView] AudioStream returned invalid"
+        return
+    end if
+    ? "[AudioPlayerView] stream url="; streamData.url
+
+    if m.audioPlayer <> invalid then
+        m.audioPlayer.uri = streamData.url
+        m.audioPlayer.control = "play"
+        ? "[AudioPlayerView] audioPlayer.play issued"
+    else
+        ? "[AudioPlayerView] audioPlayer is invalid (global)"
+    end if
+
+    duration = chainLookupReturn(track, ["RunTimeTicks"], 0)
+    if duration > 0 then
+        totalSecs = ticksToSeconds(duration)
+        m.audioTotalTime.text = formatTime(totalSecs)
+        ? "[AudioPlayerView] duration secs="; totalSecs
+    end if
+
+    m.progressTimer.control = "start"
+end function
+
+function onAudioPlayerStateChange() as Void
+    state = m.audioPlayer.state
+    m.top.playState = state
+    ? "[AudioPlayerView] state change: "; state
+
+    if state = "playing" then
+        m.btnPlayPauseAudio.uri = "pkg:/images/icons/pause.png"
+        m.progressTimer.control = "start"
+    else if state = "paused" then
+        m.btnPlayPauseAudio.uri = "pkg:/images/icons/play.png"
+        m.progressTimer.control = "stop"
+    else if state = "stopped" or state = "finished" then
+        m.btnPlayPauseAudio.uri = "pkg:/images/icons/play.png"
+        m.progressTimer.control = "stop"
+        ? "[AudioPlayerView] track ended, playing next"
+        playNext()
+    end if
+end function
+
+function onProgressTimer() as Void
+    if m.audioPlayer <> invalid then
+        currentPos = m.audioPlayer.position
+        currentDur = m.audioPlayer.duration
+
+        if currentDur > 0 then
+            m.audioCurrentTime.text = formatTime(currentPos)
+            pct = (currentPos / currentDur) * 700
+            m.audioProgressFill.width = Int(pct)
+        end if
+    end if
+end function
+
+function playPause() as Void
+    if m.audioPlayer = invalid then
+        ? "[AudioPlayerView] playPause: no audioPlayer"
+        return
+    end if
+    if m.audioPlayer.state = "playing" then
+        m.audioPlayer.control = "pause"
+        ? "[AudioPlayerView] pause"
+    else
+        m.audioPlayer.control = "play"
+        ? "[AudioPlayerView] play"
+    end if
+end function
+
+function playNext() as Void
+    ? "[AudioPlayerView] playNext"
+    index = m.top.currentTrackIndex + 1
+    if m.top.repeatMode = "one" then
+        ? "[AudioPlayerView] repeat one"
+        playTrack(m.top.currentTrackIndex)
+    else if index < m.top.trackList.Count() then
+        m.top.currentTrackIndex = index
+    else
+        if m.top.repeatMode = "all" then
+            ? "[AudioPlayerView] repeat all, looping"
+            m.top.currentTrackIndex = 0
+        else
+            ? "[AudioPlayerView] end of playlist"
+            m.top.playState = "stopped"
+        end if
+    end if
+end function
+
+function playPrev() as Void
+    index = m.top.currentTrackIndex - 1
+    if index >= 0 then
+        m.top.currentTrackIndex = index
+    end if
+end function
+
+function toggleShuffle() as Void
+    m.top.shuffleMode = not m.top.shuffleMode
+end function
+
+function toggleRepeat() as Void
+    if m.top.repeatMode = "none" then
+        m.top.repeatMode = "all"
+    else if m.top.repeatMode = "all" then
+        m.top.repeatMode = "one"
+    else
+        m.top.repeatMode = "none"
+    end if
+end function
+
+function onTrackListItemSelected() as Void
+    focused = m.trackListGrid.focusedItem
+    if focused = invalid then return
+
+    tracks = m.top.trackList
+    if tracks = invalid then return
+
+    for i = 0 to tracks.Count() - 1
+        if chainLookupReturn(tracks[i], ["Id"], "") = focused.id then
+            m.top.currentTrackIndex = i
+            exit for
+        end if
+    end for
+end function
+
+function onBackPressed() as Boolean
+    ? "[AudioPlayerView] onBackPressed"
+    if m.audioPlayer <> invalid then
+        m.audioPlayer.control = "stop"
+    end if
+    m.progressTimer.control = "stop"
+    return false
+end function

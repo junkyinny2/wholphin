@@ -1,0 +1,44 @@
+' Wholphin Roku - Home row with title and MarkupGrid
+
+sub Init()
+    m.rowLabel = m.top.findNode("rowLabel")
+    m.rowGrid = m.top.findNode("rowGrid")
+
+    m.top.observeField("rowTitle", m.port)
+    m.top.observeField("visible", m.port)
+end sub
+
+function onRowTitleChange() as Void
+    if m.rowLabel <> invalid then
+        m.rowLabel.text = m.top.rowTitle
+    end if
+end function
+
+function setContent(items as Object) as Void
+    if items = invalid or items.Count() = 0 then
+        m.top.visible = false
+        return
+    end if
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for each item in items
+        child = content.CreateChild("ContentNode")
+        child.id = chainLookupReturn(item, ["Id"], "")
+        child.title = chainLookupReturn(item, ["Name"], "")
+        child.type = chainLookupReturn(item, ["Type"], "")
+        child.json = item
+
+        img = PosterImage(child.id)
+        if img <> invalid then
+            child.HDPosterUrl = img.url
+            child.SDPosterUrl = img.url
+        end if
+    end for
+
+    m.rowGrid.content = content
+    m.top.visible = true
+end function
+
+function focusGrid() as Void
+    m.rowGrid.setFocus(true)
+end function

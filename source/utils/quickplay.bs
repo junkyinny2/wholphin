@@ -1,0 +1,220 @@
+' Wholphin Roku - Quick Play logic for initiating media playback
+
+namespace quickplay
+
+    ' Start video playback for a single item
+    function video(item as Object, mediaSourceId = "" as String, audioStreamIndex = -1 as Integer, subtitleStreamIndex = -1 as Integer, startTimeTicks = 0 as Integer) as Void
+        videoData = CreateObject("roSGNode", "VideoData")
+        videoData.id = item.id
+        videoData.json = item.json
+        videoData.title = item.title
+        videoData.image = item.image
+        
+        ' Set up the queue with this single item
+        queueManager = m.global.queueManager
+        queueManager.callFunc("clear")
+        queueManager.callFunc("push", videoData)
+        queueManager.callFunc("setPlaybackOptions", {
+            mediaSourceId:    mediaSourceId
+            audioStreamIndex: audioStreamIndex
+            subtitleStreamIndex: subtitleStreamIndex
+            startTimeTicks:   startTimeTicks
+        })
+        
+        ' Start playback
+        viewCreator = CreateObject("roSGNode", "ViewCreator")
+        viewCreator.callFunc("createVideoPlayerView")
+    end function
+    
+    ' Start audio playback for a single audio item
+    function audio(item as Object, startTimeTicks = 0 as Integer) as Void
+        audioData = CreateObject("roSGNode", "MusicSongData")
+        audioData.id = item.id
+        audioData.json = item.json
+        audioData.title = item.title
+        audioData.image = item.image
+        
+        ' Set up queue
+        queueManager = m.global.queueManager
+        queueManager.callFunc("clear")
+        queueManager.callFunc("push", audioData)
+        queueManager.callFunc("setPlaybackOptions", {
+            startTimeTicks: startTimeTicks
+        })
+        
+        ' Start audio playback
+        viewCreator = CreateObject("roSGNode", "ViewCreator")
+        viewCreator.callFunc("createAudioPlayerView")
+    end function
+    
+    ' Start audio playback for an entire album
+    function album(albumItem as Object, startIndex = 0 as Integer) as Void
+        queueManager = m.global.queueManager
+        queueManager.callFunc("clear")
+        
+        ' Fetch album tracks
+        api.items.GetChildren(albumItem.id).Then(sub(data)
+            items = data.Items
+            if items = invalid then return
+            
+            for each track in items
+                songData = CreateObject("roSGNode", "MusicSongData")
+                songData.id = track.Id
+                songData.json = track
+                songData.title = chainLookupReturn(track, ["Name"], "")
+                songData.image = albumItem.image
+                queueManager.callFunc("push", songData)
+            end for
+            
+            if startIndex > 0 then
+                queueManager.callFunc("setPosition", startIndex)
+            end if
+        End Sub)
+        
+        viewCreator = CreateObject("roSGNode", "ViewCreator")
+        viewCreator.callFunc("createAudioPlayerView")
+    end function
+    
+    ' Start playback for a series (first unwatched episode)
+    function series(seriesId as String) as Void
+        api.shows.GetEpisodes(seriesId, "").Then(sub(data)
+            items = data.Items
+            if items = invalid or items.Count() = 0 then return
+            
+            ' Find first unwatched episode
+            for each episode in items
+                userData = chainLookupReturn(episode, ["UserData"], {})
+                played = chainLookupReturn(userData, ["Played"], false)
+                if not played then
+                    episodeNode = CreateObject("roSGNode", "TVEpisodeData")
+                    episodeNode.id = episode.Id
+                    episodeNode.json = episode
+                    episodeNode.title = chainLookupReturn(episode, ["SeriesName"], "") + " - " + chainLookupReturn(episode, ["Name"], "")
+                    quickplay.video(episodeNode)
+                    return
+                end if
+            end for
+            
+            ' All watched, play first episode
+            if items.Count() > 0 then
+                episodeNode = CreateObject("roSGNode", "TVEpisodeData")
+                episodeNode.id = items[0].Id
+                episodeNode.json = items[0]
+                episodeNode.title = chainLookupReturn(items[0], ["SeriesName"], "") + " - " + chainLookupReturn(items[0], ["Name"], "")
+                quickplay.video(episodeNode)
+            end if
+        End Sub)
+    end function
+    
+    ' Start playback for a season (first unwatched episode)
+    function season(seriesId as String, seasonId as String) as Void
+        api.shows.GetEpisodes(seriesId, seasonId).Then(sub(data)
+            items = data.Items
+            if items = invalid or items.Count() = 0 then return
+            
+            ' Find first unwatched episode
+            for each episode in items
+                userData = chainLookupReturn(episode, ["UserData"], {})
+                played = chainLookupReturn(userData, ["Played"], false)
+                if not played then
+                    episodeNode = CreateObject("roSGNode", "TVEpisodeData")
+                    episodeNode.id = episode.Id
+                    episodeNode.json = episode
+                    episodeNode.title = chainLookupReturn(episode, ["SeriesName"], "") + " - " + chainLookupReturn(episode, ["Name"], "")
+                    quickplay.video(episodeNode)
+                    return
+                end if
+            end for
+            
+            ' All watched, play first episode
+            if items.Count() > 0 then
+                episodeNode = CreateObject("roSGNode", "TVEpisodeData")
+                episodeNode.id = items[0].Id
+                episodeNode.json = items[0]
+                episodeNode.title = chainLookupReturn(items[0], ["SeriesName"], "") + " - " + chainLookupReturn(items[0], ["Name"], "")
+                quickplay.video(episodeNode)
+            end if
+        End Sub)
+    end function
+    
+    ' Start playback for a playlist
+    function playlist(playlistItem as Object) as Void
+        queueManager = m.global.queueManager
+        queueManager.callFunc("clear")
+        
+        api.playlists.GetItems(playlistItem.id).Then(sub(data)
+            items = data.Items
+            if items = invalid then return
+            
+            for each item in items
+                itemType = chainLookupReturn(item, ["Type"], "")
+                if itemType = "Audio" then
+                    songData = CreateObject("roSGNode", "MusicSongData")
+                    songData.id = item.Id
+                    songData.json = item
+                    songData.title = chainLookupReturn(item, ["Name"], "")
+                    queueManager.callFunc("push", songData)
+                else
+                    videoData = CreateObject("roSGNode", "VideoData")
+                    videoData.id = item.Id
+                    videoData.json = item
+                    videoData.title = chainLookupReturn(item, ["Name"], "")
+                    queueManager.callFunc("push", videoData)
+                end if
+            end for
+        End Sub)
+        
+        viewCreator = CreateObject("roSGNode", "ViewCreator")
+        viewCreator.callFunc("createVideoPlayerView")
+    end function
+    
+    ' Start playback for a folder
+    function folder(folderItem as Object) as Void
+        ' Folders can contain videos - play all videos in the folder
+        queueManager = m.global.queueManager
+        queueManager.callFunc("clear")
+        
+        api.items.GetByFolder(folderItem.id).Then(sub(data)
+            items = data.Items
+            if items = invalid then return
+            
+            for each item in items
+                itemType = chainLookupReturn(item, ["Type"], "")
+                if itemType = "Video" or itemType = "Episode" or itemType = "Movie" then
+                    videoData = CreateObject("roSGNode", "VideoData")
+                    videoData.id = item.Id
+                    videoData.json = item
+                    videoData.title = chainLookupReturn(item, ["Name"], "")
+                    queueManager.callFunc("push", videoData)
+                end if
+            end for
+        End Sub)
+        
+        viewCreator = CreateObject("roSGNode", "ViewCreator")
+        viewCreator.callFunc("createVideoPlayerView")
+    end function
+    
+    ' Start playback for an audiobook
+    function audioBook(item as Object, startTimeTicks = 0 as Integer) as Void
+        queueManager = m.global.queueManager
+        queueManager.callFunc("clear")
+        
+        ' Get audiobook tracks (children of the audiobook item)
+        api.items.GetChildren(item.id).Then(sub(data)
+            items = data.Items
+            if items = invalid then return
+            
+            for each track in items
+                songData = CreateObject("roSGNode", "MusicSongData")
+                songData.id = track.Id
+                songData.json = track
+                songData.title = chainLookupReturn(track, ["Name"], "")
+                queueManager.callFunc("push", songData)
+            end for
+        End Sub)
+        
+        viewCreator = CreateObject("roSGNode", "ViewCreator")
+        viewCreator.callFunc("createAudioPlayerView")
+    end function
+
+end namespace

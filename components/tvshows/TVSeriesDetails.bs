@@ -1,0 +1,255 @@
+' Wholphin Roku - TV series details screen logic
+
+sub Init()
+    m.seriesBackdrop = m.top.findNode("seriesBackdrop")
+    m.seriesPoster = m.top.findNode("seriesPoster")
+    m.seriesTitle = m.top.findNode("seriesTitle")
+    m.seriesYear = m.top.findNode("seriesYear")
+    m.seriesRating = m.top.findNode("seriesRating")
+    m.seriesStatus = m.top.findNode("seriesStatus")
+    m.seriesOverview = m.top.findNode("seriesOverview")
+    m.seasonGrid = m.top.findNode("seasonGrid")
+    m.seriesCastGrid = m.top.findNode("seriesCastGrid")
+    m.seriesCastLabel = m.top.findNode("seriesCastLabel")
+
+    m.btnPlayNext = m.top.findNode("btnPlayNext")
+    m.btnResumeSeries = m.top.findNode("btnResumeSeries")
+    m.btnShuffle = m.top.findNode("btnShuffle")
+    m.btnFavSeries = m.top.findNode("btnFavSeries")
+    m.btnMyListSeries = m.top.findNode("btnMyListSeries")
+
+    m.top.observeField("seriesId", m.port)
+    m.btnPlayNext.observeField("buttonSelected", m.port)
+    m.btnResumeSeries.observeField("buttonSelected", m.port)
+    m.btnShuffle.observeField("buttonSelected", m.port)
+    m.btnFavSeries.observeField("buttonSelected", m.port)
+    m.btnMyListSeries.observeField("buttonSelected", m.port)
+    m.seasonGrid.observeField("seasonSelected", m.port)
+    m.seriesCastGrid.observeField("itemSelected", m.port)
+end sub
+
+function onSeriesIdChange() as Void
+    LoadData()
+end function
+
+function LoadData() as Void
+    m.top.loadingData = true
+    m.top.overhangTitle = translateText("Series Details")
+
+    seriesId = m.top.seriesId
+    if seriesId = "" then return
+
+    itemData = api.items.GetByID(seriesId)
+    if itemData = invalid then return
+
+    if m.top.seriesData = invalid then
+        node = CreateObject("roSGNode", "SeriesData")
+        node.id = seriesId
+        node.json = itemData
+        node.title = chainLookupReturn(itemData, ["Name"], "")
+        m.top.seriesData = node
+    end if
+
+    m.seriesTitle.text = chainLookupReturn(itemData, ["Name"], "")
+
+    year = chainLookupReturn(itemData, ["ProductionYear"], "")
+    if year <> invalid then
+        m.seriesYear.text = year.ToStr()
+    end if
+
+    rating = chainLookupReturn(itemData, ["CommunityRating"], "")
+    if rating <> invalid and rating > 0 then
+        m.seriesRating.text = "★ " + Str(rating).Trim()
+    end if
+
+    status = chainLookupReturn(itemData, ["Status"], "")
+    if status <> "" then
+        m.seriesStatus.text = status
+    end if
+
+    overview = chainLookupReturn(itemData, ["Overview"], "")
+    if overview <> invalid then
+        if Len(overview) > 500 then overview = Left(overview, 500) + "..."
+        m.seriesOverview.text = overview
+    end if
+
+    backdropUrl = BackdropImageURL(seriesId)
+    if backdropUrl <> "" then
+        m.seriesBackdrop.uri = backdropUrl
+    end if
+
+    posterImg = PosterImage(seriesId, { maxHeight: 390, maxWidth: 260 })
+    if posterImg <> invalid then
+        m.seriesPoster.uri = posterImg.url
+    end if
+
+    userData = chainLookupReturn(itemData, ["UserData"], {})
+    m.top.isFavorite = chainLookupReturn(userData, ["IsFavorite"], false)
+    m.top.isPlayed = chainLookupReturn(userData, ["Played"], false)
+
+    if m.top.isFavorite then
+        m.btnFavSeries.buttonText = translateText("Favorited")
+    end if
+
+    loadSeasons(seriesId)
+    loadSeriesCast(seriesId)
+    checkNextUp(seriesId)
+
+    m.top.loadingData = false
+    m.top.dataLoaded = true
+end function
+
+function loadSeasons(seriesId as String) as Void
+    seasonsData = api.shows.GetSeasons(seriesId, {
+        userId: session.user.GetId()
+        Fields: "PrimaryImageAspectRatio,BasicSyncInfo"
+        ImageTypeLimit: "1"
+    })
+
+    if seasonsData = invalid then return
+    seasons = chainLookupReturn(seasonsData, ["Items"], [])
+    if seasons = invalid or seasons.Count() = 0 then return
+
+    m.top.seasons = seasons
+    m.seasonGrid.seasons = seasons
+    m.seasonGrid.seriesId = seriesId
+end function
+
+function loadSeriesCast(seriesId as String) as Void
+    itemData = api.items.GetByID(seriesId)
+    if itemData = invalid then return
+
+    people = chainLookupReturn(itemData, ["People"], [])
+    if people = invalid or people.Count() = 0 then return
+
+    m.seriesCastLabel.visible = true
+    content = CreateObject("roSGNode", "ContentNode")
+    for each person in people
+        child = content.CreateChild("ContentNode")
+        child.id = chainLookupReturn(person, ["Id"], "")
+        child.title = chainLookupReturn(person, ["Name"], "")
+        child.role = chainLookupReturn(person, ["Role"], "")
+        img = PosterImage(child.id, { maxHeight: 200, maxWidth: 150 })
+        if img <> invalid then
+            child.HDPosterUrl = img.url
+        end if
+    end for
+    m.seriesCastGrid.content = content
+    m.seriesCastGrid.visible = true
+end function
+
+function checkNextUp(seriesId as String) as Void
+    nextUp = api.shows.GetNextUp({
+        userId:           session.user.GetId()
+        SeriesId:         seriesId
+        Limit:            "1"
+        Fields:           "PrimaryImageAspectRatio,BasicSyncInfo"
+        ImageTypeLimit:   "1"
+    })
+
+    if nextUp <> invalid then
+        items = chainLookupReturn(nextUp, ["Items"], [])
+        if items.Count() > 0 then
+            m.btnPlayNext.visible = true
+        end if
+    end if
+end function
+
+function onButtonSelected() as Void
+    btn = m.top.lastEventNode
+    if btn = invalid then return
+
+    btnText = btn.id
+
+    if btnText = "btnPlayNext" then
+        nextUp = api.shows.GetNextUp({
+            userId: session.user.GetId()
+            SeriesId: m.top.seriesId
+            Limit: "1"
+            Fields: "PrimaryImageAspectRatio,BasicSyncInfo"
+            ImageTypeLimit: "1"
+        })
+        if nextUp <> invalid then
+            items = chainLookupReturn(nextUp, ["Items"], [])
+            if items.Count() > 0 then
+                itemNode = CreateObject("roSGNode", "VideoData")
+                itemNode.id = chainLookupReturn(items[0], ["Id"], "")
+                itemNode.json = items[0]
+                itemNode.title = chainLookupReturn(items[0], ["Name"], "")
+                quickplay.video(itemNode)
+            end if
+        end if
+    else if btnText = "btnResumeSeries" then
+        resumeItems = api.items.Get({
+            userId:    session.user.GetId()
+            Limit:     "10"
+            Filters:   "IsResumable"
+            SortBy:    "DatePlayed"
+            SortOrder: "Descending"
+            Recursive: "true"
+            ParentId:  m.top.seriesId
+            Fields:    "PrimaryImageAspectRatio,BasicSyncInfo"
+            ImageTypeLimit: "1"
+        })
+        if resumeItems <> invalid then
+            items = chainLookupReturn(resumeItems, ["Items"], [])
+            if items.Count() > 0 then
+                itemNode = CreateObject("roSGNode", "VideoData")
+                itemNode.id = chainLookupReturn(items[0], ["Id"], "")
+                itemNode.json = items[0]
+                itemNode.title = chainLookupReturn(items[0], ["Name"], "")
+                quickplay.video(itemNode)
+            end if
+        end if
+    else if btnText = "btnShuffle" then
+        episodes = api.items.Get({
+            userId:     session.user.GetId()
+            Limit:      "100"
+            Recursive:  "true"
+            ParentId:   m.top.seriesId
+            SortBy:     "Random"
+            Fields:     "PrimaryImageAspectRatio,BasicSyncInfo"
+            ImageTypeLimit: "1"
+        })
+        if episodes <> invalid then
+            items = chainLookupReturn(episodes, ["Items"], [])
+            if items.Count() > 0 then
+                quickplay.shuffle(items)
+            end if
+        end if
+    else if btnText = "btnFavSeries" then
+        itemId = m.top.seriesId
+        MainAction_MarkFavorite(itemId, m.top.isFavorite)
+        m.top.isFavorite = not m.top.isFavorite
+        if m.top.isFavorite then
+            m.btnFavSeries.buttonText = translateText("Favorited")
+        else
+            m.btnFavSeries.buttonText = translateText("Favorite")
+        end if
+    else if btnText = "btnMyListSeries" then
+        MainAction_AddToMyList(m.top.seriesId)
+    end if
+end function
+
+function onSeasonSelected() as Void
+    selectedSeason = m.seasonGrid.selectedSeason
+    if selectedSeason = invalid then return
+
+    seriesData = m.top.seriesData
+    if seriesData = invalid then
+        seriesData = { id: m.top.seriesId }
+    end if
+
+    CreateSeasonDetailsGroup(seriesData, selectedSeason)
+end function
+
+function onCastItemSelected() as Void
+    item = m.seriesCastGrid.focusedItem
+    if item = invalid then return
+    personData = {
+        id:   item.id
+        Name: item.title
+        json: { Id: item.id, Name: item.title }
+    }
+    CreatePersonView(personData)
+end function

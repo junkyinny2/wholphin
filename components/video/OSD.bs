@@ -1,0 +1,265 @@
+' Wholphin Roku - On-screen display overlay logic
+
+sub Init()
+    m.osdTopBar = m.top.findNode("osdTopBar")
+    m.osdBottomBar = m.top.findNode("osdBottomBar")
+    m.osdTitle = m.top.findNode("osdTitle")
+    m.osdSeasonInfo = m.top.findNode("osdSeasonInfo")
+    m.osdClock = m.top.findNode("osdClock")
+    m.osdProgressBg = m.top.findNode("osdProgressBg")
+    m.osdProgressFill = m.top.findNode("osdProgressFill")
+    m.osdCurrentTime = m.top.findNode("osdCurrentTime")
+    m.osdRemainingTime = m.top.findNode("osdRemainingTime")
+    m.btnPlayPause = m.top.findNode("btnPlayPause")
+    m.btnRewind = m.top.findNode("btnRewind")
+    m.btnForward = m.top.findNode("btnForward")
+    m.btnSubtitles = m.top.findNode("btnSubtitles")
+    m.btnAudio = m.top.findNode("btnAudio")
+    m.btnChapters = m.top.findNode("btnChapters")
+    m.btnInfo = m.top.findNode("btnInfo")
+
+    m.top.observeField("playerState", m.port)
+    m.top.observeField("position", m.port)
+    m.top.observeField("duration", m.port)
+    m.top.observeField("itemTitle", m.port)
+    m.top.observeField("visible", m.port)
+
+    m.hideTimer = CreateObject("roSGNode", "Timer")
+    m.hideTimer.duration = 5
+    m.hideTimer.repeat = false
+    m.hideTimer.observeField("fire", m.port)
+
+    m.osdVisible = true
+    show()
+
+    updateClock()
+    m.clockTimer = CreateObject("roSGNode", "Timer")
+    m.clockTimer.repeat = true
+    m.clockTimer.duration = 30
+    m.clockTimer.observeField("fire", m.port)
+    m.clockTimer.control = "start"
+
+    m.trickplayData = []
+end sub
+
+function show() as Void
+    m.osdTopBar.visible = true
+    m.osdBottomBar.visible = true
+    m.osdVisible = true
+    restartHideTimer()
+end function
+
+function hide() as Void
+    m.osdTopBar.visible = false
+    m.osdBottomBar.visible = false
+    m.osdVisible = false
+    m.hideTimer.control = "stop"
+end function
+
+function toggleVisibility() as Void
+    if m.osdVisible then
+        hide()
+    else
+        show()
+    end if
+end function
+
+function restartHideTimer() as Void
+    if m.hideTimer <> invalid then
+        m.hideTimer.control = "stop"
+        m.hideTimer.control = "start"
+    end if
+end function
+
+function onPlayerStateChange() as Void
+    state = m.top.playerState
+    if state = "playing" then
+        m.btnPlayPause.text = "||"
+    else if state = "paused" then
+        m.btnPlayPause.text = ">"
+    end if
+end function
+
+function onPositionChange() as Void
+    position = m.top.position
+    duration = m.top.duration
+
+    if duration <= 0 then return
+
+    pct = (position / duration) * 100.0
+    if pct > 100 then pct = 100
+    m.osdProgressFill.width = Int(1860 * pct / 100.0)
+
+    remaining = duration - position
+    if remaining < 0 then remaining = 0
+
+    m.osdCurrentTime.text = formatTime(position)
+    m.osdRemainingTime.text = "-" + formatTime(remaining)
+end function
+
+function onDurationChange() as Void
+    onPositionChange()
+end function
+
+function onItemTitleChange() as Void
+    if m.osdTitle <> invalid then
+        m.osdTitle.text = m.top.itemTitle
+    end if
+end function
+
+function onFire() as Void
+    ' Hide timer expired
+    hide()
+end function
+
+function updateClock() as Void
+    now = CreateObject("roDateTime")
+    hours = now.GetHours()
+    minutes = now.GetMinutes()
+    timeStr = leftPad(hours.ToStr(), 2, "0") + ":" + leftPad(minutes.ToStr(), 2, "0")
+    m.osdClock.text = timeStr
+end function
+
+function handleButtonPress(buttonId as String) as Void
+    restartHideTimer()
+
+    if buttonId = "playpause" then
+        video = m.top.getParent()
+        if video <> invalid and video.hasField("togglePlayPause") then
+            video.togglePlayPause()
+        end if
+    else if buttonId = "rewind" then
+        video = m.top.getParent()
+        if video <> invalid and video.hasField("seekBackward") then
+            video.seekBackward(10)
+        end if
+    else if buttonId = "forward" then
+        video = m.top.getParent()
+        if video <> invalid and video.hasField("seekForward") then
+            video.seekForward(30)
+        end if
+    else if buttonId = "subtitles" then
+        showSubtitleSelector()
+    else if buttonId = "audio" then
+        showAudioSelector()
+    else if buttonId = "chapters" then
+        showChapterList()
+    else if buttonId = "info" then
+        toggleInfo()
+    end if
+end function
+
+function showSubtitleSelector() as Void
+    tracks = m.top.subtitleTracks
+    if tracks = invalid or tracks.Count() = 0 then return
+
+    dialog = CreateObject("roSGNode", "RadioDialog")
+    dialog.title = translateText("Subtitles")
+    items = []
+    items.Push({ label: translateText("Off"), value: -1 })
+    for i = 0 to tracks.Count() - 1
+        track = tracks[i]
+        items.Push({ label: chainLookupReturn(track, ["DisplayTitle"], ""), value: i })
+    end for
+    dialog.items = items
+    dialog.selectedValue = m.top.currentSubtitleIndex
+    dialog.observeField("selectedValue", m.port)
+    m.scene.dialog = dialog
+end function
+
+function showAudioSelector() as Void
+    tracks = m.top.audioTracks
+    if tracks = invalid or tracks.Count() = 0 then return
+
+    dialog = CreateObject("roSGNode", "RadioDialog")
+    dialog.title = translateText("Audio Track")
+    items = []
+    for i = 0 to tracks.Count() - 1
+        track = tracks[i]
+        items.Push({ label: chainLookupReturn(track, ["DisplayTitle"], ""), value: i })
+    end for
+    dialog.items = items
+    dialog.selectedValue = m.top.currentAudioIndex
+    dialog.observeField("selectedValue", m.port)
+    m.scene.dialog = dialog
+end function
+
+function showChapterList() as Void
+    chapters = m.top.chapters
+    if chapters = invalid or chapters.Count() = 0 then return
+
+    dialog = CreateObject("roSGNode", "RadioDialog")
+    dialog.title = translateText("Chapters")
+    items = []
+    for i = 0 to chapters.Count() - 1
+        chapter = chapters[i]
+        name = chainLookupReturn(chapter, ["Name"], translateText("Chapter ") + (i + 1).ToStr())
+        items.Push({ label: name, value: i })
+    end for
+    dialog.items = items
+    dialog.observeField("selectedValue", m.port)
+    m.scene.dialog = dialog
+end function
+
+function onRadioDialogSelected() as Void
+    dialog = m.top.lastEventNode
+    if dialog = invalid then return
+
+    selectedValue = dialog.selectedValue
+    if dialog.title = translateText("Subtitles") then
+        video = m.top.getParent()
+        if video <> invalid and video.hasField("setSubtitleTrack") then
+            video.setSubtitleTrack(selectedValue)
+        end if
+    else if dialog.title = translateText("Audio Track") then
+        video = m.top.getParent()
+        if video <> invalid and video.hasField("setAudioTrack") then
+            video.setAudioTrack(selectedValue)
+        end if
+    else if dialog.title = translateText("Chapters") then
+        video = m.top.getParent()
+        if video <> invalid and video.hasField("seekToChapter") then
+            video.seekToChapter(selectedValue)
+        end if
+    end if
+end function
+
+function toggleInfo() as Void
+    ' Show video info overlay
+end function
+
+function setTrickplayData(data as Object) as Void
+    m.trickplayData = data
+end function
+
+function onKeyEvent(key as String, press as Boolean) as Boolean
+    if not press then return false
+
+    if key = "OK" or key = "play" then
+        toggleVisibility()
+        return true
+    end if
+
+    if not m.osdVisible then return false
+
+    restartHideTimer()
+
+    if key = "left" then
+        handleButtonPress("rewind")
+        return true
+    else if key = "right" then
+        handleButtonPress("forward")
+        return true
+    else if key = "up" then
+        handleButtonPress("subtitles")
+        return true
+    else if key = "down" then
+        handleButtonPress("audio")
+        return true
+    else if key = "back" then
+        hide()
+        return true
+    end if
+
+    return false
+end function

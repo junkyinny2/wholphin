@@ -1,0 +1,150 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="VideoPlayerView" extends="JFScreen">
+  <interface>
+    <field id="videoItem" type="node" alwaysNotify="true" />
+    <field id="playSessionId" type="string" value="" />
+    <field id="mediaSourceId" type="string" value="" />
+    <field id="audioStreamIndex" type="int" value="-1" />
+    <field id="subtitleStreamIndex" type="int" value="-1" />
+    <field id="startTimeTicks" type="int" value="0" />
+    <field id="playMethod" type="string" value="DirectPlay" />
+    <field id="liveStream" type="boolean" value="false" />
+    <field id="playerState" type="string" value="" alwaysNotify="true" />
+    <field id="playbackPosition" type="int" value="0" alwaysNotify="true" />
+    <field id="currentChapter" type="int" value="-1" />
+    <field id="chapters" type="array" value="" />
+    <field id="nextUpItem" type="node" />
+    <field id="skipSegments" type="array" value="" />
+  </interface>
+
+  <children>
+    <!-- Poster background (shown before video loads) -->
+    <Poster
+      id="posterBackground"
+      translation="[0, 0]"
+      width="1920"
+      height="1080"
+      loadDisplayMode="scaleToFit" />
+
+    <!-- Video player -->
+    <Video
+      id="videoPlayer"
+      translation="[0, 0]"
+      width="1920"
+      height="1080"
+      enableUI="false"
+      showStatusMessage="false"
+      visible="true" />
+
+    <!-- Caption group for subtitles -->
+    <Group
+      id="captionGroup"
+      translation="[0, 880]"
+      width="1920"
+      height="100"
+      visible="true" />
+
+    <!-- On-screen display overlay -->
+    <OSD
+      id="osd"
+      translation="[0, 0]"
+      visible="true" />
+
+    <!-- Next up box -->
+    <Group
+      id="nextUpBox"
+      translation="[660, 340]"
+      width="600"
+      height="400"
+      visible="false">
+      <Rectangle
+        id="nextUpBg"
+        width="600"
+        height="400"
+        color="0x16213EFF" />
+      <Label
+        id="nextUpTitle"
+        translation="[20, 20]"
+        width="560"
+        height="30"
+        font="font:MediumBoldSystemFont"
+        color="0xFFFFFFFF"
+        text=""
+        vertAlign="center" />
+      <Poster
+        id="nextUpImage"
+        translation="[20, 60]"
+        width="200"
+        height="300"
+        loadDisplayMode="scaleToFit" />
+      <Label
+        id="nextUpLabel"
+        translation="[240, 60]"
+        width="340"
+        height="100"
+        font="font:SmallSystemFont"
+        color="0xB0B0B0FF"
+        text=""
+        wrap="true" />
+      <Label
+        id="nextUpTimer"
+        translation="[240, 360]"
+        width="340"
+        height="30"
+        font="font:SmallSystemFont"
+        color="0x00A4DCFF"
+        text=""
+        vertAlign="center" />
+    </Group>
+
+    <!-- Skip segment button (intro/outro) -->
+    <Group
+      id="skipSegmentButton"
+      translation="[1700, 780]"
+      visible="false">
+      <Rectangle
+        id="skipSegmentBg"
+        width="200"
+        height="50"
+        color="0x00A4DCFF" />
+      <Label
+        id="skipSegmentLabel"
+        translation="[10, 10]"
+        width="180"
+        height="30"
+        font="font:SmallSystemFont"
+        color="0xFFFFFFFF"
+        text="Skip Intro"
+        horizAlign="center"
+        vertAlign="center" />
+    </Group>
+
+    <!-- Trick play bar -->
+    <Group
+      id="trickPlayBar"
+      translation="[0, 0]"
+      visible="false" />
+
+    <!-- Buffering overlay -->
+    <Rectangle
+      id="bufferingOverlay"
+      translation="[0, 0]"
+      width="1920"
+      height="1080"
+      color="0x00000080"
+      visible="false" />
+    <Label
+      id="bufferingLabel"
+      translation="[860, 520]"
+      width="200"
+      height="30"
+      font="font:MediumBoldSystemFont"
+      color="0xFFFFFFFF"
+      text="Buffering..."
+      horizAlign="center"
+      vertAlign="center"
+      visible="false" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/video/VideoPlayerView.bs" />
+</component>

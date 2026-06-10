@@ -1,0 +1,239 @@
+{
+  "version": 1,
+  "title": "Wholphin Settings",
+  "children": [
+    {
+      "settingName": "preferredVideoQuality",
+      "title": "Preferred Video Quality",
+      "description": "Maximum video quality for playback",
+      "settingType": "enum",
+      "default": "Auto",
+      "enumValues": ["Auto", "4K", "1080p", "720p", "480p"]
+    },
+    {
+      "settingName": "maxBitrate",
+      "title": "Maximum Bitrate",
+      "description": "Maximum bitrate for streaming (bps)",
+      "settingType": "integer",
+      "default": "200000000"
+    },
+    {
+      "settingName": "homeScreenSection0",
+      "title": "Home Section 0",
+      "settingType": "string",
+      "default": "resume"
+    },
+    {
+      "settingName": "homeScreenSection1",
+      "title": "Home Section 1",
+      "settingType": "string",
+      "default": "nextup"
+    },
+    {
+      "settingName": "homeScreenSection2",
+      "title": "Home Section 2",
+      "settingType": "string",
+      "default": "latestmedia"
+    },
+    {
+      "settingName": "homeScreenSection3",
+      "title": "Home Section 3",
+      "settingType": "string",
+      "default": "favorites"
+    },
+    {
+      "settingName": "homeScreenView",
+      "title": "Home Screen View",
+      "description": "Default view for home screen rows",
+      "settingType": "enum",
+      "default": "poster",
+      "enumValues": ["poster", "thumb"]
+    },
+    {
+      "settingName": "showTitles",
+      "title": "Show Titles on Posters",
+      "description": "Display titles below poster images",
+      "settingType": "bool",
+      "default": "true"
+    },
+    {
+      "settingName": "showYear",
+      "title": "Show Year on Posters",
+      "description": "Display year on poster images",
+      "settingType": "bool",
+      "default": "true"
+    },
+    {
+      "settingName": "appTheme",
+      "title": "App Theme",
+      "description": "Choose the app color theme",
+      "settingType": "enum",
+      "default": "blue",
+      "enumValues": ["blue", "boldBlue", "green", "oled", "orange", "purple"]
+    },
+    {
+      "settingName": "display.language",
+      "title": "Display Language",
+      "description": "Language for the user interface",
+      "settingType": "string",
+      "default": "en_US"
+    },
+    {
+      "settingName": "audio.output",
+      "title": "Audio Output",
+      "description": "Preferred audio output mode",
+      "settingType": "enum",
+      "default": "stereo",
+      "enumValues": ["stereo", "surround", "passthrough"]
+    },
+    {
+      "settingName": "subtitle.language",
+      "title": "Subtitle Language",
+      "description": "Preferred subtitle language",
+      "settingType": "string",
+      "default": ""
+    },
+    {
+      "settingName": "subtitle.enabled",
+      "title": "Subtitles Enabled",
+      "description": "Enable subtitles by default",
+      "settingType": "bool",
+      "default": "false"
+    },
+    {
+      "settingName": "subtitle.size",
+      "title": "Subtitle Size",
+      "description": "Subtitle font size percentage",
+      "settingType": "enum",
+      "default": "normal",
+      "enumValues": ["small", "normal", "large", "xlarge"]
+    },
+    {
+      "settingName": "subtitle.color",
+      "title": "Subtitle Color",
+      "description": "Subtitle text color",
+      "settingType": "string",
+      "default": "#FFFFFF"
+    },
+    {
+      "settingName": "subtitle.bgColor",
+      "title": "Subtitle Background",
+      "description": "Subtitle background color",
+      "settingType": "string",
+      "default": "#80000000"
+    },
+    {
+      "settingName": "subtitle.hdrSize",
+      "title": "HDR Subtitle Size",
+      "description": "Subtitle font size percentage for HDR content",
+      "settingType": "enum",
+      "default": "normal",
+      "enumValues": ["small", "normal", "large", "xlarge"]
+    },
+    {
+      "settingName": "subtitle.hdrColor",
+      "title": "HDR Subtitle Color",
+      "description": "Subtitle text color for HDR content",
+      "settingType": "string",
+      "default": "#FFFFFF"
+    },
+    {
+      "settingName": "playback.bitrate",
+      "title": "Playback Bitrate",
+      "description": "Maximum bitrate for playback (bps)",
+      "settingType": "integer",
+      "default": "200000000"
+    },
+    {
+      "settingName": "playback.compatibility.disablehevc",
+      "title": "Disable HEVC",
+      "description": "Disable HEVC (H.265) video playback",
+      "settingType": "bool",
+      "default": "false"
+    },
+    {
+      "settingName": "playback.autoPlayNext",
+      "title": "Auto-Play Next Episode",
+      "description": "Automatically play the next episode",
+      "settingType": "bool",
+      "default": "true"
+    },
+    {
+      "settingName": "playback.skipBackDuration",
+      "title": "Skip Back on Resume",
+      "description": "Seconds to skip back when resuming content",
+      "settingType": "integer",
+      "default": "10"
+    },
+    {
+      "settingName": "playback.cinemaMode",
+      "title": "Cinema Mode",
+      "description": "Play pre-roll intros before movies",
+      "settingType": "bool",
+      "default": "true"
+    },
+    {
+      "settingName": "playback.refreshRateSwitch",
+      "title": "Auto Refresh Rate",
+      "description": "Automatically match display refresh rate to content",
+      "settingType": "bool",
+      "default": "false"
+    },
+    {
+      "settingName": "search.enablegenresearch",
+      "title": "Enable Genre Search",
+      "description": "Show genres in search results",
+      "settingType": "bool",
+      "default": "true"
+    },
+    {
+      "settingName": "pin.enabled",
+      "title": "Profile PIN Protection",
+      "description": "Require PIN to switch user profiles",
+      "settingType": "bool",
+      "default": "false"
+    },
+    {
+      "settingName": "pin.code",
+      "title": "Profile PIN Code",
+      "description": "PIN code for profile switching",
+      "settingType": "string",
+      "default": "0000"
+    },
+    {
+      "settingName": "screensaver.enabled",
+      "title": "Screensaver",
+      "description": "Enable in-app screensaver",
+      "settingType": "bool",
+      "default": "true"
+    },
+    {
+      "settingName": "screensaver.timeout",
+      "title": "Screensaver Timeout",
+      "description": "Minutes of inactivity before screensaver",
+      "settingType": "integer",
+      "default": "5"
+    },
+    {
+      "settingName": "discover.enabled",
+      "title": "Discover Tab",
+      "description": "Enable the Discover tab (Seerr/Overseerr)",
+      "settingType": "bool",
+      "default": "false"
+    },
+    {
+      "settingName": "discover.serverUrl",
+      "title": "Discover Server URL",
+      "description": "Seerr/Overseerr server URL",
+      "settingType": "string",
+      "default": ""
+    },
+    {
+      "settingName": "discover.apiKey",
+      "title": "Discover API Key",
+      "description": "Seerr/Overseerr API key",
+      "settingType": "string",
+      "default": ""
+    }
+  ]
+}

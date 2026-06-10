@@ -1,0 +1,152 @@
+' Wholphin Roku - Registry configuration management
+
+' Registry section for global settings
+
+' Read a value from the global registry section
+function registry_read(key as String, defaultValue = "" as String) as String
+    sec = CreateObject("roRegistrySection", "Wholphin")
+    if sec.Exists(key) then
+        return sec.Read(key)
+    end if
+    return defaultValue
+end function
+
+' Write a value to the global registry section
+function registry_write(key as String, value as String) as Void
+    sec = CreateObject("roRegistrySection", "Wholphin")
+    sec.Write(key, value)
+    sec.Flush()
+end function
+
+' Delete a key from the global registry section
+function registry_delete(key as String) as Void
+    sec = CreateObject("roRegistrySection", "Wholphin")
+    sec.Delete(key)
+    sec.Flush()
+end function
+
+' Read a value from a user-specific registry section
+function user_registry_read(userId as String, key as String, defaultValue = "" as String) as String
+    sectionName = "Wholphin_" + userId
+    sec = CreateObject("roRegistrySection", sectionName)
+    if sec.Exists(key) then
+        return sec.Read(key)
+    end if
+    return defaultValue
+end function
+
+' Write a value to a user-specific registry section
+function user_registry_write(userId as String, key as String, value as String) as Void
+    sectionName = "Wholphin_" + userId
+    sec = CreateObject("roRegistrySection", sectionName)
+    sec.Write(key, value)
+    sec.Flush()
+end function
+
+' Delete a user-specific registry section
+function user_registry_delete(userId as String) as Void
+    sectionName = "Wholphin_" + userId
+    sec = CreateObject("roRegistrySection", sectionName)
+    sec.Delete("")
+    sec.Flush()
+end function
+
+' Get a global setting value
+function get_setting(key as String, defaultValue = "" as Dynamic) as Dynamic
+    value = registry_read(key, "")
+    if value = "" then return defaultValue
+    return value
+end function
+
+' Set a global setting value
+function set_setting(key as String, value as String) as Void
+    registry_write(key, value)
+end function
+
+' Get a user-specific setting value
+function get_user_setting(userId as String, key as String, defaultValue = "" as Dynamic) as Dynamic
+    value = user_registry_read(userId, key, "")
+    if value = "" then return defaultValue
+    return value
+end function
+
+' Set a user-specific setting value
+function set_user_setting(userId as String, key as String, value as String) as Void
+    user_registry_write(userId, key, value)
+end function
+
+' Convert a string to boolean
+function toBoolean(value as String) as Boolean
+    lowerValue = LCase(value)
+    if lowerValue = "true" or lowerValue = "1" or lowerValue = "yes" then return true
+    return false
+end function
+
+' Load the settings tree from settings.json
+function loadSettingsTree() as Object
+    jsonStr = ReadAsciiFile("pkg:/settings/settings.json")
+    if jsonStr = invalid then return invalid
+    return ParseJson(jsonStr)
+end function
+
+' Save settings defaults from the settings tree into the provided settings object
+function saveSettingsDefaults(settings as Object) as Void
+    tree = loadSettingsTree()
+    if tree = invalid then return
+    
+    ' Recursively walk the tree and set defaults
+    walkSettingsTree(tree, settings, "")
+end function
+
+' Recursive helper for saveSettingsDefaults
+function walkSettingsTree(node as Object, settings as Object, prefix as String) as Void
+    children = node.Lookup("children")
+    if children = invalid then return
+    
+    for each child in children
+        key = child.Lookup("settingName")
+        if key <> invalid then
+            fullKey = key
+            defaultValue = child.Lookup("default")
+            if defaultValue <> invalid and settings.Lookup(fullKey) = invalid then
+                settings.AddReplace(fullKey, defaultValue)
+            end if
+        end if
+        
+        ' Recurse into children
+        walkSettingsTree(child, settings, prefix)
+    end for
+end function
+
+' Get saved server URL list
+function getSavedServers() as Object
+    serversStr = registry_read("saved_servers", "[]")
+    servers = ParseJson(serversStr)
+    if servers = invalid then return []
+    return servers
+end function
+
+' Save a server to the saved list
+function saveServer(serverUrl as String) as Void
+    servers = getSavedServers()
+    
+    ' Check if already saved
+    for each s in servers
+        if s = serverUrl then return
+    end for
+    
+    servers.Push(serverUrl)
+    registry_write("saved_servers", FormatJson(servers))
+end function
+
+' Remove a server from the saved list
+function removeSavedServer(serverUrl as String) as Void
+    servers = getSavedServers()
+    newServers = []
+    
+    for each s in servers
+        if s <> serverUrl then newServers.Push(s)
+    end for
+    
+    registry_write("saved_servers", FormatJson(newServers))
+end function

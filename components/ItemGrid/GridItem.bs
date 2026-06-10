@@ -1,0 +1,35 @@
+' Wholphin Roku - Standard grid item with poster
+
+sub Init()
+    m.itemPoster = m.top.findNode("itemPoster")
+    m.playedCheckmark = m.top.findNode("playedCheckmark")
+    m.favoriteIcon = m.top.findNode("favoriteIcon")
+    m.itemLabel = m.top.findNode("itemLabel")
+
+    m.top.observeField("itemContent", m.port)
+end sub
+
+function onItemContentChange() as Void
+    content = m.top.itemContent
+    if content = invalid then return
+
+    url = content.HDPosterUrl
+    if url <> "" then
+        m.itemPoster.uri = url
+        m.top.posterUrl = url
+    end if
+
+    m.top.itemTitle = content.title
+    m.itemLabel.text = content.title
+
+    m.top.itemType = content.type
+
+    userData = chainLookupReturn(content, ["json", "UserData"], {})
+    played = chainLookupReturn(userData, ["Played"], false)
+    isFavorite = chainLookupReturn(userData, ["IsFavorite"], false)
+
+    m.top.watched = played
+    m.top.favorite = isFavorite
+    m.playedCheckmark.visible = played
+    m.favoriteIcon.visible = isFavorite
+end function

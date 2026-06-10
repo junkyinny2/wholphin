@@ -1,0 +1,25 @@
+sub Init()
+    m.buttonBg = m.top.findNode("buttonBg")
+    m.buttonLabel = m.top.findNode("buttonLabel")
+    m.top.observeField("buttonText", m.port)
+    m.top.observeField("width", m.port)
+    updateDisplay()
+end sub
+
+sub onButtonTextChange()
+    updateDisplay()
+end sub
+
+sub onWidthChange()
+    updateDisplay()
+end sub
+
+sub updateDisplay()
+    if m.top.buttonText <> "" then
+        m.buttonLabel.text = m.top.buttonText
+    end if
+    if m.top.width > 0 then
+        m.buttonBg.width = m.top.width
+        m.buttonLabel.width = m.top.width
+    end if
+end sub

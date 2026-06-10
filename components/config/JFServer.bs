@@ -1,0 +1,55 @@
+' Wholphin Roku - Saved server display component
+
+sub Init()
+    m.serverNameLabel = m.top.findNode("serverNameLabel")
+    m.serverUrlLabel = m.top.findNode("serverUrlLabel")
+    m.serverVersionLabel = m.top.findNode("serverVersionLabel")
+
+    m.top.observeField("serverInfo", m.port)
+    m.top.observeField("serverName", m.port)
+    m.top.observeField("serverUrl", m.port)
+    m.top.observeField("serverVersion", m.port)
+    m.top.observeField("selected", m.port)
+    m.top.observeField("focused", "onFocusChange")
+end sub
+
+function onServerInfoChange() as Void
+    info = m.top.serverInfo
+    if info = invalid then return
+
+    m.top.serverName = chainLookupReturn(info, ["name"], "")
+    m.top.serverUrl = chainLookupReturn(info, ["url"], "")
+    m.top.serverVersion = chainLookupReturn(info, ["version"], "")
+end function
+
+function onServerNameChange() as Void
+    if m.serverNameLabel <> invalid then
+        m.serverNameLabel.text = m.top.serverName
+    end if
+end function
+
+function onServerUrlChange() as Void
+    if m.serverUrlLabel <> invalid then
+        m.serverUrlLabel.text = m.top.serverUrl
+    end if
+end function
+
+function onServerVersionChange() as Void
+    if m.serverVersionLabel <> invalid and m.top.serverVersion <> "" then
+        m.serverVersionLabel.text = "v" + m.top.serverVersion
+    end if
+end function
+
+function onFocusChange() as Void
+    if m.top.focused then
+        m.serverBg.color = "0x0F3460FF"
+    else
+        m.serverBg.color = "0x16213EFF"
+    end if
+end function
+
+function onSelectedChange() as Void
+    if m.top.selected then
+        m.serverBg.color = "0x00A4DC30"
+    end if
+end function

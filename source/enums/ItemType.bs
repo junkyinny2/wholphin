@@ -1,0 +1,46 @@
+' Wholphin Roku - ItemType enum
+' All Jellyfin media item types
+
+namespace api
+
+    enum ItemType
+        MOVIE                  = "Movie"
+        SERIES                 = "Series"
+        EPISODE                = "Episode"
+        SEASON                 = "Season"
+        AUDIO                  = "Audio"
+        MUSICALBUM             = "MusicAlbum"
+        MUSICARTIST            = "MusicArtist"
+        MUSICVIDEO             = "MusicVideo"
+        PLAYLIST               = "Playlist"
+        BOXSET                 = "BoxSet"
+        VIDEO                  = "Video"
+        FOLDER                 = "Folder"
+        COLLECTIONFOLDER       = "CollectionFolder"
+        USERVIEW               = "UserView"
+        PERSON                 = "Person"
+        PROGRAM                = "Program"
+        CHANNEL                = "Channel"
+        RECORDING              = "Recording"
+        SERIESRECORDING        = "SeriesRecording"
+        LIVETVCHANNEL          = "LiveTvChannel"
+        LIVETVPROGRAM          = "LiveTvProgram"
+        BOOK                   = "Book"
+        AUDIOBOOK              = "AudioBook"
+        PHOTO                  = "Photo"
+        PHOTOALBUM             = "PhotoAlbum"
+        MANUALPLAYLIST         = "ManualPlaylist"
+        ARTIST                 = "Artist"
+        GENRE                  = "Genre"
+        STUDIO                 = "Studio"
+        YEAR                   = "Year"
+        COLLECTION             = "Collection"
+        TRAILER                = "Trailer"
+        ADULTVIDEO             = "AdultVideo"
+        MUSICALBUMARTIST       = "MusicAlbumArtist"
+        MUSICARTISTVIDEO       = "MusicArtistVideo"
+        MUSICVIDEOARTIST       = "MusicVideoArtist"
+        PERSONVIDEO            = "PersonVideo"
+    end enum
+
+end namespace

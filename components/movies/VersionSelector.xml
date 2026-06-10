@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="VersionSelector" extends="Group">
+  <interface>
+    <field id="versions" type="array" value="" alwaysNotify="true" />
+    <field id="selectedVersionIndex" type="int" value="0" alwaysNotify="true" />
+    <field id="selectedVersionId" type="string" value="" />
+    <field id="dialogTitle" type="string" value="Select Version" />
+  </interface>
+
+  <children>
+    <Rectangle
+      id="versionBg"
+      width="500"
+      height="700"
+      color="0x16213EFF" />
+
+    <Label
+      id="versionTitleLabel"
+      translation="[20, 20]"
+      width="460"
+      height="30"
+      font="font:MediumBoldSystemFont"
+      color="0xFFFFFFFF"
+      text="Select Version"
+      vertAlign="center" />
+
+    <LabelList
+      id="versionItemList"
+      translation="[20, 70]"
+      width="460"
+      height="600"
+      itemSize="[460, 60]"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      focusedColor="0x00A4DCFF"
+      showFocusFootprint="false" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/movies/VersionSelector.bs" />
+</component>

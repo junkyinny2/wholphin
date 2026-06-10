@@ -1,0 +1,260 @@
+' Wholphin Roku - Device capabilities and Jellyfin device profile generation
+
+' Get device capabilities for Jellyfin
+function getDeviceCapabilities() as Object
+    di = CreateObject("roDeviceInfo")
+    
+    capabilities = {
+        PlayableMediaTypes: ["Audio", "Video"]
+        SupportedCommands:  ["MoveUp", "MoveDown", "MoveLeft", "MoveRight", "PageUp", "PageDown",
+                            "Select", "Back", "TogglePlayPause", "Play", "Pause", "Stop",
+                            "FastForward", "Rewind", "Seek", "SetRepeatMode", "SetShuffleQueue",
+                            "SetAudioStreamIndex", "SetSubtitleStreamIndex", "ToggleFullscreen",
+                            "SetVolume", "Mute", "Unmute", "ToggleMute"]
+        SupportsMediaControl: true
+        SupportsContentUploading: false
+        SupportsPersistentIdentifier: true
+        SupportsSync: false
+    }
+    
+    return capabilities
+end function
+
+' Generate the full device profile for Jellyfin playback info requests
+function getDeviceProfile() as Object
+    di = CreateObject("roDeviceInfo")
+    
+    ' Determine max supported bitrate based on device capabilities
+    bitrate = 40000000 ' 40 Mbps default
+    
+    ' Get user bitrate setting
+    userBitrate = session.user.GetSetting("playback.bitrate", "")
+    if userBitrate <> "" then
+        parsedBitrate = Val(userBitrate)
+        if parsedBitrate > 0 then bitrate = parsedBitrate * 1000000
+    end if
+    
+    profile = {
+        Name:             "Wholphin Roku"
+        Id:               ""
+        MaxStreamingBitrate: bitrate
+        MaxStaticBitrate:     bitrate
+        MusicStreamingTranscodingBitrate: 320000
+        DirectPlayProfiles:  GetDirectPlayProfiles()
+        TranscodingProfiles: GetTranscodingProfiles(bitrate)
+        ContainerProfiles:   []
+        CodecProfiles:       GetCodecProfiles()
+        SubtitleProfiles:    GetSubtitleProfiles()
+        ResponseProfiles:    []
+    }
+    
+    return profile
+end function
+
+' Get DirectPlay profiles supported by Roku
+function GetDirectPlayProfiles() as Object
+    profiles = []
+    
+    ' Video containers
+    videoContainers = ["mp4", "m4v", "mov", "mkv", "wmv", "asf", "avi", "mts", "m2ts", "ts"]
+    videoCodecs = ["h264", "h265", "hevc", "mpeg4", "mpeg2video", "vc1"]
+    audioCodecs = ["aac", "mp3", "mp2", "ac3", "eac3", "dts", "dca", "wma", "wmapro", "pcm_s16le", "truehd"]
+    
+    for each container in videoContainers
+        profile = {
+            Container:  container
+            Type:       "Video"
+            VideoCodec: ""
+            AudioCodec: ""
+        }
+        profiles.Push(profile)
+    end for
+    
+    ' Audio containers
+    audioContainers = ["mp3", "wma", "wav", "ogg", "oga", "flac", "aac", "m4a", "m4b", "opus"]
+    for each container in audioContainers
+        profile = {
+            Container:  container
+            Type:       "Audio"
+            VideoCodec: ""
+            AudioCodec: ""
+        }
+        profiles.Push(profile)
+    end for
+    
+    ' Photo containers
+    photoContainers = ["jpg", "jpeg", "png", "gif", "bmp", "webp"]
+    for each container in photoContainers
+        profile = {
+            Container:  container
+            Type:       "Photo"
+            VideoCodec: ""
+            AudioCodec: ""
+        }
+        profiles.Push(profile)
+    end for
+    
+    return profiles
+end function
+
+' Get transcoding profiles
+function GetTranscodingProfiles(bitrate as Integer) as Object
+    profiles = []
+    
+    ' HLS audio transcoding
+    profiles.Push({
+        Container:       "ts"
+        Type:            "Audio"
+        AudioCodec:      "aac"
+        VideoCodec:      ""
+        Protocol:        "hls"
+        EstimateContentLength: false
+        MinSegments:     2
+        SegmentLength:   0
+        BreakOnNonKeyFrames: true
+        Context:         "Streaming"
+        MaxAudioChannels: 2
+        TranscodeSeekInfo: "Auto"
+        CopyTimestamps:  false
+    })
+    
+    ' HLS video transcoding
+    disableHevc = session.user.GetSetting("playback.compatibility.disablehevc", "false")
+    videoCodecs = "h264"
+    if disableHevc <> "true" then
+        videoCodecs = "h264,h265,hevc"
+    end if
+    
+    profiles.Push({
+        Container:       "ts"
+        Type:            "Video"
+        AudioCodec:      "aac,mp3,ac3,eac3"
+        VideoCodec:      videoCodecs
+        Protocol:        "hls"
+        EstimateContentLength: false
+        MinSegments:     2
+        SegmentLength:   0
+        BreakOnNonKeyFrames: true
+        Context:         "Streaming"
+        MaxAudioChannels: 6
+        TranscodeSeekInfo: "Auto"
+        CopyTimestamps:  false
+    })
+    
+    ' Direct streaming fallback
+    profiles.Push({
+        Container:       "ts,mkv,mp4"
+        Type:            "Video"
+        AudioCodec:      "aac,mp3,ac3,eac3,dts,dca,wma,pcm_s16le"
+        VideoCodec:      "h264,h265,hevc,mpeg4,mpeg2video,vc1"
+        Protocol:        "http"
+        EstimateContentLength: false
+        MinSegments:     0
+        SegmentLength:   0
+        BreakOnNonKeyFrames: false
+        Context:         "Streaming"
+        MaxAudioChannels: 6
+        TranscodeSeekInfo: "Auto"
+        CopyTimestamps:  false
+    })
+    
+    return profiles
+end function
+
+' Get codec profiles for conditional codec restrictions
+function GetCodecProfiles() as Object
+    profiles = []
+    
+    ' H264 level/profile restrictions
+    h264Conditions = []
+    h264Conditions.Push({
+        Condition:       "NotEquals"
+        Property:        "VideoProfile"
+        Value:           "high 10"
+    })
+    h264Conditions.Push({
+        Condition:       "NotEquals"
+        Property:        "VideoProfile"
+        Value:           "high 4:2:2"
+    })
+    h264Conditions.Push({
+        Condition:       "NotEquals"
+        Property:        "VideoProfile"
+        Value:           "high 4:4:4"
+    })
+    
+    profiles.Push({
+        Type:            "Video"
+        Codec:           "h264"
+        Conditions:      h264Conditions
+    })
+    
+    ' HEVC level restrictions
+    profiles.Push({
+        Type:            "Video"
+        Codec:           "hevc"
+        Conditions:      []
+    })
+    
+    ' AAC profile restrictions
+    profiles.Push({
+        Type:            "VideoAudio"
+        Codec:           "aac"
+        Conditions:      []
+    })
+    
+    return profiles
+end function
+
+' Get subtitle profiles supported by Roku
+function GetSubtitleProfiles() as Object
+    profiles = []
+    
+    ' SRT - externally loaded
+    profiles.Push({
+        Format:    "srt"
+        Method:    "External"
+    })
+    
+    ' SRT - burn in (for transcoding)
+    profiles.Push({
+        Format:    "srt"
+        Method:    "BurnIn"
+    })
+    
+    ' SSA/ASS - burn in required
+    profiles.Push({
+        Format:    "ssa"
+        Method:    "BurnIn"
+    })
+    profiles.Push({
+        Format:    "ass"
+        Method:    "BurnIn"
+    })
+    
+    ' VTT - external
+    profiles.Push({
+        Format:    "vtt"
+        Method:    "External"
+    })
+    
+    ' SUBRIP - external
+    profiles.Push({
+        Format:    "subrip"
+        Method:    "External"
+    })
+    
+    ' PGS/HDMV PGS - burn in
+    profiles.Push({
+        Format:    "pgssub"
+        Method:    "BurnIn"
+    })
+    
+    ' DVD subtitles - burn in
+    profiles.Push({
+        Format:    "dvdsub"
+        Method:    "BurnIn"
+    })
+    
+    return profiles
+end function

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="UserItem" extends="Group">
+  <interface>
+    <field id="itemContent" type="node" alwaysNotify="true" />
+    <field id="userName" type="string" value="" />
+    <field id="hasPassword" type="boolean" value="true" />
+  </interface>
+
+  <children>
+    <!-- Profile image -->
+    <Poster
+      id="userProfileImage"
+      translation="[25, 0]"
+      width="150"
+      height="150"
+      loadDisplayMode="scaleToFit" />
+
+    <!-- User name -->
+    <Label
+      id="userNameLabel"
+      translation="[0, 170]"
+      width="200"
+      height="40"
+      font="font:MediumSystemFont"
+      color="0xFFFFFFFF"
+      text=""
+      horizAlign="center"
+      wrap="true"
+      vertAlign="center" />
+
+    <!-- Lock icon for password-protected users -->
+    <Poster
+      id="lockIcon"
+      translation="[155, 10]"
+      width="30"
+      height="30"
+      uri="pkg:/images/icons/lock.png"
+      visible="false" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/login/UserItem.bs" />
+</component>

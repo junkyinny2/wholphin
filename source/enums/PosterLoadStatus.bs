@@ -1,0 +1,12 @@
+' Wholphin Roku - PosterLoadStatus enum
+
+namespace api
+
+    enum PosterLoadStatus
+        NOT_LOADED           = 0
+        LOADING              = 1
+        LOADED               = 2
+        ERROR                = 3
+    end enum
+
+end namespace

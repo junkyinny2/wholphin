@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="UserSelect" extends="JFScreen">
+  <interface>
+    <field id="users" type="array" value="" alwaysNotify="true" />
+    <field id="quickConnectEnabled" type="boolean" value="false" />
+    <field id="selectedUser" type="node" />
+  </interface>
+
+  <children>
+    <Rectangle
+      width="1920"
+      height="1080"
+      color="0x1A1A2EFF" />
+
+    <Label
+      id="userSelectTitle"
+      translation="[560, 200]"
+      width="800"
+      height="60"
+      font="font:LargeBoldSystemFont"
+      color="0xFFFFFFFF"
+      text="Who's Watching?"
+      horizAlign="center"
+      vertAlign="center" />
+
+    <Label
+      id="serverNameLabel"
+      translation="[560, 260]"
+      width="800"
+      height="30"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      text=""
+      horizAlign="center" />
+
+    <UserRow
+      id="userRow"
+      translation="[0, 340]"
+      width="1920"
+      height="300" />
+
+    <Group id="quickConnectGroup" translation="[760, 700]" visible="false">
+      <JFButton id="btnQuickConnect" translation="[0, 0]" buttonText="Quick Connect" width="400" />
+    </Group>
+
+    <Group id="serverButtonsGroup" translation="[660, 780]">
+      <JFButton id="btnChangeServer" translation="[0, 0]" buttonText="Change Server" width="300" />
+      <JFButton id="btnManualSignIn" translation="[320, 0]" buttonText="Manual Sign In" width="300" />
+    </Group>
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/login/UserSelect.bs" />
+</component>

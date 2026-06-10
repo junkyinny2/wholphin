@@ -1,0 +1,51 @@
+' Wholphin Roku - Recent search history management
+
+' Recent search history constants
+
+' Get the list of recent search terms
+function getRecentSearches() as Object
+    jsonStr = registry_read("recent_searches", "[]")
+    searches = ParseJson(jsonStr)
+    if searches = invalid then return []
+    return searches
+end function
+
+' Add a search term to the recent searches list
+function addRecentSearch(term as String) as Void
+    if term = "" then return
+    
+    searches = getRecentSearches()
+    
+    ' Remove if already exists (to move it to front)
+    newSearches = []
+    for each s in searches
+        if s <> term then newSearches.Push(s)
+    end for
+    
+    ' Add to front
+    newSearches.Unshift(term)
+    
+    ' Trim to max
+    while newSearches.Count() > 10
+        newSearches.Pop()
+    end while
+    
+    registry_write("recent_searches", FormatJson(newSearches))
+end function
+
+' Clear all recent searches
+function clearRecentSearches() as Void
+    registry_write("recent_searches", "[]")
+end function
+
+' Remove a specific search term
+function removeRecentSearch(term as String) as Void
+    searches = getRecentSearches()
+    newSearches = []
+    
+    for each s in searches
+        if s <> term then newSearches.Push(s)
+    end for
+    
+    registry_write("recent_searches", FormatJson(newSearches))
+end function

@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="ServerDiscoveryTask" extends="Task">
+  <interface>
+    <field id="discoveredServers" type="array" value="" />
+    <field id="loadStatus" type="string" value="" />
+    <field id="timeout" type="int" value="5000" />
+  </interface>
+
+  <script type="text/brightscript" uri="pkg:/components/config/ServerDiscoveryTask.bs" />
+</component>

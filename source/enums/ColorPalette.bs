@@ -1,0 +1,37 @@
+enum ColorPalette
+    BLACK77 = "0x00000077"
+    BLACK90 = "0x00000090"
+    BLACKDD = "0x000000DD"
+    DARKGREY = "#101010"
+
+    ' ── Jellyfin / JellyVibe brand palette ──────────────────────────────
+    ' Background: very dark navy  #020B2A  hue ~225°
+    JELLYBACKGROUND = "#020B2A"
+    ' Accent gradient – violet/purple side  #9C63B8  hue ~285°
+    JELLYVIOLET = "#9C63B8"
+    ' Accent gradient – cyan/teal side  #1F8DBA  hue ~200°
+    JELLYCYAN = "#1F8DBA"
+    ' Mid-tone periwinkle  #6F7FB7  hue ~230°
+    JELLYPERIWINKLE = "#6F7FB7"
+    ' Semi-transparent navy overlay (50%)
+    JELLYOVERLAY = "#020B2A80"
+    ' ────────────────────────────────────────────────────────────────────
+
+    ELEMENTBACKGROUND = "#020B2A"
+    HIGHLIGHT = "#7B2FBE"
+    JELLYVIBE_VIOLET = "#7B2FBE"
+    LIGHTBLUE = "#c8fafa"
+    LIGHTGREY = "#aaaaaa"
+    LIGHTHIGHLIGHT = "#7B2FBE88"
+    MIDGREY = "#777777"
+    OFFWHITE = "#cccccc"
+    PURPLE = "#9C63B8"
+    RED = "#FF0000"
+    SMOKE = "#303030"
+    TRANSPARENT = "0x00000000"
+    TRIADBLUE = "#6F7FB7"
+    TRIADGREEN = "#1F8DBA"
+    VIEWBACKGROUND = "#020B2A"
+    WHITE = "#ffffff"
+end enum
+

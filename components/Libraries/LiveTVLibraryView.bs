@@ -1,0 +1,167 @@
+' Wholphin Roku - Live TV channels and guide browser
+
+sub Init()
+    m.liveTvTitle = m.top.findNode("liveTvTitle")
+    m.channelGrid = m.top.findNode("channelGrid")
+    m.liveTvLoadingLabel = m.top.findNode("liveTvLoadingLabel")
+    m.btnChannels = m.top.findNode("btnChannels")
+    m.btnGuide = m.top.findNode("btnGuide")
+    m.btnRecordings = m.top.findNode("btnRecordings")
+
+    m.top.observeField("libraryData", m.port)
+    m.channelGrid.observeField("itemSelected", m.port)
+    m.btnChannels.observeField("buttonSelected", m.port)
+    m.btnGuide.observeField("buttonSelected", m.port)
+    m.btnRecordings.observeField("buttonSelected", m.port)
+end sub
+
+function onLibraryDataChange() as Void
+    LoadData()
+end function
+
+function LoadData() as Void
+    m.top.loadingData = true
+    m.liveTvLoadingLabel.visible = true
+
+    libData = m.top.libraryData
+    if libData = invalid then return
+
+    libName = chainLookupReturn(libData, ["title"], "")
+    if libName = "" then libName = chainLookupReturn(libData, ["Name"], "")
+    m.liveTvTitle.text = libName
+    m.top.overhangTitle = libName
+
+    loadChannels()
+
+    m.top.loadingData = false
+    m.top.dataLoaded = true
+end function
+
+function loadChannels() as Void
+    m.liveTvLoadingLabel.visible = true
+
+    channelsData = api.liveTV.GetChannels({
+        userId: session.user.GetId()
+        Limit: "200"
+        Fields: "PrimaryImageAspectRatio,BasicSyncInfo,ChannelInfo"
+        ImageTypeLimit: "1"
+    })
+
+    if channelsData = invalid then
+        m.liveTvLoadingLabel.visible = false
+        return
+    end if
+
+    channels = chainLookupReturn(channelsData, ["Items"], [])
+    if channels = invalid or channels.Count() = 0 then
+        m.liveTvLoadingLabel.visible = false
+        return
+    end if
+
+    m.top.channels = channels
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for each channel in channels
+        child = content.CreateChild("ContentNode")
+        child.id = chainLookupReturn(channel, ["Id"], "")
+        child.title = chainLookupReturn(channel, ["Name"], "")
+        child.type = "LiveTVChannel"
+        child.json = channel
+
+        currentProgram = chainLookupReturn(channel, ["CurrentProgram"], {})
+        child.description = chainLookupReturn(currentProgram, ["Name"], "")
+
+        img = PosterImage(child.id, { maxHeight: 200, maxWidth: 290 })
+        if img <> invalid then
+            child.HDPosterUrl = img.url
+        end if
+    end for
+
+    m.channelGrid.content = content
+    m.channelGrid.visible = true
+    m.liveTvLoadingLabel.visible = false
+    m.channelGrid.setFocus(true)
+end function
+
+function onItemSelected() as Void
+    focused = m.channelGrid.focusedItem
+    if focused = invalid then return
+
+    channelId = focused.id
+    channelData = api.liveTV.GetChannelByID(channelId)
+    if channelData = invalid then return
+
+    itemNode = CreateObject("roSGNode", "VideoData")
+    itemNode.id = channelId
+    itemNode.json = channelData
+    itemNode.title = focused.title
+    itemNode.type = "LiveTVChannel"
+
+    quickplay.video(itemNode)
+end function
+
+function onButtonSelected() as Void
+    btn = m.top.lastEventNode
+    if btn = invalid then return
+
+    if btn.id = "btnChannels" then
+        loadChannels()
+    else if btn.id = "btnGuide" then
+        showGuide()
+    else if btn.id = "btnRecordings" then
+        showRecordings()
+    end if
+end function
+
+function showGuide() as Void
+    ' Load programs for guide view
+    guideInfo = api.liveTV.GetGuideInfo()
+    if guideInfo = invalid then return
+
+    programsData = api.liveTV.GetPrograms({
+        userId: session.user.GetId()
+        Limit: "100"
+        Fields: "PrimaryImageAspectRatio,BasicSyncInfo"
+        ImageTypeLimit: "1"
+    })
+
+    if programsData = invalid then return
+    programs = chainLookupReturn(programsData, ["Items"], [])
+    if programs = invalid then return
+
+    m.top.programs = programs
+end function
+
+function showRecordings() as Void
+    recordings = api.liveTV.GetRecordings({
+        userId: session.user.GetId()
+        Limit: "100"
+        Fields: "PrimaryImageAspectRatio,BasicSyncInfo"
+        ImageTypeLimit: "1"
+    })
+
+    if recordings = invalid then return
+    items = chainLookupReturn(recordings, ["Items"], [])
+    if items = invalid then return
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for each item in items
+        child = content.CreateChild("ContentNode")
+        child.id = chainLookupReturn(item, ["Id"], "")
+        child.title = chainLookupReturn(item, ["Name"], "")
+        child.type = "Recording"
+        child.json = item
+        img = PosterImage(child.id)
+        if img <> invalid then
+            child.HDPosterUrl = img.url
+        end if
+    end for
+
+    m.channelGrid.content = content
+    m.channelGrid.visible = true
+end function
+
+function onBackPressed() as Boolean
+    m.global.sceneManager.callFunc("popScene")
+    return true
+end function

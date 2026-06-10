@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="VisualLibraryScene" extends="JFScreen">
+  <interface>
+    <field id="libraryData" type="node" alwaysNotify="true" />
+    <field id="mediaType" type="string" value="" />
+    <field id="items" type="array" value="" />
+    <field id="sortBy" type="string" value="SortName" />
+    <field id="sortOrder" type="string" value="Ascending" />
+    <field id="filterGenres" type="array" value="" />
+    <field id="viewMode" type="string" value="poster" />
+  </interface>
+
+  <children>
+    <Rectangle
+      id="libBackground"
+      width="1920"
+      height="1080"
+      color="0x1A1A2EFF" />
+
+    <!-- Library title label -->
+    <Label
+      id="libraryTitle"
+      translation="[60, 30]"
+      width="500"
+      height="40"
+      font="font:LargeBoldSystemFont"
+      color="0xFFFFFFFF"
+      text=""
+      vertAlign="center" />
+
+    <!-- Sort/Filter options bar -->
+    <Group id="filterBar" translation="[60, 80]">
+      <JFButton id="btnSort" translation="[0, 0]" buttonText="Sort" width="120" />
+      <JFButton id="btnFilter" translation="[140, 0]" buttonText="Filter" width="120" />
+      <JFButton id="btnViewMode" translation="[280, 0]" buttonText="View" width="120" />
+      <JFButton id="btnSearch" translation="[420, 0]" buttonText="Search" width="120" />
+    </Group>
+
+    <!-- Item grid -->
+    <Label
+      id="loadingLabel"
+      translation="[860, 490]"
+      width="200"
+      height="30"
+      font="font:MediumSystemFont"
+      color="0xB0B0B0FF"
+      text="Loading..."
+      horizAlign="center"
+      visible="false" />
+
+    <MarkupGrid
+      id="itemGrid"
+      translation="[60, 130]"
+      width="1800"
+      height="900"
+      itemComponentName="GridItem"
+      itemSize="[196, 340]"
+      itemSpacing="[15, 20]"
+      numColumns="8"
+      numRows="3"
+      visible="false" />
+
+    <!-- Alpha jump list -->
+    <Alpha
+      id="alphaJump"
+      translation="[1860, 130]"
+      visible="false" />
+
+    <!-- Loading spinner -->
+    <Spinner
+      id="libSpinner"
+      translation="[860, 490]"
+      visible="false" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/Libraries/VisualLibraryScene.bs" />
+</component>

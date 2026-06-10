@@ -1,0 +1,81 @@
+' Wholphin Roku - User selection screen logic
+
+sub Init()
+    m.userRow = m.top.findNode("userRow")
+    m.serverNameLabel = m.top.findNode("serverNameLabel")
+    m.quickConnectGroup = m.top.findNode("quickConnectGroup")
+    m.btnQuickConnect = m.top.findNode("btnQuickConnect")
+    m.btnChangeServer = m.top.findNode("btnChangeServer")
+    m.btnManualSignIn = m.top.findNode("btnManualSignIn")
+
+    m.top.observeField("users", m.port)
+    m.top.observeField("quickConnectEnabled", m.port)
+    m.userRow.observeField("userSelected", m.port)
+    m.btnQuickConnect.observeField("buttonSelected", m.port)
+    m.btnChangeServer.observeField("buttonSelected", m.port)
+    m.btnManualSignIn.observeField("buttonSelected", m.port)
+
+    m.serverNameLabel.text = session.server.GetName()
+end sub
+
+function onUsersChange() as Void
+    users = m.top.users
+    if users = invalid then return
+    m.userRow.users = users
+end function
+
+function onQuickConnectEnabledChange() as Void
+    if m.top.quickConnectEnabled then
+        m.quickConnectGroup.visible = true
+    end if
+end function
+
+function onUserSelected() as Void
+    selectedUser = m.userRow.selectedUser
+    if selectedUser = invalid then return
+
+    ProcessUserSelection(selectedUser)
+end function
+
+function onButtonSelected() as Void
+    btn = m.top.lastEventNode
+    if btn = invalid then return
+
+    if btn.id = "btnQuickConnect" then
+        startQuickConnect()
+    else if btn.id = "btnChangeServer" then
+        m.global.sceneManager.callFunc("clearScenes")
+        CreateServerGroup()
+    else if btn.id = "btnManualSignIn" then
+        ShowSignInScreen("")
+    end if
+end function
+
+function startQuickConnect() as Void
+    quickConnectData = initQuickConnect()
+    if quickConnectData = invalid then
+        show_dialog(translateText("Quick Connect Error"), translateText("Unable to initiate Quick Connect. Please check server settings."))
+        return
+    end if
+
+    code = chainLookupReturn(quickConnectData, ["Code"], "")
+    if code <> "" then
+        dialog = CreateObject("roSGNode", "Dialog")
+        dialog.title = translateText("Quick Connect")
+        dialog.message = translateText("Enter the following code on your Jellyfin server:") + Chr(10) + Chr(10) + code
+        dialog.optionsDialog = true
+        dialog.buttons = [translateText("OK"), translateText("Cancel")]
+        dialog.observeField("buttonSelected", m.port)
+        dialog.id = "QuickConnectDialog"
+        m.scene.dialog = dialog
+    end if
+end function
+
+function initQuickConnect() as Object
+    return api.quickConnect.Initiate()
+end function
+
+function onBackPressed() as Boolean
+    m.global.sceneManager.callFunc("popScene")
+    return true
+end function

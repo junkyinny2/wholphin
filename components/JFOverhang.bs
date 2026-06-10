@@ -1,0 +1,57 @@
+' Wholphin Roku - JFOverhang top bar component
+
+sub Init()
+    m.titleLabel = m.top.findNode("overlayTitle")
+    m.clockLabel = m.top.findNode("overlayClock")
+    m.userImagePoster = m.top.findNode("overlayCurrentUserProfileImage")
+    m.userNameLabel = m.top.findNode("overlayCurrentUser")
+    
+    ' Set initial values
+    UpdateUserInfo()
+    
+    ' Start clock timer
+    m.clockTimer = CreateObject("roSGNode", "Timer")
+    m.clockTimer.repeat = true
+    m.clockTimer.duration = 30
+    m.clockTimer.observeField("fire", m.port)
+    m.clockTimer.control = "start"
+    
+    ' Update title when it changes
+    m.top.observeField("title", m.port)
+    m.top.observeField("clock", m.port)
+end sub
+
+' Update the title display
+function updateTitle() as Void
+    if m.titleLabel <> invalid then
+        m.titleLabel.text = m.top.title
+    end if
+end function
+
+' Update clock display
+function updateClock() as Void
+    if m.clockLabel <> invalid then
+        now = CreateObject("roDateTime")
+        hours = now.GetHours()
+        minutes = now.GetMinutes()
+        
+        timeStr = leftPad(hours.ToStr(), 2, "0") + ":" + leftPad(minutes.ToStr(), 2, "0")
+        m.clockLabel.text = timeStr
+    end if
+end function
+
+' Update user info from session
+function UpdateUserInfo() as Void
+    if m.global.session = invalid then return
+    ' Set user name
+    userName = session.user.GetDisplayName()
+    if m.userNameLabel <> invalid then
+        m.userNameLabel.text = userName
+    end if
+    
+    ' Set user image
+    userImage = session.user.GetImageUrl()
+    if m.userImagePoster <> invalid and userImage <> "" then
+        m.userImagePoster.uri = userImage
+    end if
+end function

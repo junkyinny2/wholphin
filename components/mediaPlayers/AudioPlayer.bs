@@ -1,0 +1,99 @@
+' Wholphin Roku - Background audio player component
+
+sub Init()
+    m.audioNode = CreateObject("roSGNode", "Audio")
+    m.top.appendChild(m.audioNode)
+    
+    m.audioNode.observeField("state", m.port)
+    m.audioNode.observeField("position", m.port)
+    m.audioNode.observeField("duration", m.port)
+    
+    m.top.observeField("control", m.port)
+    m.top.observeField("content", m.port)
+    
+    m.top.state = "idle"
+end sub
+
+' Handle control commands
+function onControlChange() as Void
+    control = m.top.control
+    
+    if control = "play" then
+        if m.audioNode.content <> invalid then
+            m.audioNode.control = "play"
+            m.top.state = "playing"
+        end if
+    else if control = "pause" then
+        m.audioNode.control = "pause"
+        m.top.state = "paused"
+    else if control = "stop" then
+        m.audioNode.control = "stop"
+        m.top.state = "stopped"
+    else if control = "next" then
+        playNext()
+    else if control = "prev" then
+        playPrevious()
+    end if
+end function
+
+' Handle content changes
+function onContentChange() as Void
+    if m.top.content <> invalid then
+        m.audioNode.content = m.top.content
+        m.audioNode.control = "play"
+        m.top.state = "playing"
+        m.top.position = 0
+    end if
+end function
+
+' Handle audio node state changes
+function onAudioState() as Void
+    state = m.audioNode.state
+    if state = "finished" then
+        ' Auto-play next
+        playNext()
+    else if state = "error" then
+        m.top.state = "error"
+    end if
+end function
+
+' Play the next item in the queue
+sub playNext()
+    queueManager = m.global.queueManager
+    if queueManager = invalid then return
+    
+    nextItem = queueManager.callFunc("moveForward")
+    if nextItem <> invalid then
+        loadAndPlay(nextItem)
+    else
+        m.top.state = "stopped"
+    end if
+end sub
+
+' Play the previous item in the queue
+sub playPrevious()
+    queueManager = m.global.queueManager
+    if queueManager = invalid then return
+    
+    prevItem = queueManager.callFunc("moveBack")
+    if prevItem <> invalid then
+        loadAndPlay(prevItem)
+    end if
+end sub
+
+' Load and play an item
+sub loadAndPlay(item as Object)
+    if item = invalid then return
+    
+    ' Get audio stream URL
+    streamData = AudioStream(item.id)
+    if streamData = invalid then return
+    
+    ' Create content node for audio playback
+    content = CreateObject("roSGNode", "ContentNode")
+    content.url = streamData.url
+    content.streamFormat = streamData.streamformat
+    
+    m.top.content = content
+    m.top.currentItem = item
+end sub

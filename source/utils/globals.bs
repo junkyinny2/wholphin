@@ -1,0 +1,241 @@
+' Wholphin Roku - Global constants and app info
+
+' Set all global constants used across the app
+function setConstants() as Void
+    gaa = getGlobalAA()
+    
+    ' Theme definitions — 6 Wholphin color themes
+    gaa.themes = {
+        blue: {
+            primary:         "#00A4DC"
+            primaryDark:     "#007299"
+            accent:          "#FF5722"
+            white:           "#FFFFFF"
+            black:           "#000000"
+            darkBg:          "#1A1A2E"
+            cardBg:          "#16213E"
+            overlayBg:       "#0F3460"
+            textPrimary:     "#FFFFFF"
+            textSecondary:   "#B0B0B0"
+            textMuted:       "#707070"
+            watched:         "#00E676"
+            favorite:        "#FF4081"
+            unfocused:       "#555555"
+            error:           "#FF5252"
+            success:         "#4CAF50"
+            warning:         "#FFC107"
+            info:            "#2196F3"
+            transparent:     "#00000000"
+            semiTransparent: "#80000000"
+        }
+        boldBlue: {
+            primary:         "#2962FF"
+            primaryDark:     "#0039CB"
+            accent:          "#FF6D00"
+            white:           "#FFFFFF"
+            black:           "#000000"
+            darkBg:          "#0D1B2A"
+            cardBg:          "#1B2838"
+            overlayBg:       "#1A237E"
+            textPrimary:     "#FFFFFF"
+            textSecondary:   "#B0BEC5"
+            textMuted:       "#607D8B"
+            watched:         "#00E676"
+            favorite:        "#FF4081"
+            unfocused:       "#455A64"
+            error:           "#FF5252"
+            success:         "#4CAF50"
+            warning:         "#FFC107"
+            info:            "#448AFF"
+            transparent:     "#00000000"
+            semiTransparent: "#80000000"
+        }
+        green: {
+            primary:         "#00C853"
+            primaryDark:     "#009624"
+            accent:          "#FF9100"
+            white:           "#FFFFFF"
+            black:           "#000000"
+            darkBg:          "#1A2E1A"
+            cardBg:          "#1E3E1E"
+            overlayBg:       "#0F3E0F"
+            textPrimary:     "#FFFFFF"
+            textSecondary:   "#A5D6A7"
+            textMuted:       "#66BB6A"
+            watched:         "#00E676"
+            favorite:        "#FF4081"
+            unfocused:       "#388E3C"
+            error:           "#FF5252"
+            success:         "#69F0AE"
+            warning:         "#FFC107"
+            info:            "#00E5FF"
+            transparent:     "#00000000"
+            semiTransparent: "#80000000"
+        }
+        oled: {
+            primary:         "#00A4DC"
+            primaryDark:     "#007299"
+            accent:          "#FF5722"
+            white:           "#FFFFFF"
+            black:           "#000000"
+            darkBg:          "#000000"
+            cardBg:          "#0A0A0A"
+            overlayBg:       "#111111"
+            textPrimary:     "#FFFFFF"
+            textSecondary:   "#888888"
+            textMuted:       "#444444"
+            watched:         "#00E676"
+            favorite:        "#FF4081"
+            unfocused:       "#333333"
+            error:           "#FF5252"
+            success:         "#4CAF50"
+            warning:         "#FFC107"
+            info:            "#2196F3"
+            transparent:     "#00000000"
+            semiTransparent: "#80000000"
+        }
+        orange: {
+            primary:         "#FF6D00"
+            primaryDark:     "#CC5500"
+            accent:          "#00BCD4"
+            white:           "#FFFFFF"
+            black:           "#000000"
+            darkBg:          "#2E1A0D"
+            cardBg:          "#3E2310"
+            overlayBg:       "#4A2A10"
+            textPrimary:     "#FFFFFF"
+            textSecondary:   "#FFCC80"
+            textMuted:       "#FF9800"
+            watched:         "#00E676"
+            favorite:        "#FF4081"
+            unfocused:       "#795548"
+            error:           "#FF5252"
+            success:         "#4CAF50"
+            warning:         "#FFC107"
+            info:            "#40C4FF"
+            transparent:     "#00000000"
+            semiTransparent: "#80000000"
+        }
+        purple: {
+            primary:         "#AA00FF"
+            primaryDark:     "#7C00CC"
+            accent:          "#FF9100"
+            white:           "#FFFFFF"
+            black:           "#000000"
+            darkBg:          "#1A0D2E"
+            cardBg:          "#2A1040"
+            overlayBg:       "#3E1060"
+            textPrimary:     "#FFFFFF"
+            textSecondary:   "#CE93D8"
+            textMuted:       "#9C27B0"
+            watched:         "#00E676"
+            favorite:        "#FF4081"
+            unfocused:       "#6A1B9A"
+            error:           "#FF5252"
+            success:         "#4CAF50"
+            warning:         "#FFC107"
+            info:            "#E040FB"
+            transparent:     "#00000000"
+            semiTransparent: "#80000000"
+        }
+    }
+
+    ' Default to blue theme
+    gaa.colors = gaa.themes.blue
+
+    ' Default icon set
+    gaa.icons = {
+        search:           "pkg:/images/icons/search.png"
+        home:             "pkg:/images/icons/home.png"
+        settings:         "pkg:/images/icons/settings.png"
+        favorites:        "pkg:/images/icons/favorites.png"
+        play:             "pkg:/images/icons/play.png"
+        pause:            "pkg:/images/icons/pause.png"
+        back:             "pkg:/images/icons/back.png"
+        forward:          "pkg:/images/icons/forward.png"
+        reverse:          "pkg:/images/icons/reverse.png"
+        movie:            "pkg:/images/icons/movie.png"
+        tv:               "pkg:/images/icons/tv.png"
+        music:            "pkg:/images/icons/music.png"
+        photo:            "pkg:/images/icons/photo.png"
+        user:             "pkg:/images/icons/user.png"
+        info:             "pkg:/images/icons/info.png"
+        subtitles:        "pkg:/images/icons/subtitles.png"
+        audio:            "pkg:/images/icons/audio.png"
+        chapters:         "pkg:/images/icons/chapters.png"
+        shuffle:          "pkg:/images/icons/shuffle.png"
+        repeat:           "pkg:/images/icons/repeat.png"
+        liveTv:           "pkg:/images/icons/livetv.png"
+        recording:        "pkg:/images/icons/recording.png"
+    }
+end function
+
+' Get theme colors by name
+function getThemeColors(themeName = "blue" as String) as Object
+    themes = m.global.themes
+    if themes = invalid then return invalid
+    theme = themes.Lookup(themeName)
+    if theme = invalid then theme = m.global.themes.blue
+    if theme = invalid then return invalid
+    return theme
+end function
+
+' Save app info to global
+function SaveAppToGlobal() as Void
+    gaa = getGlobalAA()
+    gaa.appInfo = {
+        name:        "wholphin"
+        displayName: "Wholphin"
+        version:     "0.1.0"
+        developer:   "Wholphin Team"
+        build:       "0.1.0.0"
+    }
+end function
+
+' Save device info to global
+function SaveDeviceToGlobal() as Void
+    gaa = getGlobalAA()
+    di = CreateObject("roDeviceInfo")
+    
+    gaa.deviceInfo = {
+        model:           di.GetModel()
+        firmwareVersion: di.GetVersion()
+        modelDisplay:    di.GetModelDisplayName()
+        isRoku:          true
+        locale:          di.GetCurrentLocale()
+    }
+    
+    ' Determine the best locale to use
+    deviceLocale = di.GetCurrentLocale()
+    if deviceLocale = invalid or deviceLocale = "" then deviceLocale = "en_US"
+    
+    ' Map device locale to our supported locales
+    localeMap = {
+        "en_US": "en_US"
+        "en_GB": "en_GB"
+        "de_DE": "de_DE"
+        "fr_FR": "fr"
+        "fr_CA": "fr_CA"
+        "es_ES": "es_ES"
+        "it_IT": "it_IT"
+        "pt_BR": "pt_BR"
+        "sv_SE": "sv"
+        "tr_TR": "tr"
+        "ar_SA": "ar"
+        "ca_ES": "ca"
+        "zh_CN": "zh_Hans"
+        "zh_Hans": "zh_Hans"
+    }
+    
+    mappedLocale = localeMap.Lookup(deviceLocale)
+    if mappedLocale = invalid then mappedLocale = "en_US"
+    gaa.locale = mappedLocale
+    
+    ' Load translations
+    gaa.localeTranslations = loadTranslations(mappedLocale)
+end function
+
+' Check if we're in debug mode
+function isDebug() as Boolean
+    return m.global.printReg = true
+end function

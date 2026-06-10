@@ -1,0 +1,273 @@
+' Wholphin Roku - Movie details screen logic
+
+sub Init()
+    m.movieBackdrop = m.top.findNode("movieBackdrop")
+    m.moviePoster = m.top.findNode("moviePoster")
+    m.movieTitle = m.top.findNode("movieTitle")
+    m.movieYear = m.top.findNode("movieYear")
+    m.movieRuntime = m.top.findNode("movieRuntime")
+    m.movieRating = m.top.findNode("movieRating")
+    m.movieOverview = m.top.findNode("movieOverview")
+    m.extrasGrid = m.top.findNode("extrasGrid")
+    m.extrasLabel = m.top.findNode("extrasLabel")
+    m.castGrid = m.top.findNode("castGrid")
+    m.castLabel = m.top.findNode("castLabel")
+    m.versionPanel = m.top.findNode("versionPanel")
+    m.versionList = m.top.findNode("versionList")
+
+    m.btnPlay = m.top.findNode("btnPlay")
+    m.btnResume = m.top.findNode("btnResume")
+    m.btnTrailer = m.top.findNode("btnTrailer")
+    m.btnFavorite = m.top.findNode("btnFavorite")
+    m.btnMyList = m.top.findNode("btnMyList")
+    m.btnSubtitles = m.top.findNode("btnSubtitles")
+    m.btnVersions = m.top.findNode("btnVersions")
+
+    m.top.observeField("movie", m.port)
+    m.top.observeField("metaData", m.port)
+    m.btnPlay.observeField("buttonSelected", m.port)
+    m.btnResume.observeField("buttonSelected", m.port)
+    m.btnTrailer.observeField("buttonSelected", m.port)
+    m.btnFavorite.observeField("buttonSelected", m.port)
+    m.btnMyList.observeField("buttonSelected", m.port)
+    m.btnSubtitles.observeField("buttonSelected", m.port)
+    m.btnVersions.observeField("buttonSelected", m.port)
+    m.extrasGrid.observeField("itemSelected", m.port)
+    m.castGrid.observeField("itemSelected", m.port)
+    m.versionList.observeField("itemSelected", m.port)
+end sub
+
+function onMovieChange() as Void
+    LoadData()
+end function
+
+function LoadData() as Void
+    m.top.loadingData = true
+    m.top.overhangTitle = translateText("Movie Details")
+
+    item = m.top.movie
+    if item = invalid then return
+
+    itemId = chainLookupReturn(item, ["id"], "")
+    if itemId = "" then
+        itemId = chainLookupReturn(item, ["Id"], "")
+    end if
+    if itemId = "" then return
+
+    jsonData = chainLookupReturn(item, ["json"], {})
+    if jsonData.Count() = 0 then
+        jsonData = item
+    end if
+
+    title = chainLookupReturn(jsonData, ["Name"], "")
+    m.movieTitle.text = title
+
+    year = chainLookupReturn(jsonData, ["ProductionYear"], "")
+    if year <> invalid then
+        m.movieYear.text = year.ToStr()
+    end if
+
+    runtime = chainLookupReturn(jsonData, ["RunTimeTicks"], 0)
+    if runtime > 0 then
+        minutes = Int(runtime / 600000000)
+        m.movieRuntime.text = minutes.ToStr() + " " + translateText("min")
+    end if
+
+    rating = chainLookupReturn(jsonData, ["CommunityRating"], "")
+    if rating <> invalid and rating > 0 then
+        m.movieRating.text = "★ " + Str(rating).Trim()
+    end if
+
+    overview = chainLookupReturn(jsonData, ["Overview"], "")
+    if overview <> invalid and overview <> "" then
+        if Len(overview) > 500 then overview = Left(overview, 500) + "..."
+        m.movieOverview.text = overview
+    end if
+
+    backdropUrl = BackdropImageURL(itemId)
+    if backdropUrl <> "" then
+        m.movieBackdrop.uri = backdropUrl
+    end if
+
+    posterImg = PosterImage(itemId, { maxHeight: 390, maxWidth: 260 })
+    if posterImg <> invalid then
+        m.moviePoster.uri = posterImg.url
+    end if
+
+    userData = chainLookupReturn(jsonData, ["UserData"], {})
+    played = chainLookupReturn(userData, ["Played"], false)
+    favorite = chainLookupReturn(userData, ["IsFavorite"], false)
+    playbackPosition = chainLookupReturn(userData, ["PlaybackPositionTicks"], 0)
+
+    m.top.isPlayed = played
+    m.top.isFavorite = favorite
+
+    if favorite then
+        m.btnFavorite.buttonText = translateText("Favorited")
+    else
+        m.btnFavorite.buttonText = translateText("Favorite")
+    end if
+
+    if playbackPosition > 0 and not played then
+        m.btnResume.visible = true
+    else
+        m.btnResume.visible = false
+    end if
+
+    loadCast(itemId)
+    loadExtras(itemId)
+    checkVersions(jsonData)
+
+    m.top.loadingData = false
+    m.top.dataLoaded = true
+end function
+
+function loadCast(itemId as String) as Void
+    cast = chainLookupReturn(m.top.movie, ["json", "People"], [])
+    if cast = invalid or cast.Count() = 0 then
+        itemData = api.items.GetByID(itemId)
+        if itemData <> invalid then
+            cast = chainLookupReturn(itemData, ["People"], [])
+        end if
+    end if
+
+    if cast <> invalid and cast.Count() > 0 then
+        m.castLabel.visible = true
+        content = CreateObject("roSGNode", "ContentNode")
+        for each person in cast
+            role = chainLookupReturn(person, ["Role"], "")
+            if role = invalid then role = chainLookupReturn(person, ["Type"], "")
+            child = content.CreateChild("ContentNode")
+            child.id = chainLookupReturn(person, ["Id"], "")
+            child.title = chainLookupReturn(person, ["Name"], "")
+            child.role = role
+            img = PosterImage(child.id, { maxHeight: 200, maxWidth: 150 })
+            if img <> invalid then
+                child.HDPosterUrl = img.url
+            end if
+        end for
+        m.castGrid.content = content
+        m.castGrid.visible = true
+    end if
+end function
+
+function loadExtras(itemId as String) as Void
+    specials = api.items.GetSpecialFeatures(itemId)
+    if specials = invalid or specials.Count() = 0 then return
+
+    m.extrasLabel.visible = true
+    content = CreateObject("roSGNode", "ContentNode")
+    for each special in specials
+        child = content.CreateChild("ContentNode")
+        child.id = chainLookupReturn(special, ["Id"], "")
+        child.title = chainLookupReturn(special, ["Name"], "")
+        child.type = chainLookupReturn(special, ["Type"], "")
+        child.json = special
+        img = PosterImage(child.id)
+        if img <> invalid then
+            child.HDPosterUrl = img.url
+        end if
+    end for
+    m.extrasGrid.content = content
+    m.extrasGrid.visible = true
+end function
+
+function checkVersions(jsonData as Object) as Void
+    mediaSources = chainLookupReturn(jsonData, ["MediaSources"], [])
+    if mediaSources.Count() > 1 then
+        m.btnVersions.visible = true
+        m.top.versions = mediaSources
+    end if
+end function
+
+function onButtonSelected() as Void
+    btn = m.top.lastEventNode
+    if btn = invalid then return
+
+    btnText = btn.id
+
+    if btnText = "btnPlay" then
+        MainAction_Play(m.top.movie)
+    else if btnText = "btnResume" then
+        MainAction_Resume(m.top.movie)
+    else if btnText = "btnTrailer" then
+        itemId = chainLookupReturn(m.top.movie, ["id"], "")
+        if itemId = "" then itemId = chainLookupReturn(m.top.movie, ["Id"], "")
+        if itemId <> "" then MainAction_PlayTrailer(itemId)
+    else if btnText = "btnFavorite" then
+        itemId = chainLookupReturn(m.top.movie, ["id"], "")
+        if itemId = "" then itemId = chainLookupReturn(m.top.movie, ["Id"], "")
+        if itemId <> "" then
+            MainAction_MarkFavorite(itemId, m.top.isFavorite)
+            m.top.isFavorite = not m.top.isFavorite
+            if m.top.isFavorite then
+                m.btnFavorite.buttonText = translateText("Favorited")
+            else
+                m.btnFavorite.buttonText = translateText("Favorite")
+            end if
+        end if
+    else if btnText = "btnMyList" then
+        itemId = chainLookupReturn(m.top.movie, ["id"], "")
+        if itemId = "" then itemId = chainLookupReturn(m.top.movie, ["Id"], "")
+        if itemId <> "" then MainAction_AddToMyList(itemId)
+    else if btnText = "btnSubtitles" then
+        itemId = chainLookupReturn(m.top.movie, ["id"], "")
+        if itemId = "" then itemId = chainLookupReturn(m.top.movie, ["Id"], "")
+        if itemId <> "" then MainAction_EditSubtitles(itemId)
+    else if btnText = "btnVersions" then
+        toggleVersionPanel()
+    end if
+end function
+
+function toggleVersionPanel() as Void
+    if m.versionPanel.visible then
+        m.versionPanel.visible = false
+        m.versionPanel.translation = [1920, 0]
+    else
+        versions = m.top.versions
+        if versions = invalid or versions.Count() = 0 then return
+
+        content = CreateObject("roSGNode", "ContentNode")
+        for each version in versions
+            child = content.CreateChild("ContentNode")
+            child.title = chainLookupReturn(version, ["Name"], translateText("Unknown"))
+            child.id = chainLookupReturn(version, ["Id"], "")
+        end for
+        m.versionList.content = content
+        m.versionPanel.visible = true
+        m.versionPanel.translation = [1520, 0]
+        m.versionList.setFocus(true)
+    end if
+end function
+
+function onVersionSelected() as Void
+    focused = m.versionList.focusedItem
+    if focused = invalid then return
+    m.top.selectedVersion = focused.id
+    toggleVersionPanel()
+end function
+
+function onExtrasItemSelected() as Void
+    item = m.extrasGrid.focusedItem
+    if item = invalid then return
+    quickplay.video(item)
+end function
+
+function onCastItemSelected() as Void
+    item = m.castGrid.focusedItem
+    if item = invalid then return
+    personData = {
+        id:   item.id
+        Name: item.title
+        json: { Id: item.id, Name: item.title }
+    }
+    CreatePersonView(personData)
+end function
+
+function onBackPressed() as Boolean
+    if m.versionPanel.visible then
+        toggleVersionPanel()
+        return true
+    end if
+    return false
+end function

@@ -1,0 +1,240 @@
+' Wholphin Roku - Item metadata and playback info functions
+
+' Get playback info (GET version - used for initial metadata)
+function ItemGetPlaybackInfo(id as String, startTimeTicks = 0 as Integer) as Object
+    return api.items.GetPlaybackInfo(id, session.user.GetId())
+end function
+
+' Get playback info with device profile (POST version - used for actual playback)
+function ItemPostPlaybackInfo(id as String, mediaSourceId = "" as String, audioTrackIndex = -1 as Integer, subtitleTrackIndex = -1 as Integer, startTimeTicks = 0 as Integer, options = {} as Object) as Object
+    return api.items.PostPlayBackInfo(id, mediaSourceId, audioTrackIndex, subtitleTrackIndex, startTimeTicks)
+end function
+
+' Resume playback for an item
+function ItemResume(id as String, mediaSourceId = "" as String, audioStreamIndex = -1 as Integer, subtitleStreamIndex = -1 as Integer) as Void
+    ' Get current playback position from user data
+    itemData = api.items.GetByID(id)
+    if itemData = invalid then return
+    
+    userData = chainLookupReturn(itemData, ["UserData"], {})
+    playPosition = chainLookupReturn(userData, ["PlaybackPositionTicks"], 0)
+    
+    ' Start playback at the resume position
+    itemNode = CreateObject("roSGNode", "VideoData")
+    itemNode.id = id
+    itemNode.json = itemData
+    itemNode.title = chainLookupReturn(itemData, ["Name"], "")
+    
+    queueManager = m.global.queueManager
+    queueManager.callFunc("clear")
+    queueManager.callFunc("push", itemNode)
+    queueManager.callFunc("setPlaybackOptions", {
+        mediaSourceId:    mediaSourceId
+        audioStreamIndex: audioStreamIndex
+        subtitleStreamIndex: subtitleStreamIndex
+        startTimeTicks:   playPosition
+    })
+    
+    viewCreator = CreateObject("roSGNode", "ViewCreator")
+    viewCreator.callFunc("createVideoPlayerView")
+end function
+
+' Get intros for an item
+function GetIntros(id as String) as Object
+    return api.items.GetIntros(id)
+end function
+
+' Delete an item
+function ItemDelete(id as String) as Boolean
+    req = APIRequest("/Items/" + id)
+    return deleteVoid(req)
+end function
+
+' Search media across multiple types
+function searchMedia(query as String) as Object
+    if query = "" then return invalid
+    
+    results = {
+        Items:     []
+        People:    []
+        Programs:  []
+    }
+    
+    ' Search items (movies, series, episodes, etc.)
+    searchParams = {
+        searchTerm:      query
+        IncludeItemTypes: "Movie,Series,Episode,Audio,MusicAlbum,MusicArtist,Playlist,BoxSet,Video,AudioBook"
+        Recursive:       "true"
+        Limit:           "30"
+        Fields:          "PrimaryImageAspectRatio,BasicSyncInfo,CanDelete,MediaSourceCount"
+        ImageTypeLimit:  "1"
+    }
+    
+    itemsResult = api.items.Get(searchParams)
+    if itemsResult <> invalid then
+        itemList = itemsResult.Items
+        if itemList <> invalid then
+            for each item in itemList
+                node = CreateObject("roSGNode", "SearchData")
+                node.id = chainLookupReturn(item, ["Id"], "")
+                node.title = chainLookupReturn(item, ["Name"], "")
+                node.type = chainLookupReturn(item, ["Type"], "")
+                node.json = item
+                results.Items.Push(node)
+            end for
+        end if
+    end if
+    
+    ' Search persons
+    personParams = {
+        searchTerm: query
+        Limit:      "10"
+    }
+    personResult = api.persons.Get(personParams)
+    if personResult <> invalid then
+        personList = personResult.Items
+        if personList <> invalid then
+            for each person in personList
+                node = CreateObject("roSGNode", "PersonData")
+                node.id = chainLookupReturn(person, ["Id"], "")
+                node.title = chainLookupReturn(person, ["Name"], "")
+                node.json = person
+                results.People.Push(node)
+            end for
+        end if
+    end if
+    
+    ' Search live TV programs
+    programParams = {
+        searchTerm: query
+        Limit:      "10"
+    }
+    programResult = api.liveTV.GetPrograms(programParams)
+    if programResult <> invalid then
+        programList = programResult.Items
+        if programList <> invalid then
+            for each program in programList
+                node = CreateObject("roSGNode", "SearchData")
+                node.id = chainLookupReturn(program, ["Id"], "")
+                node.title = chainLookupReturn(program, ["Name"], "")
+                node.type = "LiveTvProgram"
+                node.json = program
+                results.Programs.Push(node)
+            end for
+        end if
+    end if
+    
+    return results
+end function
+
+' Get detailed item metadata (wraps raw JSON into typed nodes)
+function ItemMetaData(id as String) as Object
+    itemData = api.items.GetByID(id)
+    if itemData = invalid then return invalid
+    
+    itemType = chainLookupReturn(itemData, ["Type"], "")
+    
+    node = invalid
+    
+    if itemType = "Movie" then
+        node = CreateObject("roSGNode", "MovieData")
+    else if itemType = "Series" then
+        node = CreateObject("roSGNode", "SeriesData")
+    else if itemType = "Season" then
+        node = CreateObject("roSGNode", "TVSeasonData")
+    else if itemType = "Episode" then
+        node = CreateObject("roSGNode", "TVEpisodeData")
+    else if itemType = "MusicArtist" then
+        node = CreateObject("roSGNode", "MusicArtistData")
+    else if itemType = "MusicAlbum" then
+        node = CreateObject("roSGNode", "MusicAlbumData")
+    else if itemType = "Audio" then
+        node = CreateObject("roSGNode", "MusicSongData")
+    else if itemType = "Person" then
+        node = CreateObject("roSGNode", "PersonData")
+    else if itemType = "BoxSet" then
+        node = CreateObject("roSGNode", "CollectionData")
+    else if itemType = "Playlist" then
+        node = CreateObject("roSGNode", "CollectionData")
+    else if itemType = "Folder" or itemType = "CollectionFolder" or itemType = "UserView" then
+        node = CreateObject("roSGNode", "FolderData")
+    else
+        node = CreateObject("roSGNode", "VideoData")
+    end if
+    
+    if node <> invalid then
+        node.id = id
+        node.json = itemData
+        node.title = chainLookupReturn(itemData, ["Name"], "")
+        
+        ' Build image URL
+        imageData = PosterImage(id)
+        if imageData <> invalid then
+            node.image = imageData
+            node.posterURL = imageData.url
+        end if
+    end if
+    
+    return node
+end function
+
+' Get TV episodes for a season
+function TVEpisodes(showId as String, seasonId as String) as Object
+    return api.shows.GetEpisodes(showId, seasonId)
+end function
+
+' Get music album list for an artist
+function MusicAlbumList(artistId as String) as Object
+    params = {
+        IncludeItemTypes: "MusicAlbum"
+        Recursive:       "true"
+        SortBy:          "SortName"
+        SortOrder:       "Ascending"
+        ArtistIds:       artistId
+        Fields:          "PrimaryImageAspectRatio,BasicSyncInfo"
+        ImageTypeLimit:  "1"
+    }
+    return api.items.Get(params)
+end function
+
+' Get audio stream URL for playback
+function AudioStream(id as String) as Object
+    ' Get playback info to determine stream URL
+    playbackInfo = ItemPostPlaybackInfo(id)
+    if playbackInfo = invalid then return invalid
+    
+    mediaSources = chainLookupReturn(playbackInfo, ["MediaSources"], [])
+    if mediaSources.Count() = 0 then
+        mediaSources = chainLookupReturn(playbackInfo, ["MediaSource"], [])
+    end if
+    
+    if mediaSources.Count() = 0 then return invalid
+    
+    mediaSource = mediaSources[0]
+    directUrl = chainLookupReturn(mediaSource, ["DirectStreamUrl"], "")
+    transcodingUrl = chainLookupReturn(mediaSource, ["TranscodingUrl"], "")
+    
+    url = directUrl
+    if url = "" then url = transcodingUrl
+    if url = "" then return invalid
+    
+    ' If the URL is relative, prepend server URL
+    if url.Left(1) = "/" then
+        url = session.server.GetUrl() + url
+    end if
+    
+    streamData = CreateObject("roSGNode", "AudioStreamData")
+    streamData.url = url
+    streamData.streamformat = chainLookupReturn(mediaSource, ["Container"], "")
+    
+    return streamData
+end function
+
+' Get backdrop image for an item
+function BackdropImage(id as String) as Object
+    return api.items.GetImageURL(id, "Backdrop", {
+        maxHeight: 720
+        maxWidth:  1280
+        quality:   90
+    })
+end function

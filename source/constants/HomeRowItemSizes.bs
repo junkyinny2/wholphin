@@ -1,0 +1,44 @@
+' Wholphin Roku - Home row item dimension constants
+
+namespace constants
+
+    ' Standard poster sizes
+    const POSTER_WIDTH  = 196
+    const POSTER_HEIGHT = 294
+    
+    ' Small poster sizes
+    const POSTER_WIDTH_SMALL  = 128
+    const POSTER_HEIGHT_SMALL = 192
+    
+    ' Medium poster sizes
+    const POSTER_WIDTH_MEDIUM  = 256
+    const POSTER_HEIGHT_MEDIUM = 384
+    
+    ' Thumbnail sizes
+    const THUMB_WIDTH  = 320
+    const THUMB_HEIGHT = 180
+    
+    ' Row heights
+    const ROW_HEIGHT_SMALL  = 220
+    const ROW_HEIGHT_MEDIUM = 340
+    const ROW_HEIGHT_LARGE  = 420
+    
+    ' Hero banner dimensions
+    const HERO_WIDTH  = 1920
+    const HERO_HEIGHT = 500
+    
+    ' Grid/collection item sizes
+    const GRID_WIDTH  = 196
+    const GRID_HEIGHT = 294
+    
+    ' Backdrop size
+    const BACKDROP_WIDTH  = 1920
+    const BACKDROP_HEIGHT = 1080
+    
+    ' Sidebar dimensions
+    const SIDEBAR_WIDTH = 350
+    
+    ' Overhang dimensions
+    const OVERHANG_HEIGHT = 100
+
+end namespace

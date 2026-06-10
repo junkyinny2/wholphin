@@ -1,0 +1,33 @@
+' Wholphin Roku - JFGroup base group component
+
+sub Init()
+    ' Initialize focus tracking
+    m.lastFocusNode = invalid
+    
+    ' Observe focus for automatic tracking
+    m.top.observeField("focusedChild", m.port)
+end sub
+
+' Handle focused child changes
+function onFocusedChild() as Void
+    focused = m.top.focusedChild
+    if focused <> invalid then
+        m.lastFocusNode = focused
+        m.top.lastFocus = focused
+    end if
+end function
+
+' Called when back is pressed - override in subclasses
+function onBackPressed() as Boolean
+    m.top.backPressed = true
+    return true
+end function
+
+' Set the overhang title for this screen
+function setOverhangTitle(title as String) as Void
+    m.top.overhangTitle = title
+    scene = m.top.getScene()
+    if scene <> invalid then
+        scene.setOverhangTitle(title)
+    end if
+end function

@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="TVEpisodeListItem" extends="Group">
+  <interface>
+    <field id="itemContent" type="node" alwaysNotify="true" />
+    <field id="watched" type="boolean" value="false" />
+    <field id="favorite" type="boolean" value="false" />
+    <field id="episodeNumber" type="int" value="0" />
+    <field id="seasonNumber" type="int" value="0" />
+    <field id="description" type="string" value="" />
+    <field id="runtime" type="int" value="0" />
+    <field id="playbackPosition" type="int" value="0" />
+  </interface>
+
+  <children>
+    <Rectangle
+      id="itemBg"
+      width="1800"
+      height="120"
+      color="0x1A1A2E80" />
+
+    <!-- Episode thumbnail -->
+    <Poster
+      id="episodeThumb"
+      translation="[10, 10]"
+      width="180"
+      height="100"
+      loadDisplayMode="scaleToFit" />
+
+    <!-- Episode number -->
+    <Label
+      id="episodeNumLabel"
+      translation="[200, 10]"
+      width="50"
+      height="25"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      text=""
+      vertAlign="center" />
+
+    <!-- Episode title -->
+    <Label
+      id="episodeTitleLabel"
+      translation="[260, 10]"
+      width="800"
+      height="25"
+      font="font:MediumBoldSystemFont"
+      color="0xFFFFFFFF"
+      text=""
+      vertAlign="center" />
+
+    <!-- Runtime -->
+    <Label
+      id="episodeRuntime"
+      translation="[1100, 10]"
+      width="100"
+      height="25"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      text=""
+      vertAlign="center" />
+
+    <!-- Watched indicator -->
+    <Poster
+      id="episodeWatchedIcon"
+      translation="[1220, 10]"
+      width="20"
+      height="20"
+      uri="pkg:/images/icons/checked.png"
+      visible="false" />
+
+    <!-- Description -->
+    <Label
+      id="episodeDesc"
+      translation="[200, 40]"
+      width="1400"
+      height="70"
+      font="font:SmallestSystemFont"
+      color="0x707070FF"
+      text=""
+      wrap="true"
+      vertAlign="top" />
+
+    <!-- Progress bar -->
+    <Rectangle
+      id="episodeProgress"
+      translation="[10, 114]"
+      width="0"
+      height="3"
+      color="0x00A4DCFF" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/tvshows/TVEpisodeListItem.bs" />
+</component>

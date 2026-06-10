@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="QueueManager" extends="Group">
+  <interface>
+    <field id="queue" type="array" value="" />
+    <field id="currentIndex" type="int" value="-1" alwaysNotify="true" />
+    <field id="currentItem" type="node" alwaysNotify="true" />
+    <field id="queueLength" type="int" value="0" alwaysNotify="true" />
+    <field id="shuffleMode" type="bool" value="false" />
+    <field id="repeatMode" type="string" value="None" /> <!-- None, One, All -->
+    <field id="forceTranscode" type="bool" value="false" />
+    <field id="preferredSubtitleIndex" type="int" value="-1" />
+    <field id="preferredAudioIndex" type="int" value="-1" />
+    <field id="startTimeTicks" type="int" value="0" />
+    <field id="mediaSourceId" type="string" value="" />
+    <field id="playSessionId" type="string" value="" />
+  </interface>
+  
+  <script type="text/brightscript" uri="pkg:/components/manager/QueueManager.bs" />
+</component>

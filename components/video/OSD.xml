@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="OSD" extends="Group">
+  <interface>
+    <field id="playerState" type="string" value="" />
+    <field id="position" type="int" value="0" />
+    <field id="duration" type="int" value="0" />
+    <field id="itemTitle" type="string" value="" />
+    <field id="seasonInfo" type="string" value="" />
+    <field id="episodeInfo" type="string" value="" />
+    <field id="chapters" type="array" value="" />
+    <field id="visible" type="boolean" value="true" />
+    <field id="audioTracks" type="array" value="" />
+    <field id="subtitleTracks" type="array" value="" />
+    <field id="currentAudioIndex" type="int" value="-1" />
+    <field id="currentSubtitleIndex" type="int" value="-1" />
+  </interface>
+
+  <children>
+    <!-- Top bar -->
+    <Rectangle
+      id="osdTopBar"
+      translation="[0, 0]"
+      width="1920"
+      height="80"
+      color="0x00000080" />
+
+    <Label
+      id="osdTitle"
+      translation="[30, 15]"
+      width="1000"
+      height="30"
+      font="font:MediumBoldSystemFont"
+      color="0xFFFFFFFF"
+      text=""
+      vertAlign="center" />
+
+    <Label
+      id="osdSeasonInfo"
+      translation="[30, 48]"
+      width="500"
+      height="25"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      text=""
+      vertAlign="center" />
+
+    <Label
+      id="osdClock"
+      translation="[1700, 25]"
+      width="200"
+      height="30"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      text=""
+      horizAlign="right"
+      vertAlign="center" />
+
+    <!-- Bottom controls bar -->
+    <Rectangle
+      id="osdBottomBar"
+      translation="[0, 980]"
+      width="1920"
+      height="100"
+      color="0x00000080" />
+
+    <!-- Timeline progress bar -->
+    <Rectangle
+      id="osdProgressBg"
+      translation="[30, 995]"
+      width="1860"
+      height="4"
+      color="0xFFFFFF30" />
+
+    <Rectangle
+      id="osdProgressFill"
+      translation="[30, 995]"
+      width="0"
+      height="4"
+      color="0x00A4DCFF" />
+
+    <Label
+      id="osdCurrentTime"
+      translation="[30, 1005]"
+      width="80"
+      height="25"
+      font="font:SmallestSystemFont"
+      color="0xFFFFFFFF"
+      text="0:00"
+      vertAlign="center" />
+
+    <Label
+      id="osdRemainingTime"
+      translation="[1810, 1005]"
+      width="80"
+      height="25"
+      font="font:SmallestSystemFont"
+      color="0xFFFFFFFF"
+      text="-0:00"
+      horizAlign="right"
+      vertAlign="center" />
+
+    <!-- Control buttons -->
+    <Group id="osdControls" translation="[810, 1020]">
+      <!-- Rewind 10s -->
+      <Label
+        id="btnRewind"
+        translation="[0, 0]"
+        width="60"
+        height="40"
+        font="font:MediumSystemFont"
+        color="0xFFFFFFFF"
+        text="<<"
+        horizAlign="center"
+        vertAlign="center" />
+
+      <!-- Play/Pause -->
+      <Label
+        id="btnPlayPause"
+        translation="[130, 0]"
+        width="60"
+        height="40"
+        font="font:MediumSystemFont"
+        color="0xFFFFFFFF"
+        text="||"
+        horizAlign="center"
+        vertAlign="center" />
+
+      <!-- Forward 30s -->
+      <Label
+        id="btnForward"
+        translation="[260, 0]"
+        width="60"
+        height="40"
+        font="font:MediumSystemFont"
+        color="0xFFFFFFFF"
+        text=">>"
+        horizAlign="center"
+        vertAlign="center" />
+    </Group>
+
+    <!-- Option buttons -->
+    <Group id="osdOptions" translation="[1640, 1020]">
+      <Label id="btnSubtitles" translation="[0, 0]" width="60" height="40" font="font:SmallSystemFont" color="0xFFFFFFFF" text="CC" horizAlign="center" vertAlign="center" />
+      <Label id="btnAudio" translation="[70, 0]" width="60" height="40" font="font:SmallSystemFont" color="0xFFFFFFFF" text="AUD" horizAlign="center" vertAlign="center" />
+      <Label id="btnChapters" translation="[140, 0]" width="60" height="40" font="font:SmallSystemFont" color="0xFFFFFFFF" text="CH" horizAlign="center" vertAlign="center" />
+      <Label id="btnInfo" translation="[210, 0]" width="60" height="40" font="font:SmallSystemFont" color="0xFFFFFFFF" text="i" horizAlign="center" vertAlign="center" />
+    </Group>
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/video/OSD.bs" />
+</component>

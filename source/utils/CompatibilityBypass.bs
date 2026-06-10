@@ -1,0 +1,50 @@
+' Wholphin Roku - Compatibility bypass for aggressive DirectPlay
+
+' Check if the compatibility bypass is enabled
+function isCompatibilityBypassEnabled() as Boolean
+    setting = session.user.GetSetting("playback.compatibility.disablehevc", "false")
+    return setting = "true"
+end function
+
+' Determine if we need to force transcoding for a given media source
+function shouldForceTranscode(mediaSource as Object) as Boolean
+    if not isCompatibilityBypassEnabled() then return false
+    
+    ' Check container
+    container = LCase(chainLookupReturn(mediaSource, ["Container"], ""))
+    
+    ' Containers that may have issues
+    problematicContainers = ["mkv", "avi", "wmv", "mts", "m2ts"]
+    for each pc in problematicContainers
+        if container = pc then return true
+    end for
+    
+    ' Check video codec
+    mediaStreams = chainLookupReturn(mediaSource, ["MediaStreams"], [])
+    for each stream in mediaStreams
+        streamType = chainLookupReturn(stream, ["Type"], "")
+        if streamType = "Video" then
+            codec = LCase(chainLookupReturn(stream, ["Codec"], ""))
+            if codec = "hevc" and isCompatibilityBypassEnabled() then return true
+            if codec = "h265" and isCompatibilityBypassEnabled() then return true
+        end if
+    end for
+    
+    return false
+end function
+
+' Check if the Roku model has specific HEVC support
+function supportsHEVC() as Boolean
+    di = CreateObject("roDeviceInfo")
+    model = di.GetModel()
+    
+    ' Roku models with "4K" or "UHD" in their display name typically support HEVC
+    displayName = di.GetModelDisplayName()
+    if displayName.Instr("4K") > 0 or displayName.Instr("UHD") > 0 then
+        return true
+    end if
+    
+    ' 4K model numbers typically start with 46xx, 47xx, 48xx
+    ' This is a simplified check
+    return false
+end function

@@ -1,0 +1,211 @@
+' Wholphin Roku - Session and state management
+
+namespace session
+
+    ' Initialize session globals
+    function Init() as Void
+        gaa = getGlobalAA()
+        gaa.session = {
+            isLoggedIn:      false
+            server:          {}
+            user:            {}
+            settings:        {}
+            capabilities:    {}
+            deviceProfile:   {}
+        }
+    end function
+
+    ' Server sub-namespace
+    namespace server
+     
+        ' Populate server info
+        function Populate(serverInfo as Object) as Void
+            gaa = getGlobalAA()
+            gaa.session.server = {
+                id:             chainLookupReturn(serverInfo, ["Id"], "")
+                name:           chainLookupReturn(serverInfo, ["ServerName"], "")
+                url:            chainLookupReturn(serverInfo, ["Url"], "")
+                version:        chainLookupReturn(serverInfo, ["Version"], "")
+                operatingSystem: chainLookupReturn(serverInfo, ["OperatingSystem"], "")
+            }
+        end function
+        
+        ' Clear server info
+        function Clear() as Void
+            gaa = getGlobalAA()
+            gaa.session.server = {}
+        end function
+         
+        ' Get the current server URL
+        function GetUrl() as String
+            gaa = getGlobalAA()
+            return chainLookupReturn(gaa.session.server, ["url"], "")
+        end function
+         
+        ' Get the server name
+        function GetName() as String
+            gaa = getGlobalAA()
+            return chainLookupReturn(gaa.session.server, ["name"], translateText("Unknown Server"))
+        end function
+         
+        ' Get the server version
+        function GetVersion() as String
+            gaa = getGlobalAA()
+            return chainLookupReturn(gaa.session.server, ["version"], "0.0.0.0")
+        end function
+    
+    end namespace
+
+    ' User sub-namespace
+    namespace user
+    
+        ' Populate user info after authentication
+        function Populate(userData as Object) as Void
+            userJson = chainLookupReturn(userData, ["User"], {})
+            
+            gaa = getGlobalAA()
+            gaa.session.user = {
+                id:             chainLookupReturn(userJson, ["Id"], "")
+                name:           chainLookupReturn(userJson, ["Name"], "")
+                accessToken:    chainLookupReturn(userData, ["AccessToken"], "")
+                serverId:       chainLookupReturn(userData, ["ServerId"], "")
+                isLoggedIn:     true
+                imageUrl:       ""
+                lastLoginDate:  ""
+                settings:       {}
+                abilities:      {}
+            }
+            
+            ' Load user settings from registry
+            session.user.loadUserSettings()
+            
+            ' Load user abilities
+            abilities = chainLookupReturn(userJson, ["Policy"], {})
+            gaa.session.user.abilities = abilities
+        end function
+        
+        ' Update user after AboutMe response
+        function UpdateFromAboutMe(userJson as Object) as Void
+            gaa = getGlobalAA()
+            if not isValid(gaa.session.user) then return
+            
+            gaa.session.user.name = chainLookupReturn(userJson, ["Name"], gaa.session.user.name)
+            gaa.session.user.id = chainLookupReturn(userJson, ["Id"], gaa.session.user.id)
+            
+            ' Build user image URL
+            userId = gaa.session.user.id
+            if userId <> "" then
+                serverUrl = session.server.GetUrl()
+                if serverUrl <> "" then
+                    gaa.session.user.imageUrl = serverUrl + "/Users/" + userId + "/Images/Primary?quality=90"
+                end if
+            end if
+        end function
+        
+        ' Clear user session (logout)
+        function Clear() as Void
+            gaa = getGlobalAA()
+            gaa.session.user = {}
+            gaa.session.isLoggedIn = false
+        end function
+        
+        ' Load user settings from registry
+        function loadUserSettings() as Void
+            gaa = getGlobalAA()
+            userId = gaa.session.user.id
+            if userId = "" then return
+            
+            ' Load settings tree defaults first
+            settings = {}
+            saveSettingsDefaults(settings)
+            
+            ' Then overlay saved user settings
+            keys = ["homeScreenSection0", "homeScreenSection1", "homeScreenSection2",
+                    "homeScreenSection3", "homeScreenSection4", "homeScreenSection5",
+                    "homeScreenSection6", "homeScreenSection7",
+                    "playback.bitrate", "playback.compatibility.disablehevc",
+                    "display.language", "audio.output", "subtitle.language",
+                    "search.enablegenresearch"]
+            
+            for each key in keys
+                saved = get_user_setting(userId, key, "")
+                if saved <> "" then
+                    settings.AddReplace(key, saved)
+                end if
+            end for
+            
+            gaa.session.user.settings = settings
+        end function
+        
+        ' Save a user setting
+        function SaveSetting(key as String, value as String) as Void
+            gaa = getGlobalAA()
+            userId = gaa.session.user.id
+            if userId = "" then return
+            set_user_setting(userId, key, value)
+            
+            ' Update in-memory settings
+            if gaa.session.user.settings = invalid then
+                gaa.session.user.settings = {}
+            end if
+            gaa.session.user.settings.AddReplace(key, value)
+        end function
+        
+        ' Get a user setting
+        function GetSetting(key as String, defaultValue = "" as Dynamic) as Dynamic
+            gaa = getGlobalAA()
+            settings = gaa.session.user.settings
+            if settings = invalid then return defaultValue
+            value = settings.Lookup(key)
+            if value = invalid then return defaultValue
+            return value
+        end function
+        
+        ' Get the user ID
+        function GetId() as String
+            gaa = getGlobalAA()
+            return chainLookupReturn(gaa.session.user, ["id"], "")
+        end function
+        
+        ' Get the display name
+        function GetDisplayName() as String
+            gaa = getGlobalAA()
+            return chainLookupReturn(gaa.session.user, ["name"], translateText("User"))
+        end function
+        
+        ' Check if logged in
+        function IsLoggedIn() as Boolean
+            gaa = getGlobalAA()
+            return gaa.session.isLoggedIn = true and session.user.GetId() <> ""
+        end function
+        
+        ' Check if user has a specific ability
+        function HasAbility(ability as String) as Boolean
+            gaa = getGlobalAA()
+            abilities = gaa.session.user.abilities
+            if abilities = invalid then return false
+            
+            ' Boolean abilities in Policy (e.g., IsAdministrator, EnableLiveTvAccess)
+            value = abilities.Lookup(ability)
+            if value = invalid then return false
+            if type(value) = "Boolean" then return value
+            return false
+        end function
+        
+        ' Build user image URL
+        function GetImageUrl() as String
+            gaa = getGlobalAA()
+            url = gaa.session.user.imageUrl
+            if url = "" and session.user.GetId() <> "" then
+                serverUrl = session.server.GetUrl()
+                if serverUrl <> "" then
+                    url = serverUrl + "/Users/" + session.user.GetId() + "/Images/Primary?quality=90"
+                    gaa.session.user.imageUrl = url
+                end if
+            end if
+            return url
+        end function
+    
+    end namespace
+
+end namespace

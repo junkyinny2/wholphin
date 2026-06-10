@@ -1,0 +1,53 @@
+' Wholphin Roku - Async task to preload trickplay thumbnail tiles
+
+sub Init()
+    m.top.functionName = "preloadImages"
+end sub
+
+sub preloadImages()
+    trickplayData = m.top.trickplayData
+    if trickplayData = invalid or trickplayData.Count() = 0 then
+        m.top.loadStatus = "empty"
+        return
+    end if
+
+    loaded = []
+    tileWidth = chainLookupReturn(trickplayData[0], ["TileWidth"], 320)
+    tileHeight = chainLookupReturn(trickplayData[0], ["TileHeight"], 180)
+    thumbnails = chainLookupReturn(trickplayData[0], ["Thumbnails"], [])
+
+    if thumbnails.Count() = 0 then
+        m.top.loadStatus = "empty"
+        return
+    end if
+
+    totalImages = 0
+    for each thumbnail in thumbnails
+        imageTag = chainLookupReturn(thumbnail, ["ImageTag"], "")
+        if imageTag <> "" then totalImages = totalImages + 1
+    end for
+
+    if totalImages = 0 then
+        m.top.loadStatus = "empty"
+        return
+    end if
+
+    for i = 0 to thumbnails.Count() - 1
+        thumbnail = thumbnails[i]
+        imageTag = chainLookupReturn(thumbnail, ["ImageTag"], "")
+        if imageTag <> "" then
+            url = session.server.GetUrl() + "/Videos/" + chainLookupReturn(trickplayData[0], ["ItemId"], "") + "/Trickplay/" + imageTag + "/" + tileWidth.ToStr() + "/" + tileHeight.ToStr() + ".jpg"
+
+            tile = {
+                index:   i
+                url:     url
+                width:   tileWidth
+                height:  tileHeight
+            }
+            loaded.Push(tile)
+        end if
+    end for
+
+    m.top.preloaded = loaded
+    m.top.loadStatus = "loaded"
+end sub

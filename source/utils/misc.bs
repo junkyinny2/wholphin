@@ -1,0 +1,174 @@
+' Wholphin Roku - Miscellaneous utility functions
+
+' Check if a value is valid (not invalid)
+function isValid(value) as Boolean
+    return value <> invalid
+end function
+
+' Check if a value is valid and (if string or array) not empty
+function isValidAndNotEmpty(value) as Boolean
+    if not isValid(value) then return false
+    if GetInterface(value, "ifString") <> invalid then return Len(value) > 0
+    if GetInterface(value, "ifArray") <> invalid then return value.Count() > 0
+    return true
+end function
+
+' Check if a chain of lookups is valid (all intermediate values exist)
+function isChainValid(obj, keys as Object) as Boolean
+    current = obj
+    for each key in keys
+        if not isValid(current) then return false
+        if GetInterface(current, "ifAssociativeArray") = invalid then return false
+        if not current.DoesExist(key) then return false
+        current = current[key]
+    end for
+    return true
+end function
+
+' Chain lookup - safely navigate nested AssociativeArrays
+' Returns invalid if any key in the chain is missing
+function chainLookup(obj, keys as Object) as Dynamic
+    current = obj
+    if GetInterface(keys, "ifString") <> invalid then keys = keys.Split(".")
+    for each key in keys
+        if not isValid(current) then return invalid
+        if GetInterface(current, "ifAssociativeArray") = invalid then return invalid
+        if not current.DoesExist(key) then return invalid
+        current = current[key]
+    end for
+    return current
+end function
+
+' Chain lookup with default return value
+function chainLookupReturn(obj, keys as Object, defaultValue = invalid as Dynamic) as Dynamic
+    result = chainLookup(obj, keys)
+    if result = invalid then return defaultValue
+    return result
+end function
+
+' Show a simple dialog with a message and OK button
+function show_dialog(title as String, message as String) as Void
+    dialog = CreateObject("roSGNode", "Dialog")
+    dialog.title = title
+    dialog.message = message
+    dialog.optionsDialog = true
+    dialog.buttons = ["OK"]
+    dialog.observeField("buttonSelected", m.port)
+    dialog.dialogResult = 0
+    m.scene.dialog = dialog
+end function
+
+' Show a message dialog (JFMessageDialog variant)
+function message_dialog(title as String, message as String, buttons = [] as Object) as Void
+    dialog = CreateObject("roSGNode", "JFMessageDialog")
+    dialog.title = title
+    dialog.message = message
+    if buttons.Count() = 0 then buttons = ["OK"]
+    dialog.buttons = buttons
+    dialog.observeField("buttonSelected", m.port)
+    m.scene.dialog = dialog
+end function
+
+' Start the loading spinner overlay
+function startLoadingSpinner() as Void
+    if m.scene.spinner <> invalid then
+        m.scene.spinner.visible = true
+    end if
+end function
+
+' Stop the loading spinner overlay
+function stopLoadingSpinner() as Void
+    if m.scene.spinner <> invalid then
+        m.scene.spinner.visible = false
+    end if
+end function
+
+' Left-pad a string with a character
+function leftPad(str as String, length as Integer, padChar = " " as String) as String
+    while Len(str) < length
+        str = padChar + str
+    end while
+    return str
+end function
+
+' Format seconds into HH:MM:SS or MM:SS
+function formatTime(seconds as Integer) as String
+    hours = Int(seconds / 3600)
+    minutes = Int((seconds Mod 3600) / 60)
+    secs = seconds Mod 60
+    
+    if hours > 0
+        return leftPad(hours.ToStr(), 2, "0") + ":" + leftPad(minutes.ToStr(), 2, "0") + ":" + leftPad(secs.ToStr(), 2, "0")
+    else
+        return leftPad(minutes.ToStr(), 2, "0") + ":" + leftPad(secs.ToStr(), 2, "0")
+    end if
+end function
+
+' Convert ticks (Jellyfin time unit: 1 tick = 100 nanoseconds) to seconds
+function ticksToSeconds(ticks as Integer) as Integer
+    return Int(ticks / 10000000)
+end function
+
+' Convert seconds to ticks
+function secondsToTicks(seconds as Integer) as Integer
+    return seconds * 10000000
+end function
+
+' Get the message picker from a message port
+function getMsgPicker(port) as Object
+    return port.getMessage()
+end function
+
+' Check if a node event matches an expected field
+function isNodeEvent(msg, expectedNodeId as String, expectedField as String) as Boolean
+    if not isValid(msg) then return false
+    if not msg.isNodeEvent() then return false
+    node = msg.getNode()
+    if node <> expectedNodeId then return false
+    if msg.getField() <> expectedField then return false
+    return true
+end function
+
+' Simple logging/tracing helper
+function traceStep(stepName as String, data = invalid as Dynamic) as Void
+    if m.global.printReg = true then
+        print "[Wholphin] " + stepName
+        if data <> invalid then print data
+    end if
+end function
+
+' Localization function - returns translated string
+function translateText(text as String) as String
+    if m.global.localeTranslations = invalid then return text
+    translation = m.global.localeTranslations.Lookup(text)
+    if translation = invalid then return text
+    return translation
+end function
+
+' Load locale translations from file
+function loadTranslations(localeCode as String) as Object
+    translations = CreateObject("roAssociativeArray")
+    filePath = "pkg:/locale/" + localeCode + "/translations.ts"
+    content = ReadAsciiFile(filePath)
+    if content = invalid then return translations
+    
+    ' Parse Qt .ts XML format for <source> and <translation> pairs
+    sourceRegex = CreateObject("roRegex", "<source>([\s\S]*?)</source>", "")
+    transRegex = CreateObject("roRegex", "<translation[^>]*>([\s\S]*?)</translation>", "")
+    
+    sourceMatches = sourceRegex.Match(content)
+    transMatches = transRegex.Match(content)
+    
+    count = sourceMatches.Count()
+    if transMatches.Count() < count then count = transMatches.Count()
+    
+    for i = 0 to count - 1
+        key = sourceMatches[i]
+        value = transMatches[i]
+        if key <> "" and value <> "" then
+            translations.AddReplace(key, value)
+        end if
+    end for
+    
+    return translations
+end function

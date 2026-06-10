@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="SetServerScreen" extends="JFScreen">
+  <interface>
+    <field id="serverUrl" type="string" value="" />
+    <field id="savedServers" type="array" value="" />
+    <field id="isDiscovering" type="boolean" value="false" />
+  </interface>
+
+  <children>
+    <Rectangle
+      width="1920"
+      height="1080"
+      color="0x1A1A2EFF" />
+
+    <Label
+      id="serverTitle"
+      translation="[560, 200]"
+      width="800"
+      height="60"
+      font="font:LargeBoldSystemFont"
+      color="0xFFFFFFFF"
+      text="Connect to Jellyfin Server"
+      horizAlign="center"
+      vertAlign="center" />
+
+    <!-- Server URL input -->
+    <Label
+      id="serverUrlLabel"
+      translation="[560, 300]"
+      width="800"
+      height="30"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      text="Server URL"
+      horizAlign="center"
+      vertAlign="center" />
+
+    <Group id="serverInputGroup" translation="[560, 340]">
+      <Rectangle
+        id="serverInputBg"
+        width="800"
+        height="50"
+        color="0x16213EFF" />
+      <Label
+        id="serverInputText"
+        translation="[15, 10]"
+        width="770"
+        height="30"
+        font="font:MediumSystemFont"
+        color="0xFFFFFFFF"
+        text=""
+        vertAlign="center" />
+    </Group>
+
+    <!-- Buttons -->
+    <Group id="serverButtons" translation="[560, 410]">
+      <JFButton id="btnConnect" translation="[0, 0]" buttonText="Connect" width="200" />
+      <JFButton id="btnDiscover" translation="[220, 0]" buttonText="Auto Discover" width="300" />
+      <JFButton id="btnManualEntry" translation="[540, 0]" buttonText="Manual Entry" width="260" />
+    </Group>
+
+    <!-- Saved servers list -->
+    <Label
+      id="savedServersLabel"
+      translation="[560, 490]"
+      width="800"
+      height="30"
+      font="font:MediumBoldSystemFont"
+      color="0xFFFFFFFF"
+      text="Saved Servers"
+      horizAlign="center"
+      vertAlign="center"
+      visible="false" />
+
+    <LabelList
+      id="serverList"
+      translation="[560, 530]"
+      width="800"
+      height="300"
+      itemSize="[800, 50]"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      focusedColor="0x00A4DCFF"
+      showFocusFootprint="false"
+      visible="false" />
+
+    <!-- Auto-discovered servers -->
+    <Label
+      id="discoveredLabel"
+      translation="[560, 490]"
+      width="800"
+      height="30"
+      font="font:MediumBoldSystemFont"
+      color="0xFFFFFFFF"
+      text="Discovered Servers"
+      horizAlign="center"
+      vertAlign="center"
+      visible="false" />
+
+    <LabelList
+      id="discoveredServerList"
+      translation="[560, 530]"
+      width="800"
+      height="300"
+      itemSize="[800, 50]"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      focusedColor="0x00A4DCFF"
+      showFocusFootprint="false"
+      visible="false" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/config/SetServerScreen.bs" />
+</component>

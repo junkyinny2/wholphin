@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="LibraryFilterDialog" extends="Dialog">
+  <interface>
+    <field id="selectedFilters" type="array" value="" />
+    <field id="filterType" type="string" value="sort" /> <!-- sort, filter, genre -->
+  </interface>
+
+  <children>
+    <Rectangle
+      id="filterDialogBg"
+      width="500"
+      height="600"
+      color="0x16213EFF" />
+
+    <Label
+      id="filterDialogTitle"
+      translation="[20, 20]"
+      width="460"
+      height="30"
+      font="font:MediumBoldSystemFont"
+      color="0xFFFFFFFF"
+      text="Sort By"
+      vertAlign="center" />
+
+    <LabelList
+      id="filterOptionsList"
+      translation="[20, 70]"
+      width="460"
+      height="500"
+      itemSize="[460, 50]"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      focusedColor="0x00A4DCFF"
+      showFocusFootprint="false" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/ItemGrid/LibraryFilterDialog.bs" />
+</component>

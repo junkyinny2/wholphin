@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="HeroBanner" extends="Group">
+  <interface>
+    <field id="items" type="array" value="" alwaysNotify="true" />
+    <field id="currentIndex" type="int" value="0" alwaysNotify="true" />
+    <field id="heroItemFocused" type="node" alwaysNotify="true" />
+    <field id="autoPlay" type="bool" value="true" />
+    <field id="autoPlayInterval" type="int" value="8000" />
+  </interface>
+  
+  <children>
+    <!-- Hero background image -->
+    <Poster
+      id="heroBg"
+      width="1920"
+      height="440"
+      loadDisplayMode="scaleToFit" />
+    
+    <!-- Hero overlay gradient -->
+    <Rectangle
+      id="heroOverlay"
+      width="1920"
+      height="440"
+      color="0x00000060" />
+    
+    <!-- Hero title -->
+    <Label
+      id="heroTitle"
+      translation="[60, 300]"
+      width="800"
+      height="50"
+      font="font:LargeBoldSystemFont"
+      color="0xFFFFFFFF"
+      text=""
+      vertAlign="center" />
+    
+    <!-- Hero overview -->
+    <Label
+      id="heroOverview"
+      translation="[60, 360]"
+      width="800"
+      height="60"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      text=""
+      wrap="true"
+      vertAlign="top" />
+    
+    <!-- Hero item indicators -->
+    <Group id="heroIndicators" translation="[860, 410]" />
+  </children>
+  
+  <script type="text/brightscript" uri="pkg:/components/home/HeroBanner.bs" />
+</component>

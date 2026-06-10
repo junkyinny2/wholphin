@@ -1,0 +1,85 @@
+' Wholphin Roku - Generic folder/channel library browser
+
+sub Init()
+    m.otherLibTitle = m.top.findNode("otherLibTitle")
+    m.otherItemGrid = m.top.findNode("otherItemGrid")
+    m.otherLoadingLabel = m.top.findNode("otherLoadingLabel")
+
+    m.top.observeField("libraryData", m.port)
+    m.otherItemGrid.observeField("itemSelected", m.port)
+end sub
+
+function onLibraryDataChange() as Void
+    LoadData()
+end function
+
+function LoadData() as Void
+    m.top.loadingData = true
+    m.otherLoadingLabel.visible = true
+
+    libData = m.top.libraryData
+    if libData = invalid then return
+
+    libName = chainLookupReturn(libData, ["title"], "")
+    if libName = "" then libName = chainLookupReturn(libData, ["Name"], "")
+    m.otherLibTitle.text = libName
+    m.top.overhangTitle = libName
+
+    libId = chainLookupReturn(libData, ["id"], "")
+    if libId = "" then libId = chainLookupReturn(libData, ["Id"], "")
+
+    result = api.items.GetChildren(libId, {
+        userId: session.user.GetId()
+        Fields: "PrimaryImageAspectRatio,BasicSyncInfo"
+        ImageTypeLimit: "1"
+    })
+
+    if result = invalid then
+        m.otherLoadingLabel.visible = false
+        m.top.loadingData = false
+        return
+    end if
+
+    items = chainLookupReturn(result, ["Items"], [])
+    if items = invalid or items.Count() = 0 then
+        m.otherLoadingLabel.visible = false
+        m.top.loadingData = false
+        return
+    end if
+
+    m.top.items = items
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for each item in items
+        child = content.CreateChild("ContentNode")
+        child.id = chainLookupReturn(item, ["Id"], "")
+        child.title = chainLookupReturn(item, ["Name"], "")
+        child.type = chainLookupReturn(item, ["Type"], "")
+        child.json = item
+
+        img = PosterImage(child.id)
+        if img <> invalid then
+            child.HDPosterUrl = img.url
+        end if
+    end for
+
+    m.otherItemGrid.content = content
+    m.otherItemGrid.visible = true
+    m.otherLoadingLabel.visible = false
+    m.otherItemGrid.setFocus(true)
+
+    m.top.loadingData = false
+    m.top.dataLoaded = true
+end function
+
+function onItemSelected() as Void
+    focused = m.otherItemGrid.focusedItem
+    if focused = invalid then return
+
+    HandleItemSelection(m.top.id, focused)
+end function
+
+function onBackPressed() as Boolean
+    m.global.sceneManager.callFunc("popScene")
+    return true
+end function

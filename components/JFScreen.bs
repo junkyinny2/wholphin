@@ -1,0 +1,45 @@
+' Wholphin Roku - JFScreen with lifecycle callbacks
+
+sub Init()
+    ' Initialize lifecycle state
+    m.top.screenShown = false
+    m.top.screenHidden = false
+    m.top.dataLoaded = false
+    m.top.loadingData = false
+end sub
+
+' Called when this screen becomes the active (top) scene
+function OnScreenShown() as Void
+    m.top.screenShown = true
+    m.top.screenHidden = false
+    
+    ' Update overhang
+    setOverhangTitle(m.top.overhangTitle)
+    
+    ' Set focus to last focused child or first focusable
+    if m.lastFocusNode <> invalid then
+        m.lastFocusNode.setFocus(true)
+    else
+        setFocus(true)
+    end if
+end function
+
+' Called when this screen is no longer active (hidden by another scene)
+function OnScreenHidden() as Void
+    m.top.screenHidden = true
+    m.top.screenShown = false
+end function
+
+' Load data for this screen - override in subclasses
+function LoadData() as Void
+    m.top.loadingData = true
+    ' Subclasses should override this
+    m.top.loadingData = false
+    m.top.dataLoaded = true
+end function
+
+' Handle back press
+function onBackPressed() as Boolean
+    ' Default behavior - let the scene manager handle it
+    return false
+end function

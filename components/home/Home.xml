@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="Home" extends="JFScreen">
+  <interface>
+    <field id="libraries" type="array" value="" />
+    <field id="heroItems" type="array" value="" />
+    <field id="rowItems" type="array" value="" />
+    <field id="backdropUrl" type="string" value="" />
+  </interface>
+  
+  <children>
+    <!-- Backdrop image -->
+    <Poster
+      id="backdrop"
+      translation="[0, 0]"
+      width="1920"
+      height="1080"
+      loadDisplayMode="scaleToFit"
+      visible="true" />
+    
+    <!-- Transition backdrop for cross-fade -->
+    <Poster
+      id="backdropTransition"
+      translation="[0, 0]"
+      width="1920"
+      height="1080"
+      loadDisplayMode="scaleToFit"
+      visible="false"
+      opacity="0" />
+    
+    <!-- Hero banner at the top -->
+    <HeroBanner
+      id="heroBanner"
+      translation="[0, 60]"
+      visible="true" />
+    
+    <!-- Home screen content rows -->
+    <HomeRows
+      id="homeRows"
+      translation="[100, 500]"
+      width="1720"
+      height="500"
+      visible="true" />
+    
+    <!-- Options slider (side panel) -->
+    <Group id="optionsSlider" translation="[1920, 100]" visible="false">
+      <Rectangle
+        width="400"
+        height="980"
+        color="0x16213EFF" />
+    </Group>
+  </children>
+  
+  <script type="text/brightscript" uri="pkg:/components/home/Home.bs" />
+</component>

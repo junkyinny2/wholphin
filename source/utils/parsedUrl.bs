@@ -1,0 +1,112 @@
+' Wholphin Roku - URL parsing utilities
+
+' Parse a URL string into its components
+function parseUrl(url as String) as Object
+    result = {
+        scheme:   ""
+        host:     ""
+        port:     ""
+        path:     ""
+        query:    {}
+        fragment: ""
+        full:     url
+    }
+    
+    if url = "" then return result
+    
+    ' Extract scheme
+    schemeMatch = CreateObject("roRegex", "^(https?)://", "i").Match(url)
+    if schemeMatch.Count() > 0 then
+        result.scheme = LCase(schemeMatch[1])
+        url = url.Mid(Len(schemeMatch[0]))
+    end if
+    
+    ' Extract host and port
+    hostPortMatch = CreateObject("roRegex", "^([^:/]+)(?::(\d+))?", "i").Match(url)
+    if hostPortMatch.Count() > 1 then
+        result.host = LCase(hostPortMatch[1])
+        if hostPortMatch.Count() > 2 and hostPortMatch[2] <> "" then
+            result.port = hostPortMatch[2]
+        end if
+        url = url.Mid(Len(hostPortMatch[0]))
+    end if
+    
+    ' Extract path
+    pathMatch = CreateObject("roRegex", "^(/[^?#]*)", "").Match(url)
+    if pathMatch.Count() > 0 then
+        result.path = pathMatch[1]
+        url = url.Mid(Len(pathMatch[0]))
+    end if
+    
+    ' Extract query string
+    queryMatch = CreateObject("roRegex", "^\?([^#]*)", "").Match(url)
+    if queryMatch.Count() > 0 then
+        queryStr = queryMatch[1]
+        pairs = queryStr.Split("&")
+        for each pair in pairs
+            kv = pair.Split("=")
+            if kv.Count() = 2 then
+                key = kv[0]
+                value = kv[1]
+                ' URL decode the value
+                value = value.Replace("%20", " ")
+                value = value.Replace("+", " ")
+                result.query.AddReplace(key, value)
+            end if
+        end for
+        url = url.Mid(Len(queryMatch[0]))
+    end if
+    
+    ' Extract fragment
+    fragmentMatch = CreateObject("roRegex", "^#(.*)$", "").Match(url)
+    if fragmentMatch.Count() > 0 then
+        result.fragment = fragmentMatch[1]
+    end if
+    
+    return result
+end function
+
+' Check if a string looks like a valid URL
+function isValidUrl(url as String) as Boolean
+    if url = "" then return false
+    regex = CreateObject("roRegex", "^(https?)://[^\s/$.?#].[^\s]*$", "i")
+    return regex.IsMatch(url)
+end function
+
+' Infer a server URL from a partial input (add scheme and port if missing)
+function inferServerUrl(input as String) as String
+    input = input.Trim()
+    if input = "" then return ""
+    
+    ' If it already has a scheme, return as-is
+    if input.Left(7) = "http://" or input.Left(8) = "https://" then
+        return input
+    end if
+    
+    ' Try HTTPS on default port first, then HTTP
+    serverUrl = "https://" + input + ":8920"
+    
+    ' Return the HTTPS version (the connection test will determine if it works)
+    return serverUrl
+end function
+
+' Build a URL with query parameters
+function buildUrlWithParams(baseUrl as String, params = {} as Object) as String
+    if params.Count() = 0 then return baseUrl
+    
+    parts = []
+    for each key in params
+        value = params[key]
+        if value <> invalid then
+            parts.Push(key + "=" + value.ToStr())
+        end if
+    end for
+    
+    if parts.Count() > 0 then
+        separator = "?"
+        if baseUrl.Instr("?") > 0 then separator = "&"
+        return baseUrl + separator + parts.Join("&")
+    end if
+    
+    return baseUrl
+end function

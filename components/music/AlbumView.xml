@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="AlbumView" extends="JFScreen">
+  <interface>
+    <field id="album" type="node" alwaysNotify="true" />
+    <field id="tracks" type="array" value="" />
+    <field id="isFavorite" type="boolean" value="false" />
+  </interface>
+
+  <children>
+    <Poster
+      id="albumBackdrop"
+      translation="[0, 0]"
+      width="1920"
+      height="300"
+      loadDisplayMode="scaleToFit" />
+
+    <Rectangle
+      id="albumOverlay"
+      translation="[0, 0]"
+      width="1920"
+      height="300"
+      color="0x00000060" />
+
+    <Poster
+      id="albumCover"
+      translation="[60, 30]"
+      width="240"
+      height="240"
+      loadDisplayMode="scaleToFit" />
+
+    <Label
+      id="albumTitle"
+      translation="[340, 40]"
+      width="1000"
+      height="40"
+      font="font:LargeBoldSystemFont"
+      color="0xFFFFFFFF"
+      text=""
+      vertAlign="center" />
+
+    <Label
+      id="albumArtist"
+      translation="[340, 90]"
+      width="1000"
+      height="30"
+      font="font:MediumSystemFont"
+      color="0xB0B0B0FF"
+      text=""
+      vertAlign="center" />
+
+    <Label
+      id="albumYear"
+      translation="[340, 125]"
+      width="200"
+      height="25"
+      font="font:SmallSystemFont"
+      color="0x707070FF"
+      text=""
+      vertAlign="center" />
+
+    <Group id="albumActionButtons" translation="[340, 170]">
+      <JFButton id="btnAlbumPlay" translation="[0, 0]" buttonText="Play" width="160" />
+      <JFButton id="btnAlbumShuffle" translation="[180, 0]" buttonText="Shuffle" width="160" />
+      <JFButton id="btnAlbumFavorite" translation="[360, 0]" buttonText="Favorite" width="160" />
+    </Group>
+
+    <!-- Track list -->
+    <Label
+      id="albumTracksLabel"
+      translation="[60, 330]"
+      width="300"
+      height="30"
+      font="font:MediumBoldSystemFont"
+      color="0xFFFFFFFF"
+      text="Tracks" />
+
+    <LabelList
+      id="trackList"
+      translation="[60, 370]"
+      width="1800"
+      height="680"
+      itemSize="[1800, 50]"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      focusedColor="0x00A4DCFF"
+      showFocusFootprint="true" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/music/AlbumView.bs" />
+</component>

@@ -1,0 +1,75 @@
+' Wholphin Roku - View factory functions for creating and showing views
+
+function createVideoPlayerView() as Object
+    ' Create the video player view
+    player = CreateObject("roSGNode", "VideoPlayerView")
+    
+    ' Push onto the scene stack
+    m.global.sceneManager.callFunc("pushScene", player)
+    
+    ' Start playback
+    player.callFunc("startPlayback")
+    
+    return player
+end function
+
+function createAudioPlayerView() as Object
+    ' Create the audio player view
+    player = CreateObject("roSGNode", "AudioPlayerView")
+    
+    ' Push onto the scene stack
+    m.global.sceneManager.callFunc("pushScene", player)
+    
+    ' Start playback
+    player.callFunc("startPlayback")
+    
+    return player
+end function
+
+function jumpIntoAudioPlayerView() as Object
+    ' If the audio player view is already in the stack, jump to it
+    ' Otherwise create a new one
+    sceneManager = m.global.sceneManager
+    existingPlayer = invalid
+    
+    ' Check if an audio player is already in the stack
+    ' (simplified - in production would iterate the stack)
+    
+    return createAudioPlayerView()
+end function
+
+function createHomeView() as Object
+    return CreateHomeGroup()
+end function
+
+function createMusicLibraryView(libraryItem as Object) as Object
+    return CreateMusicLibraryView(libraryItem)
+end function
+
+function createVisualLibraryView(libraryItem as Object, mediaType as String) as Object
+    return CreateVisualLibraryScene(libraryItem, mediaType)
+end function
+
+function createOtherLibraryView(libraryItem as Object) as Object
+    return CreateOtherLibrary(libraryItem)
+end function
+
+function createMovieDetailView(movie as Object) as Object
+    return CreateMovieDetailsGroup(movie)
+end function
+
+function createSeriesDetailView(seriesId as String) as Object
+    return CreateSeriesDetailsGroup(seriesId)
+end function
+
+function createSearchView() as Object
+    return CreateSearchPage()
+end function
+
+function createPersonView(person as Object) as Object
+    return CreatePersonView(person)
+end function
+
+function createSettingsView() as Object
+    return CreateSettingsScreen()
+end function

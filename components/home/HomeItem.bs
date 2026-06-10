@@ -1,0 +1,34 @@
+' Wholphin Roku - Home item component
+
+sub Init()
+    m.poster = m.top.findNode("itemPoster")
+    m.checkmark = m.top.findNode("playedCheckmark")
+    m.label = m.top.findNode("itemLabel")
+    
+    m.top.observeField("itemContent", m.port)
+end sub
+
+' Update display when item content changes
+function onItemContentChange() as Void
+    content = m.top.itemContent
+    if content = invalid then return
+    
+    ' Set poster URL
+    url = content.HDPosterUrl
+    if url <> "" then
+        m.poster.uri = url
+    end if
+    
+    ' Set title
+    m.top.itemTitle = content.title
+    m.label.text = content.title
+    
+    ' Set item type
+    m.top.itemType = content.type
+    
+    ' Check watched status
+    userData = chainLookupReturn(content, ["json", "UserData"], {})
+    played = chainLookupReturn(userData, ["Played"], false)
+    m.top.watched = played
+    m.checkmark.visible = played
+end function

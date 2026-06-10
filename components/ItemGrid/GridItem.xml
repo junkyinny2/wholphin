@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="GridItem" extends="Group">
+  <interface>
+    <field id="itemContent" type="node" alwaysNotify="true" />
+    <field id="posterUrl" type="string" value="" />
+    <field id="itemTitle" type="string" value="" />
+    <field id="itemType" type="string" value="" />
+    <field id="watched" type="bool" value="false" />
+    <field id="favorite" type="bool" value="false" />
+  </interface>
+
+  <children>
+    <Poster
+      id="itemPoster"
+      translation="[0, 0]"
+      width="196"
+      height="294"
+      loadDisplayMode="scaleToFit" />
+
+    <Poster
+      id="playedCheckmark"
+      translation="[160, 10]"
+      width="30"
+      height="30"
+      uri="pkg:/images/icons/checked.png"
+      visible="false" />
+
+    <Poster
+      id="favoriteIcon"
+      translation="[10, 10]"
+      width="25"
+      height="25"
+      uri="pkg:/images/icons/favorites.png"
+      visible="false" />
+
+    <Label
+      id="itemLabel"
+      translation="[0, 298]"
+      width="196"
+      height="40"
+      font="font:SmallestSystemFont"
+      color="0xFFFFFFFF"
+      text=""
+      wrap="true"
+      vertAlign="top" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/ItemGrid/GridItem.bs" />
+</component>

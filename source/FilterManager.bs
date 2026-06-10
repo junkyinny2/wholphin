@@ -1,0 +1,83 @@
+' Wholphin Roku - Library filter management
+
+' Filter state for a library view
+function CreateFilterState() as Object
+    return {
+        sortBy:        "SortName"
+        sortOrder:     "Ascending"
+        filters:       {}
+        limit:         100
+        startIndex:    0
+        recursive:     true
+        searchTerm:    ""
+        genreIds:      ""
+        year:          0
+        isFavorite:    false
+        isPlayed:      false
+        isUnplayed:    false
+        isResumable:   false
+    }
+end function
+
+' Get query parameters from filter state
+function GetFilterParams(filterState as Object) as Object
+    params = {}
+    
+    ' Sort
+    if filterState.sortBy <> "" then params.SortBy = filterState.sortBy
+    if filterState.sortOrder <> "" then params.SortOrder = filterState.sortOrder
+    
+    ' Pagination
+    if filterState.limit > 0 then params.Limit = filterState.limit.ToStr()
+    if filterState.startIndex > 0 then params.StartIndex = filterState.startIndex.ToStr()
+    
+    ' Recursive
+    if filterState.recursive then params.Recursive = "true"
+    
+    ' Search
+    if filterState.searchTerm <> "" then params.searchTerm = filterState.searchTerm
+    
+    ' Genre filter
+    if filterState.genreIds <> "" then params.GenreIds = filterState.genreIds
+    
+    ' Year filter
+    if filterState.year > 0 then params.Years = filterState.year.ToStr()
+    
+    ' Status filters
+    filters = []
+    if filterState.isFavorite then filters.Push("IsFavorite")
+    if filterState.isPlayed then filters.Push("IsPlayed")
+    if filterState.isUnplayed then filters.Push("IsUnplayed")
+    if filterState.isResumable then filters.Push("IsResumable")
+    
+    if filters.Count() > 0 then params.Filters = filters.Join(",")
+    
+    ' Custom filters from the filters object
+    for each key in filterState.filters
+        value = filterState.filters[key]
+        if value <> invalid and value <> "" then
+            params[key] = value
+        end if
+    end for
+    
+    return params
+end function
+
+' Parse available filters from API response
+function ParseFilters(filterData as Object) as Object
+    result = {
+        genres:       []
+        years:        []
+        tags:         []
+        officialRatings: []
+    }
+    
+    if filterData = invalid then return result
+    
+    result.genres = chainLookupReturn(filterData, ["Genres"], [])
+    result.years = chainLookupReturn(filterData, ["Years"], [])
+    result.tags = chainLookupReturn(filterData, ["Tags"], [])
+    result.officialRatings = chainLookupReturn(filterData, ["OfficialRatings"], [])
+    
+    return result
+end function

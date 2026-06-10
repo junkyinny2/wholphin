@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="PosterRow" extends="Group">
+  <interface>
+    <field id="itemContent" type="node" alwaysNotify="true" />
+  </interface>
+
+  <children>
+    <!-- Poster image -->
+    <Poster
+      id="itemPoster"
+      translation="[0, 0]"
+      width="300"
+      height="390"
+      loadDisplayMode="scaleToFit" />
+
+    <!-- Continue watching progress bar -->
+    <Rectangle
+      id="progressBarBg"
+      translation="[0, 390]"
+      width="300"
+      height="4"
+      color="0x444444FF" />
+    <Rectangle
+      id="progressBarFill"
+      translation="[0, 390]"
+      width="0"
+      height="4"
+      color="0x00A4DCFF" />
+
+    <!-- Item title -->
+    <Label
+      id="itemLabel"
+      translation="[0, 398]"
+      width="300"
+      height="50"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      vertAlign="top"
+      wrap="true" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/PosterRow.brs" />
+</component>

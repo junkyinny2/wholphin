@@ -1,0 +1,134 @@
+' Wholphin Roku - Sidebar navigation component
+
+sub Init()
+    ? "[WholphinSidebar] Init() starting"
+    m.destinations = m.top.findNode("sidebarDestinations")
+    m.libraryList = m.top.findNode("sidebarLibraryList")
+    m.userImage = m.top.findNode("sidebarUserImage")
+    m.userName = m.top.findNode("sidebarUserName")
+    
+    ' Set up destinations
+    discoverEnabled = chainLookupReturn(m.global, "session.user.settings.discover.enabled", "false")
+    destinationItems = [
+        { title: translateText("Search"),       id: "search" }
+        { title: translateText("Home"),         id: "home" }
+        { title: translateText("Favorites"),    id: "favorites" }
+        { title: translateText("Settings"),     id: "settings" }
+    ]
+    if discoverEnabled = "true"
+        destinationItems.push({ title: translateText("Discover"), id: "discover" })
+    end if
+    destinationItems.push({ separator: true })
+    destinationItems.push({ title: translateText("Sign Out"), id: "signout" })
+    
+    content = CreateObject("roSGNode", "ContentNode")
+    for each item in destinationItems
+        if item.separator = true then
+            ' Skip separator in content (handled differently)
+        else
+            node = content.CreateChild("ContentNode")
+            node.title = item.title
+            node.id = item.id
+        end if
+    end for
+    
+    m.destinations.content = content
+    m.destinations.observeField("itemSelected", m.port)
+    m.destinations.observeField("focusedItem", m.port)
+    
+    ' Update user info from session
+    UpdateUserInfo()
+end sub
+
+' Update user info display
+function UpdateUserInfo() as Void
+    if m.global.session = invalid then return
+    if m.userName <> invalid then
+        m.userName.text = session.user.GetDisplayName()
+    end if
+    
+    if m.userImage <> invalid then
+        imgUrl = session.user.GetImageUrl()
+        if imgUrl <> "" then
+            m.userImage.uri = imgUrl
+        end if
+    end if
+end function
+
+' Handle destination selection
+function onDestinationSelected() as Void
+    focused = m.destinations.focusedItem
+    if focused = invalid then return
+    
+    destinationId = focused.id
+    if destinationId = invalid then return
+    
+    m.top.selectedDestination = destinationId
+    
+    ' Navigate based on destination
+    if destinationId = "search" then
+        CreateSearchPage()
+    else if destinationId = "home" then
+        ' Pop all scenes back to home
+        sceneManager = m.global.sceneManager
+        if sceneManager <> invalid then
+            sceneManager.callFunc("clearScenes")
+        end if
+        CreateHomeGroup()
+    else if destinationId = "favorites" then
+        ' Navigate to favorites
+    else if destinationId = "discover" then
+        CreateDiscoverPage()
+    else if destinationId = "settings" then
+        CreateSettingsScreen()
+    else if destinationId = "signout" then
+        ' Sign out and return to login
+        SignOut()
+        m.global.sceneManager.callFunc("clearScenes")
+        LoginFlow()
+        CreateHomeGroup()
+    end if
+    
+    ' Hide sidebar
+    m.top.visible = false
+end function
+
+' Load user libraries into the sidebar
+function loadLibraries(libraries as Object) as Void
+    if libraries = invalid then return
+    
+    content = CreateObject("roSGNode", "ContentNode")
+    
+    for each lib in libraries
+        node = content.CreateChild("ContentNode")
+        node.title = chainLookupReturn(lib, ["Name"], "")
+        node.id = chainLookupReturn(lib, ["Id"], "")
+    end for
+    
+    m.libraryList.content = content
+    m.libraryList.observeField("itemSelected", m.port)
+end function
+
+' Handle library selection
+function onLibrarySelected() as Void
+    focused = m.libraryList.focusedItem
+    if focused = invalid then return
+    
+    libraryId = focused.id
+    libraryName = focused.title
+    
+    ' Navigate to the library
+    libraryItem = {
+        id:   libraryId
+        title: libraryName
+        type: "CollectionFolder"
+        json: { Id: libraryId, Name: libraryName }
+    }
+    
+    ' Determine collection type
+    ' (simplified - in production, fetch the full library data)
+    NavigateToLibrary(libraryItem, "")
+    
+    ' Hide sidebar
+    m.top.visible = false
+end function

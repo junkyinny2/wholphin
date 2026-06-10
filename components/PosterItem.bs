@@ -1,0 +1,40 @@
+sub init()
+  m.posterImage = m.top.findNode("posterImage")
+  m.availBadge = m.top.findNode("availBadge")
+  m.titleLabel = m.top.findNode("titleLabel")
+end sub
+
+sub itemContentChanged()
+  content = m.top.itemContent
+  if content = invalid then return
+  m.top.posterUrl = content.hdPosterUrl
+  m.top.title = content.title
+  m.top.availabilityStatus = content.availabilityStatus
+end sub
+
+sub posterUrlChanged()
+  if m.top.posterUrl <> "" and m.top.posterUrl <> invalid
+    m.posterImage.uri = m.top.posterUrl
+  else
+    m.posterImage.uri = "pkg:/images/default_poster.png"
+  end if
+end sub
+
+sub titleChanged()
+  m.titleLabel.text = m.top.title
+end sub
+
+sub availabilityStatusChanged()
+  status = m.top.availabilityStatus
+  ' 4=PARTIALLY_AVAILABLE, 5=AVAILABLE
+  if status = 4 or status = 5
+    m.availBadge.visible = true
+    if status = 5
+      m.availBadge.color = "#00FF00"
+    else
+      m.availBadge.color = "#FFFF00"
+    end if
+  else
+    m.availBadge.visible = false
+  end if
+end sub

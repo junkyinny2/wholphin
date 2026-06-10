@@ -1,0 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="MusicLibraryView" extends="JFScreen">
+  <interface>
+    <field id="libraryData" type="node" alwaysNotify="true" />
+    <field id="items" type="array" value="" />
+    <field id="viewMode" type="string" value="artists" /> <!-- artists, albums, playlists -->
+  </interface>
+
+  <children>
+    <Rectangle
+      width="1920"
+      height="1080"
+      color="0x1A1A2EFF" />
+
+    <Label
+      id="musicLibTitle"
+      translation="[60, 30]"
+      width="500"
+      height="40"
+      font="font:LargeBoldSystemFont"
+      color="0xFFFFFFFF"
+      text=""
+      vertAlign="center" />
+
+    <Group id="musicFilterBar" translation="[60, 80]">
+      <JFButton id="btnArtists" translation="[0, 0]" buttonText="Artists" width="160" />
+      <JFButton id="btnAlbums" translation="[180, 0]" buttonText="Albums" width="160" />
+      <JFButton id="btnPlaylists" translation="[360, 0]" buttonText="Playlists" width="160" />
+      <JFButton id="btnMusicSearch" translation="[540, 0]" buttonText="Search" width="120" />
+    </Group>
+
+    <Label
+      id="musicLoadingLabel"
+      translation="[860, 490]"
+      width="200"
+      height="30"
+      font="font:MediumSystemFont"
+      color="0xB0B0B0FF"
+      text="Loading..."
+      horizAlign="center"
+      visible="false" />
+
+    <MarkupGrid
+      id="musicGrid"
+      translation="[60, 130]"
+      width="1800"
+      height="900"
+      itemComponentName="GridItemMedium"
+      itemSize="[290, 340]"
+      itemSpacing="[15, 20]"
+      numColumns="6"
+      numRows="3"
+      visible="false" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/Libraries/MusicLibraryView.bs" />
+</component>

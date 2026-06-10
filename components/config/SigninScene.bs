@@ -1,0 +1,67 @@
+' Wholphin Roku - Sign-in screen logic
+
+sub Init()
+    m.usernameInputText = m.top.findNode("usernameInputText")
+    m.passwordInputText = m.top.findNode("passwordInputText")
+    m.errorLabel = m.top.findNode("errorLabel")
+    m.btnSignIn = m.top.findNode("btnSignIn")
+    m.btnCancel = m.top.findNode("btnCancel")
+
+    m.top.observeField("username", m.port)
+    m.btnSignIn.observeField("buttonSelected", m.port)
+    m.btnCancel.observeField("buttonSelected", m.port)
+end sub
+
+function onUsernameChange() as Void
+    if m.usernameInputText <> invalid then
+        m.usernameInputText.text = m.top.username
+    end if
+end function
+
+function onButtonSelected() as Void
+    btn = m.top.lastEventNode
+    if btn = invalid then return
+
+    if btn.id = "btnSignIn" then
+        performSignIn()
+    else if btn.id = "btnCancel" then
+        m.global.sceneManager.callFunc("popScene")
+    end if
+end function
+
+function performSignIn() as Void
+    username = m.usernameInputText.text
+    password = m.passwordInputText.text
+
+    if username = "" then
+        showError(translateText("Please enter a username"))
+        return
+    end if
+
+    m.top.isAuthenticating = true
+    m.btnSignIn.buttonText = translateText("Signing in...")
+
+    result = AuthenticateUser(username, password)
+
+    m.top.isAuthenticating = false
+    m.btnSignIn.buttonText = translateText("Sign In")
+
+    if result then
+        m.global.sceneManager.callFunc("popScene")
+        if m.global.sceneManager.callFunc("getSceneCount") = 0 then
+            CreateHomeGroup()
+        end if
+    else
+        showError(translateText("Invalid username or password"))
+    end if
+end function
+
+function showError(message as String) as Void
+    m.errorLabel.text = message
+    m.errorLabel.visible = true
+end function
+
+function onBackPressed() as Boolean
+    m.global.sceneManager.callFunc("popScene")
+    return true
+end function

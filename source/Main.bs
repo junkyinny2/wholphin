@@ -1,0 +1,157 @@
+' Wholphin Roku - Main Entry Point
+' Channel startup, event loop, and global initialization
+
+' Load all source dependencies
+Library "pkg:/source/api/baserequest.bs"
+Library "pkg:/source/api/sdk.bs"
+Library "pkg:/source/api/userauth.bs"
+Library "pkg:/source/api/Items.bs"
+Library "pkg:/source/api/Image.bs"
+Library "pkg:/source/utils/misc.bs"
+Library "pkg:/source/utils/globals.bs"
+Library "pkg:/source/utils/config.bs"
+Library "pkg:/source/utils/session.bs"
+Library "pkg:/source/utils/deviceCapabilities.bs"
+Library "pkg:/source/utils/quickplay.bs"
+Library "pkg:/source/utils/parsedUrl.bs"
+Library "pkg:/source/utils/recentSearches.bs"
+Library "pkg:/source/utils/controlStyle.bs"
+Library "pkg:/source/utils/CompatibilityBypass.bs"
+Library "pkg:/source/ShowScenes.bs"
+Library "pkg:/source/MainActions.bs"
+Library "pkg:/source/MainEventHandlers.bs"
+Library "pkg:/source/FilterManager.bs"
+
+' Main entry point
+sub Main(args as Object)
+    ? "[Main] Starting Wholphin"
+    m.screen = CreateObject("roSGScreen")
+    m.port = CreateObject("roMessagePort")
+    m.screen.setMessagePort(m.port)
+    
+    m.scene = m.screen.CreateScene("BaseScene")
+    ? "[Main] BaseScene created"
+    
+    setConstants()
+    SaveAppToGlobal()
+    SaveDeviceToGlobal()
+    ? "[Main] Globals set up"
+    
+    m.screen.show()
+    ? "[Main] Screen shown"
+    
+    session.Init()
+    ? "[Main] Session initialized"
+    
+    gaa = getGlobalAA()
+    m.scene.sceneManager = CreateObject("roSGNode", "SceneManager")
+    m.scene.appendChild(m.scene.sceneManager)
+    gaa.sceneManager = m.scene.sceneManager
+    ? "[Main] SceneManager created"
+    
+    m.scene.queueManager = CreateObject("roSGNode", "QueueManager")
+    m.scene.appendChild(m.scene.queueManager)
+    gaa.queueManager = m.scene.queueManager
+    
+    m.scene.audioPlayer = CreateObject("roSGNode", "AudioPlayer")
+    m.scene.appendChild(m.scene.audioPlayer)
+    gaa.audioPlayer = m.scene.audioPlayer
+    
+    playstateTask = CreateObject("roSGNode", "PlaystateTask")
+    m.scene.appendChild(playstateTask)
+    gaa.playstateTask = playstateTask
+    ? "[Main] All service nodes created"
+    
+    m.scene.observeField("input", m.port)
+    
+    ? "[Main] Calling LoginFlow"
+    loginResult = LoginFlow()
+    ? "[Main] LoginFlow returned: "; loginResult
+    if loginResult then
+        CreateHomeGroup()
+    end if
+    
+    ? "[Main] Entering event loop"
+    
+    ' Main event loop
+    while true
+        msg = wait(0, m.port)
+        
+        if msg <> invalid then
+            if msg.isScreenClosed() then
+                ' Screen was closed - exit the app
+                exit while
+                
+            else if msg.isNodeEvent(msg) then
+                nodeId = msg.getNode()
+                field = msg.getField()
+                
+                ' Handle scene manager events
+                if nodeId = "sceneManager" then
+                    if field = "pushScene" then
+                        ' Scene was pushed
+                    else if field = "popScene" then
+                        ' Scene was popped
+                    end if
+                
+                ' Handle input events (deep linking)
+                else if nodeId = m.screen.id then
+                    if field = "input" then
+                        inputData = msg.getData()
+                        HandleDeepLink(inputData)
+                    end if
+                
+                ' Handle dialog callbacks
+                else if field = "buttonSelected" then
+                    HandleDialogCallback(nodeId, msg.getData())
+                
+                ' Handle playback state changes
+                else if field = "state" then
+                    HandlePlaybackStateChange(nodeId, msg.getData())
+                
+                ' Handle item selection
+                else if field = "itemSelected" then
+                    HandleItemSelection(nodeId, msg.getData())
+                
+                ' Handle row selection
+                else if field = "rowItemSelected" then
+                    HandleRowItemSelected(nodeId, msg.getData())
+                
+                ' Handle focus changes
+                else if field = "focusedItem" then
+                    HandleFocusedItem(nodeId, msg.getData())
+                
+                ' Handle image loading status
+                else if field = "loadStatus" then
+                    HandleImageLoadStatus(nodeId, msg.getData())
+                
+                ' Handle ContentNode changes
+                else if field = "content" then
+                    HandleContentUpdate(nodeId, msg.getData())
+                
+                ' Handle quick play requests
+                else if field = "quickPlayVideo" then
+                    data = msg.getData()
+                    if data <> invalid then
+                        quickplay.video(data)
+                    end if
+                
+                else if field = "quickPlayAudio" then
+                    data = msg.getData()
+                    if data <> invalid then
+                        quickplay.audio(data)
+                    end if
+                
+                end if
+            
+            else if msg.isRemoteKeyPressed() then
+                ' Handle remote control key presses
+                HandleRemoteKey(msg.GetIndex())
+                
+            end if
+        end if
+    end while
+    
+    ' Clean up
+    m.screen.close()
+end sub

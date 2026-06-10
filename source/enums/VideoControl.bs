@@ -1,0 +1,22 @@
+' Wholphin Roku - VideoControl enum
+
+namespace api
+
+    enum VideoControl
+        PLAY                 = "play"
+        PAUSE                = "pause"
+        STOP                 = "stop"
+        SEEK                 = "seek"
+        FORWARD              = "forward"
+        REVERSE              = "reverse"
+        NEXT                 = "next"
+        PREVIOUS             = "previous"
+        TOGGLE_PLAY_PAUSE    = "togglePlayPause"
+        SUBTITLE_MENU        = "subtitleMenu"
+        AUDIO_MENU           = "audioMenu"
+        INFO                 = "info"
+        CHAPTERS             = "chapters"
+        SETTINGS             = "settings"
+    end enum
+
+end namespace

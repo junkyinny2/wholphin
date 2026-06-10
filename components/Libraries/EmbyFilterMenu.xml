@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="EmbyFilterMenu" extends="Group">
+  <interface>
+    <field id="filterType" type="string" value="" /> <!-- genre, year, rating -->
+    <field id="options" type="array" value="" alwaysNotify="true" />
+    <field id="selectedOptions" type="array" value="" />
+    <field id="filterApplied" type="node" alwaysNotify="true" />
+    <field id="title" type="string" value="Filter" />
+  </interface>
+
+  <children>
+    <Rectangle
+      id="filterBg"
+      width="350"
+      height="600"
+      color="0x16213EFF" />
+
+    <Label
+      id="filterTitle"
+      translation="[20, 20]"
+      width="310"
+      height="30"
+      font="font:MediumBoldSystemFont"
+      color="0xFFFFFFFF"
+      text="Filter"
+      vertAlign="center" />
+
+    <LabelList
+      id="filterOptions"
+      translation="[20, 70]"
+      width="310"
+      height="500"
+      itemSize="[310, 45]"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      focusedColor="0x00A4DCFF"
+      showFocusFootprint="false" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/Libraries/EmbyFilterMenu.bs" />
+</component>

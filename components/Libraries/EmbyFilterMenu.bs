@@ -1,0 +1,80 @@
+' Wholphin Roku - Emby-style filter menu for library views
+
+sub Init()
+    m.filterTitle = m.top.findNode("filterTitle")
+    m.filterOptions = m.top.findNode("filterOptions")
+
+    m.top.observeField("options", m.port)
+    m.top.observeField("title", m.port)
+    m.filterOptions.observeField("itemSelected", m.port)
+end sub
+
+function onOptionsChange() as Void
+    options = m.top.options
+    if options = invalid or options.Count() = 0 then return
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for each opt in options
+        child = content.CreateChild("ContentNode")
+        child.title = chainLookupReturn(opt, ["label"], "")
+        child.value = chainLookupReturn(opt, ["value"], "")
+        child.selected = chainLookupReturn(opt, ["selected"], false)
+
+        if child.selected then
+            child.title = "✓ " + child.title
+        end if
+    end for
+
+    m.filterOptions.content = content
+    m.filterOptions.setFocus(true)
+end function
+
+function onTitleChange() as Void
+    if m.filterTitle <> invalid then
+        m.filterTitle.text = m.top.title
+    end if
+end function
+
+function onOptionSelected() as Void
+    focused = m.filterOptions.focusedItem
+    if focused = invalid then return
+
+    focused.selected = not focused.selected
+
+    if focused.selected then
+        if Left(focused.title, 1) <> "✓" then
+            focused.title = "✓ " + focused.title
+        end if
+    else
+        if Left(focused.title, 1) = "✓" then
+            focused.title = Right(focused.title, Len(focused.title) - 2)
+        end if
+    end if
+
+    selected = []
+    content = m.filterOptions.content
+    if content <> invalid then
+        for i = 0 to content.GetChildCount() - 1
+            child = content.GetChild(i)
+            if child.selected then
+                selected.Push(child.value)
+            end if
+        end for
+    end if
+
+    m.top.selectedOptions = selected
+end function
+
+function show() as Void
+    m.top.visible = true
+    m.filterOptions.setFocus(true)
+end function
+
+function hide() as Void
+    m.top.visible = false
+end function
+
+function applyFilter() as Void
+    m.top.filterApplied = m.top.selectedOptions
+    hide()
+end function

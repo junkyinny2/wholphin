@@ -1,0 +1,74 @@
+' Wholphin Roku - Control and button styling utilities
+
+' Get the color for a button based on its type
+function getButtonColor(buttonType as String) as String
+    colors = m.global.colors
+    
+    buttonColors = {
+        primary:   colors.primary
+        accent:    colors.accent
+        danger:    colors.error
+        success:   colors.success
+        warning:   colors.warning
+        info:      colors.info
+        muted:     colors.textMuted
+        dark:      colors.cardBg
+        overlay:   colors.overlayBg
+    }
+    
+    color = buttonColors.Lookup(buttonType)
+    if color = invalid then return colors.primary
+    return color
+end function
+
+' Get focus color for a button type
+function getFocusColor(buttonType as String) as String
+    colors = m.global.colors
+    
+    focusColors = {
+        primary:   colors.primaryDark
+        accent:    colors.accent
+        danger:    colors.error
+        success:   colors.success
+        warning:   colors.warning
+        info:      colors.info
+        muted:     colors.primary
+        dark:      colors.primary
+        overlay:   colors.primary
+    }
+    
+    color = focusColors.Lookup(buttonType)
+    if color = invalid then return colors.primaryDark
+    return color
+end function
+
+' Get text color based on background
+function getTextColorForBackground(bgColor as String) as String
+    colors = m.global.colors
+    
+    ' Simple heuristic: if the background color starts with "00" or is light, use dark text
+    if bgColor.Left(2) = "00" or bgColor = colors.white then
+        return colors.black
+    end if
+    
+    return colors.textPrimary
+end function
+
+' Create a button style associative array
+function createButtonStyle(buttonType = "primary" as String, width = 200 as Integer, height = 50 as Integer) as Object
+    colors = m.global.colors
+    
+    return {
+        backgroundColor:  getButtonColor(buttonType)
+        focusColor:       getFocusColor(buttonType)
+        textColor:        colors.textPrimary
+        focusTextColor:   colors.white
+        width:            width
+        height:           height
+        fontSize:         22
+        focusFontSize:    24
+        borderRadius:     4
+        paddingLeft:      16
+        paddingRight:     16
+    }
+end function

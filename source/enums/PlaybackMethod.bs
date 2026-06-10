@@ -1,0 +1,14 @@
+' Wholphin Roku - PlaybackMethod enum
+
+namespace api
+
+    enum PlaybackMethod
+        DIRECTPLAY           = 0
+        DIRECTSTREAM         = 1
+        TRANSCODE            = 2
+        REMOTE               = 3
+        HLS                  = 4
+        NONE                 = -1
+    end enum
+
+end namespace

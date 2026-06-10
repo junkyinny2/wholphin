@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="UserRow" extends="Group">
+  <interface>
+    <field id="users" type="array" value="" alwaysNotify="true" />
+    <field id="userSelected" type="node" alwaysNotify="true" />
+    <field id="selectedUser" type="node" />
+  </interface>
+
+  <children>
+    <MarkupGrid
+      id="userGrid"
+      translation="[0, 0]"
+      width="1920"
+      height="300"
+      itemComponentName="UserItem"
+      itemSize="[200, 280]"
+      itemSpacing="[20, 0]"
+      numRows="1" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/login/UserRow.bs" />
+</component>

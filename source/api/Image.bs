@@ -1,0 +1,148 @@
+' Wholphin Roku - Image URL building and management
+
+' Get all images for an item
+function ItemImages(id as String, params = {} as Object) as Object
+    result = api.items.GetImages(id)
+    if result = invalid then return []
+    
+    images = []
+    for each img in result
+        imageNode = CreateObject("roSGNode", "ImageData")
+        imageNode.imagetype = chainLookupReturn(img, ["ImageType"], "")
+        imageNode.url = chainLookupReturn(img, ["ImageUrl"], "")
+        imageNode.width = chainLookupReturn(img, ["Width"], 0)
+        imageNode.height = chainLookupReturn(img, ["Height"], 0)
+        images.Push(imageNode)
+    end for
+    
+    return images
+end function
+
+' Find the best poster image for an item (Primary > Logo > Thumb)
+function PosterImage(id as String, params = {} as Object) as Object
+    if params = invalid then params = {}
+    
+    ' Set default quality
+    if params.quality = invalid then params.quality = "90"
+    if params.maxHeight = invalid then params.maxHeight = "384"
+    if params.maxWidth = invalid then params.maxWidth = "196"
+    
+    ' Try Primary first
+    url = ImageURL(id, "Primary", params)
+    if url <> "" then
+        node = CreateObject("roSGNode", "ImageData")
+        node.url = url
+        node.imagetype = "Primary"
+        return node
+    end if
+    
+    ' Fallback to Logo
+    url = ImageURL(id, "Logo", params)
+    if url <> "" then
+        node = CreateObject("roSGNode", "ImageData")
+        node.url = url
+        node.imagetype = "Logo"
+        return node
+    end if
+    
+    ' Fallback to Thumb
+    url = ImageURL(id, "Thumb", params)
+    if url <> "" then
+        node = CreateObject("roSGNode", "ImageData")
+        node.url = url
+        node.imagetype = "Thumb"
+        return node
+    end if
+    
+    return invalid
+end function
+
+' Build a direct image URL for an item
+function ImageURL(id as String, version as String, params = {} as Object) as String
+    if id = "" or version = "" then return ""
+    
+    queryParams = {}
+    
+    ' Copy parameters
+    if params.maxHeight <> invalid then queryParams.maxHeight = params.maxHeight
+    if params.maxWidth <> invalid then queryParams.maxWidth = params.maxWidth
+    if params.quality <> invalid then queryParams.quality = params.quality
+    if params.fillWidth <> invalid then queryParams.fillWidth = params.fillWidth
+    if params.fillHeight <> invalid then queryParams.fillHeight = params.fillHeight
+    
+    ' Default quality
+    if queryParams.quality = invalid then queryParams.quality = "90"
+    
+    return buildURL("/Items/" + id + "/Images/" + version, queryParams)
+end function
+
+' Build a user profile image URL
+function UserImageURL(id as String, params = {} as Object) as String
+    if id = "" then return ""
+    
+    if params.quality = invalid then params.quality = "90"
+    if params.maxHeight = invalid then params.maxHeight = "96"
+    if params.maxWidth = invalid then params.maxWidth = "96"
+    
+    return buildURL("/Users/" + id + "/Images/Primary", params)
+end function
+
+' Build backdrop image URL
+function BackdropImageURL(id as String, index = 0 as Integer) as String
+    params = {
+        maxHeight: 720
+        maxWidth:  1280
+        quality:   90
+    }
+    imgUrl = ImageURL(id, "Backdrop", params)
+    if imgUrl <> "" then return imgUrl
+    
+    ' Try alternative backdrop
+    params.index = index
+    return ImageURL(id, "Backdrop", params)
+end function
+
+' Build logo image URL
+function LogoImageURL(id as String) as String
+    return ImageURL(id, "Logo", {
+        maxHeight: 200
+        maxWidth:  600
+        quality:   90
+    })
+end function
+
+' Build thumbnail image URL
+function ThumbImageURL(id as String) as String
+    return ImageURL(id, "Thumb", {
+        maxHeight: 360
+        maxWidth:  640
+        quality:   90
+    })
+end function
+
+' Create an image node with a loaded URI
+function createImageNode(url as String, width = 0 as Integer, height = 0 as Integer) as Object
+    if url = "" then return invalid
+    
+    node = CreateObject("roSGNode", "Poster")
+    node.uri = url
+    if width > 0 then node.width = width
+    if height > 0 then node.height = height
+    node.loadDisplayMode = "scaleToFit"
+    
+    return node
+end function
+
+' Preload an image by creating a temporary poster node
+function preloadImage(url as String) as Void
+    if url = "" then return
+    
+    ' Create a temporary poster to trigger loading
+    loader = CreateObject("roSGNode", "Poster")
+    loader.uri = url
+    loader.visible = false
+    ' Add to scene briefly to trigger load
+    m.scene.appendChild(loader)
+    ' We'll remove it later when the image is loaded
+    loader.observeField("loadStatus", m.port)
+end function

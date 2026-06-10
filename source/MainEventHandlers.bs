@@ -1,0 +1,257 @@
+' Wholphin Roku - Event handler functions for the main event loop
+
+' Handle deep link input events (roInput)
+function HandleDeepLink(inputData as Object) as Void
+    if inputData = invalid then return
+    
+    ' Roku deep linking provides mediaType, contentId, etc.
+    mediaType = chainLookupReturn(inputData, ["mediaType"], "")
+    contentId = chainLookupReturn(inputData, ["contentId"], "")
+    
+    if contentId = "" then return
+    
+    if mediaType = "movie" or mediaType = "episode" then
+        ' Load the item and start playback
+        itemData = api.items.GetByID(contentId)
+        if itemData <> invalid then
+            itemNode = CreateObject("roSGNode", "VideoData")
+            itemNode.id = contentId
+            itemNode.json = itemData
+            itemNode.title = chainLookupReturn(itemData, ["Name"], "")
+            quickplay.video(itemNode)
+        end if
+    else if mediaType = "series" then
+        CreateSeriesDetailsGroup(contentId)
+    else if mediaType = "music" then
+        itemData = api.items.GetByID(contentId)
+        if itemData <> invalid then
+            itemNode = CreateObject("roSGNode", "MusicSongData")
+            itemNode.id = contentId
+            itemNode.json = itemData
+            itemNode.title = chainLookupReturn(itemData, ["Name"], "")
+            quickplay.audio(itemNode)
+        end if
+    end if
+end function
+
+' Handle dialog button selection
+function HandleDialogCallback(nodeId as String, selectedButton as Integer) as Void
+    if nodeId = "" then return
+    
+    ' Dispatch based on dialog type
+    if nodeId = "WhatsNewDialog" then
+        
+    else if nodeId = "QuickConnectDialog" then
+        HandleQuickConnectResult(selectedButton)
+    else if nodeId = "ResumeDialog" then
+        HandleResumeDialogResult(selectedButton)
+    else if nodeId = "LibrarySettingDialog" then
+        HandleLibrarySettingsResult(selectedButton)
+    end if
+end function
+
+' Handle Playback State Changes
+function HandlePlaybackStateChange(nodeId as String, state as String) as Void
+    if nodeId = "videoPlayer" then
+        if state = "playing" then
+            ' Start progress reporting
+            progressTimer = m.global.playstateTask
+            if progressTimer <> invalid then
+                progressTimer.control = "start"
+            end if
+        else if state = "paused" then
+            ' Pause progress reporting (or keep reporting isPaused=true)
+        else if state = "stopped" or state = "finished" then
+            ' Stop progress reporting
+            progressTimer = m.global.playstateTask
+            if progressTimer <> invalid then
+                progressTimer.control = "stop"
+            end if
+        else if state = "error" then
+            ' Handle playback error
+            HandlePlaybackError()
+        end if
+    end if
+end function
+
+' Handle item selection from grids and lists
+function HandleItemSelection(nodeId as String, selectedItem as Object) as Void
+    if selectedItem = invalid then return
+    
+    itemType = chainLookupReturn(selectedItem, ["type"], "")
+    itemId = chainLookupReturn(selectedItem, ["id"], "")
+    
+    if itemId = "" then return
+    
+    if itemType = "Movie" then
+        CreateMovieDetailsGroup(selectedItem)
+    else if itemType = "Series" then
+        CreateSeriesDetailsGroup(itemId)
+    else if itemType = "Season" then
+        seriesId = chainLookupReturn(selectedItem, ["seriesId"], "")
+        if seriesId <> "" then
+            CreateSeasonDetailsGroup({ id: seriesId }, selectedItem)
+        end if
+    else if itemType = "Episode" then
+        ' Play the episode
+        quickplay.video(selectedItem)
+    else if itemType = "MusicArtist" then
+        CreateArtistView(selectedItem)
+    else if itemType = "MusicAlbum" then
+        CreateAlbumView(selectedItem)
+    else if itemType = "Playlist" then
+        CreatePlaylistView(selectedItem)
+    else if itemType = "BoxSet" then
+        CreatePlaylistView(selectedItem)
+    else if itemType = "Person" then
+        CreatePersonView(selectedItem)
+    else if itemType = "Folder" then
+        CreateOtherLibrary(selectedItem)
+    else if itemType = "CollectionFolder" then
+        ' Determine library type and create appropriate view
+        collectionType = chainLookupReturn(selectedItem, ["json", "CollectionType"], "")
+        NavigateToLibrary(selectedItem, collectionType)
+    else if itemType = "UserView" then
+        collectionType = chainLookupReturn(selectedItem, ["json", "CollectionType"], "")
+        NavigateToLibrary(selectedItem, collectionType)
+    end if
+end function
+
+' Navigate to the appropriate library view based on collection type
+function NavigateToLibrary(libraryItem as Object, collectionType as String) as Void
+    if collectionType = "movies" then
+        CreateVisualLibraryScene(libraryItem, "Movies")
+    else if collectionType = "tvshows" then
+        CreateVisualLibraryScene(libraryItem, "Series")
+    else if collectionType = "music" then
+        CreateMusicLibraryView(libraryItem)
+    else if collectionType = "musicvideos" then
+        CreateVisualLibraryScene(libraryItem, "MusicVideo")
+    else if collectionType = "trailers" then
+        CreateVisualLibraryScene(libraryItem, "Trailer")
+    else if collectionType = "homevideos" or collectionType = "photos" then
+        CreateOtherLibrary(libraryItem)
+    else if collectionType = "books" then
+        CreateBookLibraryView(libraryItem)
+    else if collectionType = "audiobooks" then
+        CreateBookLibraryView(libraryItem)
+    else if collectionType = "boxsets" then
+        CreateVisualLibraryScene(libraryItem, "BoxSet")
+    else if collectionType = "playlists" then
+        CreateMusicLibraryView(libraryItem)
+    else if collectionType = "livetv" then
+        CreateLiveTVLibraryView(libraryItem)
+    else if collectionType = "channels" then
+        CreateLiveTVLibraryView(libraryItem)
+    else
+        ' Default to other library view
+        CreateOtherLibrary(libraryItem)
+    end if
+end function
+
+' Handle row item selection (home screen rows)
+function HandleRowItemSelected(nodeId as String, data as Object) as Void
+    if data = invalid then return
+    
+    rowIndex = chainLookupReturn(data, ["row"], 0)
+    colIndex = chainLookupReturn(data, ["col"], 0)
+    item = chainLookupReturn(data, ["item"], invalid)
+    
+    if item <> invalid then
+        HandleItemSelection(nodeId, item)
+    end if
+end function
+
+' Handle focused item changes (for backdrop updates on home screen)
+function HandleFocusedItem(nodeId as String, focusedItem as Object) as Void
+    ' Home screen uses this to update the backdrop
+    if focusedItem = invalid then return
+end function
+
+' Handle image load status
+function HandleImageLoadStatus(nodeId as String, status as String) as Void
+    if status = "ready" then
+        ' Image loaded successfully
+    else if status = "failed" then
+        ' Image failed to load
+    end if
+end function
+
+' Handle content node updates
+function HandleContentUpdate(nodeId as String, content as Object) as Void
+    ' Used by tasks that load data
+end function
+
+' Handle remote key presses
+function HandleRemoteKey(keyIndex as Integer) as Void
+    ' Map key codes to actions
+    ' Roku remote key codes:
+    ' 0-9: Number keys
+    ' 10: Info/Star (*)
+    ' 11: Back
+    ' 12: OK/Select
+    ' 13: Left
+    ' 14: Right
+    ' 15: Up
+    ' 16: Down
+    ' 17: Play
+    ' 18: Pause
+    ' 19: Fast Forward
+    ' 20: Rewind
+    ' 21: Replay
+    ' 22: Instant Replay
+    
+    if keyIndex = 10 then ' Info/Star button
+        ' Toggle info overlay
+    else if keyIndex = 17 then ' Play
+        ' Toggle play/pause on video player
+    else if keyIndex = 18 then ' Pause
+        ' Toggle play/pause
+    end if
+end function
+
+' Handle playback error recovery
+function HandlePlaybackError() as Void
+    print "[Wholphin] Playback error detected"
+    
+    ' Try to recover by retrying with transcoding
+    queueManager = m.global.queueManager
+    if queueManager <> invalid then
+        currentItem = queueManager.callFunc("getCurrentItem")
+        if currentItem <> invalid then
+            ' Force transcode and retry
+            queueManager.callFunc("setForceTranscode", true)
+            queueManager.callFunc("playCurrentItem")
+        end if
+    end if
+end function
+
+' Handle Quick Connect result
+function HandleQuickConnectResult(buttonIndex as Integer) as Void
+    if buttonIndex = 0 then
+        ' User wants to try quick connect again
+        quickConnectData = initQuickConnect()
+        if quickConnectData <> invalid then
+            code = chainLookupReturn(quickConnectData, ["Code"], "")
+            if code <> "" then
+                show_dialog(translateText("Quick Connect"), translateText("Enter code: ") + code + translateText(" on your Jellyfin server"))
+            end if
+        end if
+    end if
+end function
+
+' Handle resume dialog result
+function HandleResumeDialogResult(buttonIndex as Integer) as Void
+    if buttonIndex = 0 then
+        ' Play from beginning
+    else if buttonIndex = 1 then
+        ' Resume
+    else if buttonIndex = 2 then
+        ' Mark played
+    end if
+end function
+
+' Handle library settings result
+function HandleLibrarySettingsResult(buttonIndex as Integer) as Void
+    ' Apply filters/sort
+end function

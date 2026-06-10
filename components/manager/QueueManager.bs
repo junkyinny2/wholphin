@@ -1,0 +1,181 @@
+' Wholphin Roku - Playback queue manager
+
+sub Init()
+    m.queueArray = []
+    m.top.queue = []
+    m.top.currentIndex = -1
+    m.top.currentItem = invalid
+    m.top.queueLength = 0
+    m.top.shuffleMode = false
+    m.top.repeatMode = "None"
+    m.top.forceTranscode = false
+    m.top.preferredSubtitleIndex = -1
+    m.top.preferredAudioIndex = -1
+    m.top.startTimeTicks = 0
+    m.top.mediaSourceId = ""
+    m.top.playSessionId = ""
+end sub
+
+' Push an item to the end of the queue
+function push(item as Object) as Void
+    if item = invalid then return
+    
+    m.queueArray.Push(item)
+    m.top.queue = m.queueArray
+    m.top.queueLength = m.queueArray.Count()
+    
+    ' If this is the first item, set it as current
+    if m.top.currentIndex < 0 then
+        m.top.currentIndex = 0
+        m.top.currentItem = item
+    end if
+end function
+
+' Pop the last item from the queue
+function pop() as Object
+    if m.queueArray.Count() = 0 then return invalid
+    
+    item = m.queueArray.Pop()
+    m.top.queue = m.queueArray
+    m.top.queueLength = m.queueArray.Count()
+    
+    return item
+end function
+
+' Set the entire queue
+function set(items as Object) as Void
+    m.queueArray = []
+    for each item in items
+        m.queueArray.Push(item)
+    end for
+    
+    m.top.queue = m.queueArray
+    m.top.queueLength = m.queueArray.Count()
+    
+    if m.queueArray.Count() > 0 then
+        m.top.currentIndex = 0
+        m.top.currentItem = m.queueArray[0]
+    end if
+end function
+
+' Clear the entire queue
+function clear() as Void
+    m.queueArray = []
+    m.top.queue = []
+    m.top.currentIndex = -1
+    m.top.currentItem = invalid
+    m.top.queueLength = 0
+    m.top.playSessionId = ""
+end function
+
+' Set the current position in the queue
+function setPosition(index as Integer) as Void
+    if index >= 0 and index < m.queueArray.Count() then
+        m.top.currentIndex = index
+        m.top.currentItem = m.queueArray[index]
+    end if
+end function
+
+' Move to the next item in the queue
+function moveForward() as Object
+    if m.queueArray.Count() = 0 then return invalid
+    
+    nextIndex = m.top.currentIndex + 1
+    
+    if nextIndex >= m.queueArray.Count() then
+        if m.top.repeatMode = "All" then
+            nextIndex = 0
+        else
+            return invalid ' End of queue
+        end if
+    end if
+    
+    m.top.currentIndex = nextIndex
+    m.top.currentItem = m.queueArray[nextIndex]
+    return m.top.currentItem
+end function
+
+' Move to the previous item in the queue
+function moveBack() as Object
+    if m.queueArray.Count() = 0 then return invalid
+    
+    prevIndex = m.top.currentIndex - 1
+    
+    if prevIndex < 0 then
+        if m.top.repeatMode = "All" then
+            prevIndex = m.queueArray.Count() - 1
+        else
+            prevIndex = 0
+        end if
+    end if
+    
+    m.top.currentIndex = prevIndex
+    m.top.currentItem = m.queueArray[prevIndex]
+    return m.top.currentItem
+end function
+
+' Get the current item
+function getCurrentItem() as Object
+    return m.top.currentItem
+end function
+
+' Set playback options (media source, audio/subtitle tracks, start time)
+function setPlaybackOptions(options as Object) as Void
+    if options = invalid then return
+    
+    if options.mediaSourceId <> invalid then
+        m.top.mediaSourceId = options.mediaSourceId
+    end if
+    
+    if options.audioStreamIndex <> invalid and options.audioStreamIndex >= 0 then
+        m.top.preferredAudioIndex = options.audioStreamIndex
+    end if
+    
+    if options.subtitleStreamIndex <> invalid and options.subtitleStreamIndex >= 0 then
+        m.top.preferredSubtitleIndex = options.subtitleStreamIndex
+    end if
+    
+    if options.startTimeTicks <> invalid then
+        m.top.startTimeTicks = options.startTimeTicks
+    end if
+    
+    if options.forceTranscode <> invalid then
+        m.top.forceTranscode = options.forceTranscode
+    end if
+end function
+
+' Set force transcode flag
+function setForceTranscode(force as Boolean) as Void
+    m.top.forceTranscode = force
+end function
+
+' Set the play session ID
+function setPlaySessionId(sessionId as String) as Void
+    m.top.playSessionId = sessionId
+end function
+
+' Toggle shuffle mode
+function toggleShuffle() as Boolean
+    m.top.shuffleMode = not m.top.shuffleMode
+    return m.top.shuffleMode
+end function
+
+' Toggle repeat mode (None -> All -> One -> None)
+function toggleRepeat() as String
+    if m.top.repeatMode = "None" then
+        m.top.repeatMode = "All"
+    else if m.top.repeatMode = "All" then
+        m.top.repeatMode = "One"
+    else
+        m.top.repeatMode = "None"
+    end if
+    return m.top.repeatMode
+end function
+
+' Set the starting item index (for starting at a specific position in the queue)
+function setTopStartingPoint(index as Integer) as Void
+    if index >= 0 and index < m.queueArray.Count() then
+        m.top.currentIndex = index
+        m.top.currentItem = m.queueArray[index]
+    end if
+end function

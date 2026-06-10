@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="JFButton" extends="Group">
+  <interface>
+    <field id="buttonText" type="string" value="" />
+    <field id="width" type="int" value="200" />
+  </interface>
+  <children>
+    <Rectangle
+      id="buttonBg"
+      width="200"
+      height="50"
+      color="0x00A4DCFF" />
+    <Label
+      id="buttonLabel"
+      translation="[0, 0]"
+      width="200"
+      height="50"
+      font="font:MediumSystemFont"
+      color="0xFFFFFFFF"
+      text=""
+      horizAlign="center"
+      vertAlign="center" />
+  </children>
+  <script type="text/brightscript" uri="pkg:/components/JFButton.brs" />
+</component>

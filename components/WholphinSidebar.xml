@@ -1,0 +1,60 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="WholphinSidebar" extends="Group">
+  <interface>
+    <field id="sidebarVisible" type="boolean" value="false" />
+    <field id="selectedDestination" type="string" value="" alwaysNotify="true" />
+    <field id="libraryList" type="array" value="" />
+    <field id="userName" type="string" value="" />
+    <field id="userImage" type="string" value="" />
+  </interface>
+  
+  <children>
+    <!-- Sidebar background -->
+    <Rectangle
+      id="sidebarBg"
+      width="350"
+      height="1080"
+      color="0x16213EFF" />
+    
+    <!-- User section -->
+    <Group id="userSection" translation="[20, 120]">
+      <Poster
+        id="sidebarUserImage"
+        width="60"
+        height="60"
+        loadDisplayMode="scaleToFit"
+        uri="" />
+      <Label
+        id="sidebarUserName"
+        translation="[80, 15]"
+        width="250"
+        height="30"
+        font="font:MediumBoldSystemFont"
+        color="0xFFFFFFFF"
+        text=""
+        vertAlign="center" />
+    </Group>
+    
+    <!-- Navigation destinations -->
+    <LabelList
+      id="sidebarDestinations"
+      translation="[20, 220]"
+      itemSize="[310, 50]"
+      font="font:MediumSystemFont"
+      color="0xB0B0B0FF"
+      focusedColor="0x00A4DCFF"
+      focusBitmapBlendColor="0x00A4DCFF" />
+    
+    <!-- Library list (user's media libraries) -->
+    <LabelList
+      id="sidebarLibraryList"
+      translation="[20, 540]"
+      itemSize="[310, 45]"
+      font="font:SmallSystemFont"
+      color="0x707070FF"
+      focusedColor="0x00A4DCFF"
+      focusBitmapBlendColor="0x00A4DCFF" />
+  </children>
+  
+  <script type="text/brightscript" uri="pkg:/components/WholphinSidebar.bs" />
+</component>

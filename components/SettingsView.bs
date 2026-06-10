@@ -1,0 +1,141 @@
+
+sub init()
+  m.pageTitle = m.top.findNode("pageTitle")
+  m.settingsList = m.top.findNode("settingsList")
+  m.detailPanel = m.top.findNode("detailPanel")
+  m.settingTitle = m.top.findNode("settingTitle")
+  m.settingDescription = m.top.findNode("settingDescription")
+  m.valueList = m.top.findNode("valueList")
+  m.currentSettings = invalid
+  m.selectedKey = ""
+  m.settingsList.observeField("itemSelected", "onSettingSelected")
+  m.settingsList.observeField("focusItem", "onSettingFocused")
+  m.valueList.observeField("itemSelected", "onValueSelected")
+  m.top.overhangTitle = translateText("Settings")
+end sub
+
+sub loadSettings()
+  jsonStr = ReadAsciiFile("pkg:/settings/settings.json")
+  if jsonStr = invalid then return
+  parsed = ParseJson(jsonStr)
+  if parsed = invalid or parsed.children = invalid then return
+  m.currentSettings = parsed
+  listContent = CreateObject("roSGNode", "ContentNode")
+  for each setting in parsed.children
+    node = listContent.CreateChild("ContentNode")
+    node.title = setting.title
+    node.id = setting.settingName
+    node.settingType = setting.settingType
+    if setting.description <> invalid then node.description = setting.description
+    if setting.enumValues <> invalid then node.enumValues = setting.enumValues
+    node.currentValue = getSettingValue(setting.settingName, setting.default)
+  end for
+  m.settingsList.content = listContent
+end sub
+
+function getSettingValue(key as String, defaultValue as String) as String
+  val = session.user.GetSetting(key, defaultValue)
+  if val = invalid or val = "" then return defaultValue
+  return val
+end function
+
+sub onSettingSelected()
+  selected = m.settingsList.itemSelected
+  if selected = invalid then return
+  showSettingDetail(selected)
+end sub
+
+sub onSettingFocused()
+  focused = m.settingsList.focusedItem
+  if focused = invalid then return
+  if focused.id <> m.selectedKey
+    m.detailPanel.visible = false
+  end if
+end sub
+
+sub showSettingDetail(settingNode as Object)
+  m.detailPanel.visible = true
+  m.selectedKey = settingNode.id
+  m.settingTitle.text = settingNode.title
+  if settingNode.description <> invalid
+    m.settingDescription.text = settingNode.description
+  else
+    m.settingDescription.text = ""
+  end if
+  valueContent = CreateObject("roSGNode", "ContentNode")
+  if settingNode.settingType = "enum" and settingNode.enumValues <> invalid
+    for each val in settingNode.enumValues
+      child = valueContent.CreateChild("ContentNode")
+      child.title = val
+      child.id = val
+      if val = settingNode.currentValue then child.title = val + " ✓"
+    end for
+  else if settingNode.settingType = "bool"
+    yesNode = valueContent.CreateChild("ContentNode")
+    yesNode.title = translateText("Yes")
+    yesNode.id = "true"
+    if settingNode.currentValue = "true" then yesNode.title = translateText("Yes") + " ✓"
+    noNode = valueContent.CreateChild("ContentNode")
+    noNode.title = translateText("No")
+    noNode.id = "false"
+    if settingNode.currentValue = "false" then noNode.title = translateText("No") + " ✓"
+  else
+    child = valueContent.CreateChild("ContentNode")
+    child.title = settingNode.currentValue
+    child.id = settingNode.currentValue
+  end if
+  m.valueList.content = valueContent
+  m.valueList.setFocus(true)
+end sub
+
+sub onValueSelected()
+  selected = m.valueList.itemSelected
+  if selected = invalid or m.selectedKey = "" then return
+  newValue = selected.id
+  if newValue = invalid then return
+  session.user.SaveSetting(m.selectedKey, newValue)
+  refreshList()
+  applyIfThemeChanged()
+  m.detailPanel.visible = false
+  m.settingsList.setFocus(true)
+end sub
+
+sub applyIfThemeChanged()
+  if m.selectedKey = "appTheme"
+    themeName = getSettingValue("appTheme", "blue")
+    colors = getThemeColors(themeName)
+    if colors <> invalid
+      m.global.colors = colors
+      applyThemeToScene(colors)
+    end if
+  end if
+end sub
+
+sub applyThemeToScene(colors as Object)
+  scene = m.top.getScene()
+  if scene = invalid then return
+  if scene.hasField("overhang")
+    overhang = scene.findNode("overhang")
+    if overhang <> invalid and overhang.hasField("color")
+      overhang.color = colors.primary
+    end if
+  end if
+end sub
+
+sub refreshList()
+  loadSettings()
+end sub
+
+function onKeyEvent(key as String, press as Boolean) as Boolean
+  if not press then return false
+  if key = "back"
+    if m.detailPanel.visible
+      m.detailPanel.visible = false
+      m.settingsList.setFocus(true)
+      return true
+    end if
+    m.global.sceneManager.callFunc("popScene")
+    return true
+  end if
+  return false
+end function

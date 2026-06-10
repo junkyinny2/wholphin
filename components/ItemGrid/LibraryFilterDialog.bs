@@ -1,0 +1,73 @@
+' Wholphin Roku - Library filter/sort dialog
+
+sub Init()
+    m.filterDialogTitle = m.top.findNode("filterDialogTitle")
+    m.filterOptionsList = m.top.findNode("filterOptionsList")
+
+    m.top.observeField("title", m.port)
+    m.top.observeField("filterType", m.port)
+    m.filterOptionsList.observeField("itemSelected", m.port)
+end sub
+
+function onTitleChange() as Void
+    if m.filterDialogTitle <> invalid then
+        m.filterDialogTitle.text = m.top.title
+    end if
+end function
+
+function onFilterTypeChange() as Void
+    loadOptions()
+end function
+
+function loadOptions() as Void
+    filterType = m.top.filterType
+    content = CreateObject("roSGNode", "ContentNode")
+
+    if filterType = "sort" then
+        options = [
+            { label: translateText("Name (A-Z)"),       value: "SortName|Ascending" }
+            { label: translateText("Name (Z-A)"),       value: "SortName|Descending" }
+            { label: translateText("Date Added"),       value: "DateCreated|Descending" }
+            { label: translateText("Release Date"),     value: "PremiereDate|Descending" }
+            { label: translateText("Rating"),           value: "CommunityRating|Descending" }
+            { label: translateText("Runtime"),          value: "Runtime|Descending" }
+            { label: translateText("Play Count"),       value: "PlayCount|Descending" }
+            { label: translateText("Random"),           value: "Random|Ascending" }
+        ]
+    else if filterType = "filter" then
+        options = [
+            { label: translateText("All"),              value: "" }
+            { label: translateText("Favorites"),        value: "IsFavorite" }
+            { label: translateText("Resumable"),        value: "IsResumable" }
+            { label: translateText("Played"),           value: "IsPlayed" }
+            { label: translateText("Unplayed"),         value: "IsUnplayed" }
+        ]
+    else if filterType = "genre" then
+        options = [
+            { label: translateText("All Genres"),       value: "" }
+            { label: translateText("Action"),           value: "Action" }
+            { label: translateText("Comedy"),           value: "Comedy" }
+            { label: translateText("Drama"),            value: "Drama" }
+            { label: translateText("Horror"),           value: "Horror" }
+            { label: translateText("Sci-Fi"),           value: "Sci-Fi" }
+            { label: translateText("Thriller"),         value: "Thriller" }
+            { label: translateText("Romance"),          value: "Romance" }
+            { label: translateText("Documentary"),      value: "Documentary" }
+        ]
+    end if
+
+    for each opt in options
+        child = content.CreateChild("ContentNode")
+        child.title = opt.label
+        child.value = opt.value
+    end for
+
+    m.filterOptionsList.content = content
+    m.filterOptionsList.setFocus(true)
+end function
+
+function onOptionSelected() as Void
+    focused = m.filterOptionsList.focusedItem
+    if focused = invalid then return
+    m.top.selectedFilters = [focused.value]
+end function

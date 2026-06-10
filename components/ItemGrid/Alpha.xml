@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="Alpha" extends="Group">
+  <interface>
+    <field id="letterSelected" type="string" value="" alwaysNotify="true" />
+    <field id="selectedLetter" type="string" value="" />
+    <field id="visible" type="boolean" value="false" />
+  </interface>
+
+  <children>
+    <Rectangle
+      id="alphaBg"
+      width="40"
+      height="900"
+      color="0x16213E80" />
+
+    <LabelList
+      id="alphaList"
+      translation="[0, 0]"
+      width="40"
+      height="900"
+      itemSize="[40, 30]"
+      font="font:SmallestSystemFont"
+      color="0xB0B0B0FF"
+      focusedColor="0x00A4DCFF"
+      focusBitmapBlendColor="0x00A4DCFF"
+      showFocusFootprint="false" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/ItemGrid/Alpha.bs" />
+</component>

@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="DiscoverPage" extends="JFScreen">
+  <interface>
+    <field id="serverUrl" type="string" value="" />
+    <field id="apiKey" type="string" value="" />
+    <field id="items" type="array" value="" />
+    <field id="selectedItem" type="assocarray" alwaysNotify="true" />
+  </interface>
+  <children>
+    <Label id="pageTitle" text="Discover" font="font:LargeBoldSystemFont" translation="[100, 80]" />
+    <LabelList id="sectionTabs"
+      translation="[100, 150]"
+      itemSize="[300, 56]"
+      itemSpacing="[4, 0]"
+      layoutDirection="horiz"
+      numRows="1"
+      focusBitmapBlendColor="#7B2FBE" />
+    <MarkupGrid id="itemGrid"
+      translation="[100, 230]"
+      itemSize="[260, 390]"
+      itemSpacing="[16, 20]"
+      numColumns="5"
+      numRows="2"
+      itemComponentName="PosterItem" />
+  </children>
+</component>

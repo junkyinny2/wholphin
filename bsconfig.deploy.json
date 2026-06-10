@@ -1,0 +1,26 @@
+{
+  "extends": "bsconfig.json",
+  "host": "192.168.1.196",
+  "username": "rokudev",
+  "password": "whit",
+  "outFile": "out/Wholphin.zip",
+  "plugins": [],
+  "diagnosticFilters": [
+    "node_modules/**/*",
+    "**/roku_modules/**/*"
+  ],
+  "diagnosticSeverityOverrides": {
+    "BSLINT1001": "hint",
+    "BSLINT1002": "hint",
+    "BSLINT1003": "hint",
+    "BSLINT1004": "hint",
+    "BSLINT1005": "hint",
+    "BSLINT1006": "hint",
+    "BSLINT1007": "hint",
+    "BSLINT1008": "hint",
+    "BSLINT1009": "hint",
+    "BSLINT1010": "hint",
+    "BS1140": "hint",
+    "BS1141": "hint"
+  }
+}

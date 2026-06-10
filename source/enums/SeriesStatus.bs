@@ -1,0 +1,11 @@
+' Wholphin Roku - SeriesStatus enum
+
+namespace api
+
+    enum SeriesStatus
+        CONTINUING           = "Continuing"
+        ENDED                = "Ended"
+        UNKNOWN              = ""
+    end enum
+
+end namespace

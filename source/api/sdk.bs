@@ -1,0 +1,932 @@
+' Wholphin Roku - Jellyfin API SDK
+' Complete set of API endpoint wrappers organized by namespace
+
+' ============================================================
+' Top-level API functions
+' ============================================================
+
+' Get user views (libraries)
+function GetUserViews(userId = "" as String) as Object
+    if userId = "" then userId = session.user.GetId()
+    req = APIRequest("/Users/" + userId + "/Views")
+    return getJson(req)
+end function
+
+' ============================================================
+' api.albums - Album endpoints
+' ============================================================
+namespace api.albums
+
+    function GetInstantMix(id as String) as Object
+        req = APIRequest("/Albums/" + id + "/InstantMix")
+        return getJson(req)
+    end function
+
+    function GetSimilar(id as String) as Object
+        req = APIRequest("/Albums/" + id + "/Similar")
+        return getJson(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.artists - Artist endpoints
+' ============================================================
+namespace api.artists
+
+    function Get(params = {} as Object) as Object
+        req = APIRequest("/Artists", params)
+        return getJson(req)
+    end function
+
+    function GetByName(name as String) as Object
+        req = APIRequest("/Artists/" + HttpEncode(name))
+        return getJson(req)
+    end function
+
+    function GetAlbumArtists(params = {} as Object) as Object
+        req = APIRequest("/Artists/AlbumArtists", params)
+        return getJson(req)
+    end function
+
+    function GetInstantMix(id as String) as Object
+        req = APIRequest("/Artists/" + id + "/InstantMix")
+        return getJson(req)
+    end function
+
+    function GetSimilar(id as String) as Object
+        req = APIRequest("/Artists/" + id + "/Similar")
+        return getJson(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.audio - Audio streaming endpoints
+' ============================================================
+namespace api.audio
+
+    function GetStreamURL(id as String, container as String, audioCodec = "aac" as String, startTimeTicks = 0 as Integer) as String
+        serverUrl = session.server.GetUrl()
+        params = {
+            Container:    container
+            AudioCodec:   audioCodec
+            StartTimeTicks: startTimeTicks
+            Static:       "false"
+        }
+        url = buildURL("/Audio/" + id + "/stream", params)
+        return url
+    end function
+
+    function GetStreamURLWithContainer(id as String, container as String, startTimeTicks = 0 as Integer) as String
+        serverUrl = session.server.GetUrl()
+        params = {
+            StartTimeTicks: startTimeTicks
+            Static:       "false"
+        }
+        url = buildURL("/Audio/" + id + "/stream." + container, params)
+        return url
+    end function
+
+    function GetUniversalURL(id as String, mediaSourceId as String, audioCodec = "aac" as String, maxAudioChannels = 2 as Integer) as String
+        params = {
+            Id:               id
+            MediaSourceId:    mediaSourceId
+            AudioCodec:       audioCodec
+            MaxAudioChannels: maxAudioChannels
+        }
+        url = buildURL("/Audio/" + id + "/Universal", params)
+        return url
+    end function
+
+    function GetLyrics(id as String) as Object
+        req = APIRequest("/Audio/" + id + "/Lyrics")
+        return getJson(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.auth - Authentication endpoints
+' ============================================================
+namespace api.auth
+
+    function GetKeys() as Object
+        req = APIRequest("/Auth/Keys")
+        return getJson(req)
+    end function
+
+    function PostKeys(app as String) as Object
+        req = APIRequest("/Auth/Keys")
+        return postJson(req, { App: app })
+    end function
+
+    function DeleteKeys(key as String) as Boolean
+        req = APIRequest("/Auth/Keys/" + HttpEncode(key))
+        return deleteVoid(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.branding - Branding endpoints
+' ============================================================
+namespace api.branding
+
+    function GetSplashScreen() as Object
+        req = APIRequest("/Branding/Splashscreen")
+        return getJson(req)
+    end function
+
+    function GetConfiguration() as Object
+        req = APIRequest("/Branding/Configuration")
+        return getJson(req)
+    end function
+
+    function GetCSS() as Object
+        req = APIRequest("/Branding/Css")
+        return getJson(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.channels - Channel endpoints
+' ============================================================
+namespace api.channels
+
+    function Get() as Object
+        req = APIRequest("/Channels")
+        return getJson(req)
+    end function
+
+    function GetFeatures() as Object
+        req = APIRequest("/Channels/Features")
+        return getJson(req)
+    end function
+
+    function GetItems(channelId as String, params = {} as Object) as Object
+        req = APIRequest("/Channels/" + channelId + "/Items", params)
+        return getJson(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.collections - Collection endpoints
+' ============================================================
+namespace api.collections
+
+    function Create(name as String, ids = "" as String) as Object
+        req = APIRequest("/Collections", { name: name, ids: ids })
+        return postJson(req, {})
+    end function
+
+    function AddItems(collectionId as String, ids as String) as Object
+        req = APIRequest("/Collections/" + collectionId + "/Items", { ids: ids })
+        return postJson(req, {})
+    end function
+
+    function DeleteItems(collectionId as String, ids as String) as Object
+        req = APIRequest("/Collections/" + collectionId + "/Items/Delete", { ids: ids })
+        return postJson(req, {})
+    end function
+
+end namespace
+
+' ============================================================
+' api.devices - Device endpoints
+' ============================================================
+namespace api.devices
+
+    function Get() as Object
+        req = APIRequest("/Devices")
+        return getJson(req)
+    end function
+
+    function GetInfo(id as String) as Object
+        req = APIRequest("/Devices/Info", { id: id })
+        return getJson(req)
+    end function
+
+    function Delete(id as String) as Boolean
+        req = APIRequest("/Devices", { id: id })
+        return deleteVoid(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.displayPreferences - Display preference endpoints
+' ============================================================
+namespace api.displayPreferences
+
+    function Get(id as String, userId = "" as String, client = "wholphin" as String) as Object
+        if userId = "" then userId = session.user.GetId()
+        req = APIRequest("/DisplayPreferences/" + id, { userId: userId, client: client })
+        return getJson(req)
+    end function
+
+    function Update(id as String, prefs as Object) as Object
+        req = APIRequest("/DisplayPreferences/" + id)
+        return postJson(req, prefs)
+    end function
+
+end namespace
+
+' ============================================================
+' api.genres - Genre endpoints
+' ============================================================
+namespace api.genres
+
+    function Get(params = {} as Object) as Object
+        req = APIRequest("/Genres", params)
+        return getJson(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.images - Image info endpoints
+' ============================================================
+namespace api.images
+
+    function GetGeneral(name as String, imageType as String) as Object
+        req = APIRequest("/Images/General/" + HttpEncode(name) + "/" + imageType)
+        return getJson(req)
+    end function
+
+    function GetRatings(name as String) as Object
+        req = APIRequest("/Images/Ratings/" + HttpEncode(name))
+        return getJson(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.items - Item endpoints (core)
+' ============================================================
+namespace api.items
+
+    function Get(params = {} as Object) as Object
+        req = APIRequest("/Items", params)
+        return getJson(req)
+    end function
+
+    function GetByID(id as String) as Object
+        req = APIRequest("/Items/" + id)
+        return getJson(req)
+    end function
+
+    function GetByFolder(parentId as String, params = {} as Object) as Object
+        params.parentId = parentId
+        req = APIRequest("/Items", params)
+        return getJson(req)
+    end function
+
+    function GetChildren(id as String, params = {} as Object) as Object
+        req = APIRequest("/Items/" + id + "/Children", params)
+        return getJson(req)
+    end function
+
+    function GetIntros(id as String) as Object
+        req = APIRequest("/Items/" + id + "/Intros")
+        return getJson(req)
+    end function
+
+    function GetSuggestions(userId = "" as String) as Object
+        if userId = "" then userId = session.user.GetId()
+        req = APIRequest("/Users/" + userId + "/Suggestions")
+        return getJson(req)
+    end function
+
+    function GetLatest(userId = "" as String, params = {} as Object) as Object
+        if userId = "" then userId = session.user.GetId()
+        req = APIRequest("/Users/" + userId + "/Items/Latest", params)
+        return getJson(req)
+    end function
+
+    function GetFilters(userId = "" as String) as Object
+        if userId = "" then userId = session.user.GetId()
+        req = APIRequest("/Items/Filters", { userId: userId })
+        return getJson(req)
+    end function
+
+    function GetFilters2(userId = "" as String, parentId = "" as String) as Object
+        if userId = "" then userId = session.user.GetId()
+        params = { userId: userId }
+        if parentId <> "" then params.parentId = parentId
+        req = APIRequest("/Items/Filters2", params)
+        return getJson(req)
+    end function
+
+    function GetImages(id as String) as Object
+        req = APIRequest("/Items/" + id + "/Images")
+        return getJson(req)
+    end function
+
+    function GetSpecialFeatures(id as String) as Object
+        req = APIRequest("/Items/" + id + "/SpecialFeatures")
+        return getJson(req)
+    end function
+
+    function GetPlaybackInfo(id as String, userId = "" as String) as Object
+        if userId = "" then userId = session.user.GetId()
+        req = APIRequest("/Items/" + id + "/PlaybackInfo", { userId: userId })
+        return getJson(req)
+    end function
+
+    function PostPlayBackInfo(id as String, mediaSourceId = "" as String, audioStreamIndex = -1 as Integer, subtitleStreamIndex = -1 as Integer, startTimeTicks = 0 as Integer) as Object
+        deviceProfile = getDeviceProfile()
+        body = {
+            DeviceProfile:    deviceProfile
+            MediaSourceId:    mediaSourceId
+            AudioStreamIndex: audioStreamIndex
+            SubtitleStreamIndex: subtitleStreamIndex
+            StartTimeTicks:   startTimeTicks
+            AutoOpenLiveStream: true
+            EnableDirectPlay: true
+            EnableDirectStream: true
+            EnableTranscoding: true
+            MaxAudioChannels: 6
+            UserId:           session.user.GetId()
+        }
+        req = APIRequest("/Items/" + id + "/PlaybackInfo")
+        return postJson(req, body)
+    end function
+
+    function GetInstantMix(id as String) as Object
+        req = APIRequest("/Items/" + id + "/InstantMix")
+        return getJson(req)
+    end function
+
+    function GetSimilar(id as String) as Object
+        req = APIRequest("/Items/" + id + "/Similar")
+        return getJson(req)
+    end function
+
+    function GetThemeMedia(id as String) as Object
+        req = APIRequest("/Items/" + id + "/ThemeMedia")
+        return getJson(req)
+    end function
+
+    function GetThemeSongs(id as String, userId = "" as String) as Object
+        if userId = "" then userId = session.user.GetId()
+        req = APIRequest("/Items/" + id + "/ThemeSongs", { userId: userId })
+        return getJson(req)
+    end function
+
+    function GetThemeVideos(id as String, userId = "" as String) as Object
+        if userId = "" then userId = session.user.GetId()
+        req = APIRequest("/Items/" + id + "/ThemeVideos", { userId: userId })
+        return getJson(req)
+    end function
+
+    function GetCounts(userId = "" as String) as Object
+        if userId = "" then userId = session.user.GetId()
+        req = APIRequest("/Items/Counts", { userId: userId })
+        return getJson(req)
+    end function
+
+    function SearchRemoteSubtitles(id as String, language as String) as Object
+        req = APIRequest("/Items/" + id + "/RemoteSearch/Subtitles/" + language)
+        return getJson(req)
+    end function
+
+    function DownloadRemoteSubtitles(id as String, subtitleId as String) as Object
+        req = APIRequest("/Items/" + id + "/RemoteSearch/Subtitles/" + subtitleId)
+        return postJson(req, {})
+    end function
+
+    function GetAncestors(id as String) as Object
+        req = APIRequest("/Items/" + id + "/Ancestors")
+        return getJson(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.library - Library management endpoints
+' ============================================================
+namespace api.library
+
+    function GetMediaFolders() as Object
+        req = APIRequest("/Library/MediaFolders")
+        return getJson(req)
+    end function
+
+    function GetPhysicalPaths() as Object
+        req = APIRequest("/Library/PhysicalPaths")
+        return getJson(req)
+    end function
+
+    function Refresh(id as String) as Object
+        req = APIRequest("/Items/" + id + "/Refresh")
+        return postJson(req, {})
+    end function
+
+    function GetVirtualFolders() as Object
+        req = APIRequest("/Library/VirtualFolders")
+        return getJson(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.liveTV - Live TV endpoints
+' ============================================================
+namespace api.liveTV
+
+    function GetChannels(params = {} as Object) as Object
+        req = APIRequest("/LiveTv/Channels", params)
+        return getJson(req)
+    end function
+
+    function GetChannelByID(id as String) as Object
+        req = APIRequest("/LiveTv/Channels/" + id)
+        return getJson(req)
+    end function
+
+    function GetGuideInfo() as Object
+        req = APIRequest("/LiveTv/GuideInfo")
+        return getJson(req)
+    end function
+
+    function GetInfo() as Object
+        req = APIRequest("/LiveTv/Info")
+        return getJson(req)
+    end function
+
+    function GetPrograms(params = {} as Object) as Object
+        req = APIRequest("/LiveTv/Programs", params)
+        return getJson(req)
+    end function
+
+    function PostPrograms(params = {} as Object) as Object
+        req = APIRequest("/LiveTv/Programs")
+        return postJson(req, params)
+    end function
+
+    function GetRecommendedPrograms(params = {} as Object) as Object
+        req = APIRequest("/LiveTv/Programs/Recommended", params)
+        return getJson(req)
+    end function
+
+    function GetRecordings(params = {} as Object) as Object
+        req = APIRequest("/LiveTv/Recordings", params)
+        return getJson(req)
+    end function
+
+    function GetSeriesTimers(params = {} as Object) as Object
+        req = APIRequest("/LiveTv/SeriesTimers", params)
+        return getJson(req)
+    end function
+
+    function CreateSeriesTimer(config as Object) as Object
+        req = APIRequest("/LiveTv/SeriesTimers")
+        return postJson(req, config)
+    end function
+
+    function GetTimers(params = {} as Object) as Object
+        req = APIRequest("/LiveTv/Timers", params)
+        return getJson(req)
+    end function
+
+    function CreateTimer(config as Object) as Object
+        req = APIRequest("/LiveTv/Timers")
+        return postJson(req, config)
+    end function
+
+end namespace
+
+' ============================================================
+' api.localization - Localization endpoints
+' ============================================================
+namespace api.localization
+
+    function GetCountries() as Object
+        req = APIRequest("/Localization/Countries")
+        return getJson(req)
+    end function
+
+    function GetCultures() as Object
+        req = APIRequest("/Localization/Cultures")
+        return getJson(req)
+    end function
+
+    function GetOptions() as Object
+        req = APIRequest("/Localization/Options")
+        return getJson(req)
+    end function
+
+    function GetParentalRatings() as Object
+        req = APIRequest("/Localization/ParentalRatings")
+        return getJson(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.MediaSegments - Intro/outro credit skip segments
+' ============================================================
+namespace api.MediaSegments
+
+    function Get(itemId as String) as Object
+        req = APIRequest("/MediaSegments", { ItemId: itemId })
+        return getJson(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.movies - Movie endpoints
+' ============================================================
+namespace api.movies
+
+    function GetSimilar(id as String) as Object
+        req = APIRequest("/Movies/" + id + "/Similar")
+        return getJson(req)
+    end function
+
+    function GetRecommendations(userId = "" as String) as Object
+        if userId = "" then userId = session.user.GetId()
+        req = APIRequest("/Movies/Recommendations", { userId: userId })
+        return getJson(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.notifications - Notification endpoints
+' ============================================================
+namespace api.notifications
+
+    function Get(params = {} as Object) as Object
+        req = APIRequest("/Notifications", params)
+        return getJson(req)
+    end function
+
+    function MarkRead(id as String) as Object
+        req = APIRequest("/Notifications/" + id + "/Read")
+        return postJson(req, {})
+    end function
+
+    function GetSummary(userId = "" as String) as Object
+        if userId = "" then userId = session.user.GetId()
+        req = APIRequest("/Notifications/" + userId + "/Summary")
+        return getJson(req)
+    end function
+
+    function GetServices() as Object
+        req = APIRequest("/Notifications/Services")
+        return getJson(req)
+    end function
+
+    function GetTypes() as Object
+        req = APIRequest("/Notifications/Types")
+        return getJson(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.persons - Person endpoints
+' ============================================================
+namespace api.persons
+
+    function Get(params = {} as Object) as Object
+        req = APIRequest("/Persons", params)
+        return getJson(req)
+    end function
+
+    function GetByName(name as String, userId = "" as String) as Object
+        if userId = "" then userId = session.user.GetId()
+        req = APIRequest("/Persons/" + HttpEncode(name), { userId: userId })
+        return getJson(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.playback - Playback endpoints
+' ============================================================
+namespace api.playback
+
+    function BitrateTest(size as Integer) as Object
+        req = APIRequest("/Playback/BitrateTest", { size: size })
+        return getJson(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.playlists - Playlist endpoints
+' ============================================================
+namespace api.playlists
+
+    function Create(name as String, ids = "" as String) as Object
+        req = APIRequest("/Playlists", { name: name, ids: ids })
+        return postJson(req, {})
+    end function
+
+    function Add(playlistId as String, ids as String) as Object
+        req = APIRequest("/Playlists/" + playlistId + "/Items", { ids: ids })
+        return postJson(req, {})
+    end function
+
+    function Remove(playlistId as String, entryIds as String) as Object
+        req = APIRequest("/Playlists/" + playlistId + "/Items", { entryIds: entryIds })
+        return postJson(req, {})
+    end function
+
+    function GetItems(playlistId as String, params = {} as Object) as Object
+        req = APIRequest("/Playlists/" + playlistId + "/Items", params)
+        return getJson(req)
+    end function
+
+    function Move(playlistId as String, itemId as String, newIndex as Integer) as Object
+        req = APIRequest("/Playlists/" + playlistId + "/Items/" + itemId + "/Move/" + newIndex.ToStr())
+        return postJson(req, {})
+    end function
+
+end namespace
+
+' ============================================================
+' api.quickConnect - Quick Connect endpoints
+' ============================================================
+namespace api.quickConnect
+
+    function Initiate() as Object
+        req = APIRequest("/QuickConnect/Initiate")
+        return postJson(req, {})
+    end function
+
+    function Connect(secret as String) as Object
+        req = APIRequest("/QuickConnect/Connect", { secret: secret })
+        return getJson(req)
+    end function
+
+    function IsEnabled() as Object
+        req = APIRequest("/QuickConnect/Enabled")
+        return getJson(req)
+    end function
+
+    function Authorize(code as String) as Object
+        req = APIRequest("/QuickConnect/Authorize", { code: code })
+        return getJson(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.search - Search endpoints
+' ============================================================
+namespace api.search
+
+    function GetHints(searchTerm as String, params = {} as Object) as Object
+        params.searchTerm = searchTerm
+        req = APIRequest("/Search/Hints", params)
+        return getJson(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.sessions - Session endpoints
+' ============================================================
+namespace api.sessions
+
+    function Get() as Object
+        req = APIRequest("/Sessions")
+        return getJson(req)
+    end function
+
+    function Playing(data as Object) as Object
+        req = APIRequest("/Sessions/Playing")
+        return postJson(req, data)
+    end function
+
+    function PostProgress(data as Object) as Object
+        req = APIRequest("/Sessions/Playing/Progress")
+        return postJson(req, data)
+    end function
+
+    function PostStopped(data as Object) as Object
+        req = APIRequest("/Sessions/Playing/Stopped")
+        return postJson(req, data)
+    end function
+
+    function Ping() as Object
+        req = APIRequest("/Sessions/Ping")
+        return postJson(req, {})
+    end function
+
+    function PostCapabilities(data as Object) as Object
+        req = APIRequest("/Sessions/Capabilities")
+        return postJson(req, data)
+    end function
+
+    function PostCommand(sessionId as String, command as Object) as Object
+        req = APIRequest("/Sessions/" + sessionId + "/Command")
+        return postJson(req, command)
+    end function
+
+    function Logout() as Object
+        req = APIRequest("/Sessions/Logout")
+        return postJson(req, {})
+    end function
+
+end namespace
+
+' ============================================================
+' api.shows - TV Show endpoints
+' ============================================================
+namespace api.shows
+
+    function GetEpisodes(seriesId as String, seasonId = "" as String, params = {} as Object) as Object
+        params.seriesId = seriesId
+        if seasonId <> "" then params.seasonId = seasonId
+        req = APIRequest("/Shows/" + seriesId + "/Episodes", params)
+        return getJson(req)
+    end function
+
+    function GetSeasons(seriesId as String, params = {} as Object) as Object
+        req = APIRequest("/Shows/" + seriesId + "/Seasons", params)
+        return getJson(req)
+    end function
+
+    function GetNextUp(params = {} as Object) as Object
+        req = APIRequest("/Shows/NextUp", params)
+        return getJson(req)
+    end function
+
+    function GetUpcoming(params = {} as Object) as Object
+        req = APIRequest("/Shows/Upcoming", params)
+        return getJson(req)
+    end function
+
+    function GetSimilar(id as String) as Object
+        req = APIRequest("/Shows/" + id + "/Similar")
+        return getJson(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.system - System endpoints
+' ============================================================
+namespace api.system
+
+    function GetInfo() as Object
+        req = APIRequest("/System/Info")
+        return getJson(req)
+    end function
+
+    function GetPublicInfo() as Object
+        ' Note: Public info doesn't always require authentication
+        req = APIRequest("/System/Info/Public")
+        return getJson(req)
+    end function
+
+    function GetConfiguration() as Object
+        req = APIRequest("/System/Configuration")
+        return getJson(req)
+    end function
+
+    function GetPing() as Object
+        req = APIRequest("/System/Ping")
+        return getJson(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.users - User endpoints
+' ============================================================
+namespace api.users
+
+    function Get() as Object
+        req = APIRequest("/Users")
+        return getJson(req)
+    end function
+
+    function GetMe() as Object
+        req = APIRequest("/Users/Me")
+        return getJson(req)
+    end function
+
+    function GetPublic() as Object
+        req = APIRequest("/Users/Public")
+        return getJson(req)
+    end function
+
+    function AuthenticateByName(username as String, password as String) as Object
+        req = APIRequest("/Users/AuthenticateByName")
+        body = {
+            Username: username
+            Pw:       password
+        }
+        return postJson(req, body)
+    end function
+
+    function GetImageURL(userId as String, imageType as String, params = {} as Object) as String
+        params.quality = chainLookupReturn(params, ["quality"], "90")
+        return buildURL("/Users/" + userId + "/Images/" + imageType, params)
+    end function
+
+    function MarkFavorite(itemId as String, userId = "" as String) as Object
+        if userId = "" then userId = session.user.GetId()
+        req = APIRequest("/Users/" + userId + "/FavoriteItems/" + itemId)
+        return postJson(req, {})
+    end function
+
+    function UnmarkFavorite(itemId as String, userId = "" as String) as Object
+        if userId = "" then userId = session.user.GetId()
+        req = APIRequest("/Users/" + userId + "/FavoriteItems/" + itemId)
+        return deleteVoid(req)
+    end function
+
+    function MarkPlayed(itemId as String, userId = "" as String) as Object
+        if userId = "" then userId = session.user.GetId()
+        req = APIRequest("/Users/" + userId + "/PlayedItems/" + itemId)
+        return postJson(req, {})
+    end function
+
+    function UnmarkPlayed(itemId as String, userId = "" as String) as Object
+        if userId = "" then userId = session.user.GetId()
+        req = APIRequest("/Users/" + userId + "/PlayedItems/" + itemId)
+        return deleteVoid(req)
+    end function
+
+    function UpdateConfiguration(config as Object) as Object
+        req = APIRequest("/Users/" + session.user.GetId() + "/Configuration")
+        return postJson(req, config)
+    end function
+
+end namespace
+
+' ============================================================
+' api.videos - Video streaming endpoints
+' ============================================================
+namespace api.videos
+
+    function GetAdditionalParts(id as String) as Object
+        req = APIRequest("/Videos/" + id + "/AdditionalParts")
+        return getJson(req)
+    end function
+
+    function GetStreamURL(id as String, container as String, startTimeTicks = 0 as Integer) as String
+        params = {
+            StartTimeTicks: startTimeTicks
+            Static:       "false"
+        }
+        return buildURL("/Videos/" + id + "/stream." + container, params)
+    end function
+
+    function GetSubtitles(id as String, mediaSourceId as String, index as Integer, format as String) as String
+        return buildURL("/Videos/" + id + "/" + mediaSourceId + "/Subtitles/" + index.ToStr() + "/" + format)
+    end function
+
+    function DeleteSubtitle(id as String, index as Integer) as Object
+        req = APIRequest("/Videos/" + id + "/Subtitles/" + index.ToStr())
+        return deleteVoid(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.subtitles - Subtitle endpoints
+' ============================================================
+namespace api.subtitles
+
+    function Get(subtitleId as String) as String
+        req = CreateObject("roUrlTransfer")
+        serverUrl = session.server.GetUrl()
+        req.SetUrl(serverUrl + "/Subtitles/" + subtitleId + "/Stream")
+        
+        ' Add auth header
+        req.SetHeaders({
+            "Authorization": buildAuthHeader()
+        })
+        
+        return getString(req)
+    end function
+
+end namespace
+
+' ============================================================
+' api.music - Music-specific endpoints
+' ============================================================
+namespace api.music
+
+    function GetGenres(params = {} as Object) as Object
+        req = APIRequest("/MusicGenres", params)
+        return getJson(req)
+    end function
+
+    function GetGenreByName(name as String) as Object
+        req = APIRequest("/MusicGenres/" + HttpEncode(name))
+        return getJson(req)
+    end function
+
+end namespace

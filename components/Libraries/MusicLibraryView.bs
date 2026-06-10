@@ -1,0 +1,169 @@
+' Wholphin Roku - Music library browser (artists/albums/playlists)
+
+sub Init()
+    m.musicLibTitle = m.top.findNode("musicLibTitle")
+    m.musicGrid = m.top.findNode("musicGrid")
+    m.musicLoadingLabel = m.top.findNode("musicLoadingLabel")
+    m.btnArtists = m.top.findNode("btnArtists")
+    m.btnAlbums = m.top.findNode("btnAlbums")
+    m.btnPlaylists = m.top.findNode("btnPlaylists")
+    m.btnMusicSearch = m.top.findNode("btnMusicSearch")
+
+    m.top.observeField("libraryData", m.port)
+    m.musicGrid.observeField("itemSelected", m.port)
+    m.btnArtists.observeField("buttonSelected", m.port)
+    m.btnAlbums.observeField("buttonSelected", m.port)
+    m.btnPlaylists.observeField("buttonSelected", m.port)
+    m.btnMusicSearch.observeField("buttonSelected", m.port)
+end sub
+
+function onLibraryDataChange() as Void
+    LoadData()
+end function
+
+function LoadData() as Void
+    m.top.loadingData = true
+    m.musicLoadingLabel.visible = true
+
+    libData = m.top.libraryData
+    if libData = invalid then return
+
+    libName = chainLookupReturn(libData, ["title"], "")
+    if libName = "" then libName = chainLookupReturn(libData, ["Name"], "")
+    m.musicLibTitle.text = libName
+    m.top.overhangTitle = libName
+
+    loadView(m.top.viewMode)
+
+    m.top.loadingData = false
+    m.top.dataLoaded = true
+end function
+
+function loadView(viewMode as String) as Void
+    m.musicLoadingLabel.visible = true
+
+    libId = chainLookupReturn(m.top.libraryData, ["id"], "")
+    if libId = "" then libId = chainLookupReturn(m.top.libraryData, ["Id"], "")
+
+    params = {
+        userId:     session.user.GetId()
+        parentId:   libId
+        Limit:      "100"
+        Recursive:  "true"
+        Fields:     "PrimaryImageAspectRatio,BasicSyncInfo"
+        ImageTypeLimit: "1"
+    }
+
+    if viewMode = "artists" then
+        result = api.artists.Get(params)
+        if result = invalid then
+            m.musicLoadingLabel.visible = false
+            return
+        end if
+        items = chainLookupReturn(result, ["Items"], [])
+        m.musicGrid.itemSize = "[290, 340]"
+        m.musicGrid.itemComponentName = "GridItemMedium"
+        m.musicGrid.numColumns = 6
+    else if viewMode = "albums" then
+        params.IncludeItemTypes = "MusicAlbum"
+        result = api.items.Get(params)
+        if result = invalid then
+            m.musicLoadingLabel.visible = false
+            return
+        end if
+        items = chainLookupReturn(result, ["Items"], [])
+        m.musicGrid.itemSize = "[290, 340]"
+        m.musicGrid.itemComponentName = "GridItemMedium"
+        m.musicGrid.numColumns = 6
+    else if viewMode = "playlists" then
+        params.IncludeItemTypes = "Playlist"
+        result = api.items.Get(params)
+        if result = invalid then
+            m.musicLoadingLabel.visible = false
+            return
+        end if
+        items = chainLookupReturn(result, ["Items"], [])
+        m.musicGrid.itemSize = "[196, 340]"
+        m.musicGrid.itemComponentName = "GridItem"
+        m.musicGrid.numColumns = 8
+    end if
+
+    if items = invalid or items.Count() = 0 then
+        m.musicLoadingLabel.visible = false
+        return
+    end if
+
+    m.top.items = items
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for each item in items
+        child = content.CreateChild("ContentNode")
+        child.id = chainLookupReturn(item, ["Id"], "")
+        child.title = chainLookupReturn(item, ["Name"], "")
+        child.type = chainLookupReturn(item, ["Type"], "")
+        child.json = item
+
+        img = PosterImage(child.id, { maxHeight: 340, maxWidth: 290 })
+        if img <> invalid then
+            child.HDPosterUrl = img.url
+        end if
+    end for
+
+    m.musicGrid.content = content
+    m.musicGrid.visible = true
+    m.musicLoadingLabel.visible = false
+    m.musicGrid.setFocus(true)
+end function
+
+function onItemSelected() as Void
+    focused = m.musicGrid.focusedItem
+    if focused = invalid then return
+
+    itemType = focused.type
+
+    if itemType = "MusicArtist" then
+        artistData = {
+            id:   focused.id
+            Name: focused.title
+            json: focused.json
+        }
+        CreateArtistView(artistData)
+    else if itemType = "MusicAlbum" then
+        albumData = {
+            id:   focused.id
+            Name: focused.title
+            json: focused.json
+        }
+        CreateAlbumView(albumData)
+    else if itemType = "Playlist" or itemType = "BoxSet" then
+        albumData = {
+            id:   focused.id
+            Name: focused.title
+            json: focused.json
+        }
+        CreatePlaylistView(albumData)
+    end if
+end function
+
+function onButtonSelected() as Void
+    btn = m.top.lastEventNode
+    if btn = invalid then return
+
+    if btn.id = "btnArtists" then
+        m.top.viewMode = "artists"
+        loadView("artists")
+    else if btn.id = "btnAlbums" then
+        m.top.viewMode = "albums"
+        loadView("albums")
+    else if btn.id = "btnPlaylists" then
+        m.top.viewMode = "playlists"
+        loadView("playlists")
+    else if btn.id = "btnMusicSearch" then
+        CreateSearchPage()
+    end if
+end function
+
+function onBackPressed() as Boolean
+    m.global.sceneManager.callFunc("popScene")
+    return true
+end function

@@ -1,0 +1,104 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="SigninScene" extends="JFScreen">
+  <interface>
+    <field id="username" type="string" value="" />
+    <field id="password" type="string" value="" />
+    <field id="isAuthenticating" type="boolean" value="false" />
+    <field id="errorMessage" type="string" value="" />
+  </interface>
+
+  <children>
+    <Rectangle
+      width="1920"
+      height="1080"
+      color="0x1A1A2EFF" />
+
+    <Label
+      id="signinTitle"
+      translation="[660, 250]"
+      width="600"
+      height="50"
+      font="font:LargeBoldSystemFont"
+      color="0xFFFFFFFF"
+      text="Sign In"
+      horizAlign="center"
+      vertAlign="center" />
+
+    <!-- Username -->
+    <Label
+      id="usernameLabel"
+      translation="[660, 340]"
+      width="600"
+      height="30"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      text="Username"
+      horizAlign="center" />
+
+    <Group id="usernameInputGroup" translation="[660, 380]">
+      <Rectangle
+        id="usernameInputBg"
+        width="600"
+        height="50"
+        color="0x16213EFF" />
+      <Label
+        id="usernameInputText"
+        translation="[15, 10]"
+        width="570"
+        height="30"
+        font="font:MediumSystemFont"
+        color="0xFFFFFFFF"
+        text=""
+        vertAlign="center" />
+    </Group>
+
+    <!-- Password -->
+    <Label
+      id="passwordLabel"
+      translation="[660, 460]"
+      width="600"
+      height="30"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      text="Password"
+      horizAlign="center" />
+
+    <Group id="passwordInputGroup" translation="[660, 500]">
+      <Rectangle
+        id="passwordInputBg"
+        width="600"
+        height="50"
+        color="0x16213EFF" />
+      <Label
+        id="passwordInputText"
+        translation="[15, 10]"
+        width="570"
+        height="30"
+        font="font:MediumSystemFont"
+        color="0xFFFFFFFF"
+        text=""
+        vertAlign="center" />
+    </Group>
+
+    <!-- Error message -->
+    <Label
+      id="errorLabel"
+      translation="[660, 570]"
+      width="600"
+      height="30"
+      font="font:SmallSystemFont"
+      color="0xFF5252FF"
+      text=""
+      horizAlign="center"
+      vertAlign="center"
+      visible="false" />
+
+    <!-- Buttons -->
+    <Group id="signinButtons" translation="[760, 620]">
+      <JFButton id="btnSignIn" translation="[0, 0]" buttonText="Sign In" width="200" />
+      <JFButton id="btnCancel" translation="[220, 0]" buttonText="Cancel" width="200" />
+    </Group>
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/config/SigninScene.bs" />
+</component>

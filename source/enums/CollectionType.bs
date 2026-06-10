@@ -1,0 +1,22 @@
+' Wholphin Roku - CollectionType enum
+
+namespace api
+
+    enum CollectionType
+        MOVIES               = "movies"
+        TVSHOWS              = "tvshows"
+        MUSIC                = "music"
+        MUSICVIDEOS          = "musicvideos"
+        BOXSETS              = "boxsets"
+        BOOKS                = "books"
+        PHOTOS               = "photos"
+        HOMEMOVIESVIDEOS     = "homevideos"
+        PLAYLISTS            = "playlists"
+        LIVETV               = "livetv"
+        CHANNELS             = "channels"
+        TRAILERS             = "trailers"
+        AUDIOBOOKS           = "audiobooks"
+        UNKNOWN              = ""
+    end enum
+
+end namespace

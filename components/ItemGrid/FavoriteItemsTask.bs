@@ -1,0 +1,38 @@
+' Wholphin Roku - Async task for marking/unmarking favorites
+
+sub Init()
+    m.top.functionName = "processFavorite"
+end sub
+
+sub processFavorite()
+    itemId = m.top.itemId
+    if itemId = "" then
+        m.top.loadStatus = "error"
+        return
+    end if
+
+    action = m.top.action
+
+    if action = "mark" then
+        result = api.users.MarkFavorite(itemId)
+        if result <> invalid then
+            m.top.result = true
+            m.top.loadStatus = "done"
+        else
+            m.top.result = false
+            m.top.loadStatus = "error"
+        end if
+
+    else if action = "unmark" then
+        result = api.users.UnmarkFavorite(itemId)
+        if result <> invalid then
+            m.top.result = true
+            m.top.loadStatus = "done"
+        else
+            m.top.result = false
+            m.top.loadStatus = "error"
+        end if
+    else
+        m.top.loadStatus = "error"
+    end if
+end sub

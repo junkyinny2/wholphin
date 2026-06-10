@@ -1,0 +1,126 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="AudioPlayerView" extends="JFScreen">
+  <interface>
+    <field id="albumData" type="node" alwaysNotify="true" />
+    <field id="trackList" type="array" value="" />
+    <field id="currentTrackIndex" type="int" value="0" alwaysNotify="true" />
+    <field id="playState" type="string" value="stopped" />
+    <field id="shuffleMode" type="boolean" value="false" />
+    <field id="repeatMode" type="string" value="none" /> <!-- none, one, all -->
+  </interface>
+
+  <children>
+    <!-- Background -->
+    <Rectangle
+      width="1920"
+      height="1080"
+      color="0x1A1A2EFF" />
+
+    <!-- Album art -->
+    <Poster
+      id="albumArt"
+      translation="[310, 140]"
+      width="500"
+      height="500"
+      loadDisplayMode="scaleToFit" />
+
+    <!-- Track info -->
+    <Label
+      id="trackTitle"
+      translation="[900, 140]"
+      width="700"
+      height="40"
+      font="font:LargeBoldSystemFont"
+      color="0xFFFFFFFF"
+      text=""
+      vertAlign="center" />
+
+    <Label
+      id="trackArtist"
+      translation="[900, 190]"
+      width="700"
+      height="30"
+      font="font:MediumSystemFont"
+      color="0xB0B0B0FF"
+      text=""
+      vertAlign="center" />
+
+    <Label
+      id="trackAlbum"
+      translation="[900, 230]"
+      width="700"
+      height="25"
+      font="font:SmallSystemFont"
+      color="0x707070FF"
+      text=""
+      vertAlign="center" />
+
+    <!-- Progress bar -->
+    <Rectangle
+      id="audioProgressBg"
+      translation="[900, 290]"
+      width="700"
+      height="4"
+      color="0xFFFFFF30" />
+
+    <Rectangle
+      id="audioProgressFill"
+      translation="[900, 290]"
+      width="0"
+      height="4"
+      color="0x00A4DCFF" />
+
+    <Label
+      id="audioCurrentTime"
+      translation="[900, 300]"
+      width="80"
+      height="25"
+      font="font:SmallestSystemFont"
+      color="0xB0B0B0FF"
+      text="0:00"
+      vertAlign="center" />
+
+    <Label
+      id="audioTotalTime"
+      translation="[1520, 300]"
+      width="80"
+      height="25"
+      font="font:SmallestSystemFont"
+      color="0xB0B0B0FF"
+      text="0:00"
+      horizAlign="right"
+      vertAlign="center" />
+
+    <!-- Controls -->
+    <Group id="audioControls" translation="[1050, 350]">
+      <Poster id="btnShuffle" translation="[0, 0]" width="40" height="40" uri="pkg:/images/icons/shuffle.png" />
+      <Poster id="btnPrev" translation="[80, 0]" width="40" height="40" uri="pkg:/images/icons/reverse.png" />
+      <Poster id="btnPlayPauseAudio" translation="[160, -10]" width="60" height="60" uri="pkg:/images/icons/play.png" />
+      <Poster id="btnNext" translation="[260, 0]" width="40" height="40" uri="pkg:/images/icons/forward.png" />
+      <Poster id="btnRepeat" translation="[340, 0]" width="40" height="40" uri="pkg:/images/icons/repeat.png" />
+    </Group>
+
+    <!-- Track list -->
+    <Label
+      id="trackListLabel"
+      translation="[60, 680]"
+      width="300"
+      height="30"
+      font="font:MediumBoldSystemFont"
+      color="0xFFFFFFFF"
+      text="Track List" />
+
+    <MarkupGrid
+      id="trackListGrid"
+      translation="[60, 720]"
+      width="1800"
+      height="320"
+      itemComponentName="HomeItem"
+      itemSize="[196, 270]"
+      itemSpacing="[10, 0]"
+      numColumns="8"
+      numRows="1" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/music/AudioPlayerView.bs" />
+</component>

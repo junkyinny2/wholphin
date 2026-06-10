@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="PersonDetails" extends="JFScreen">
+  <interface>
+    <field id="buttonSelected" type="string" alwaysNotify="true" />
+    <field id="itemContent" type="node" onChange="loadPerson" />
+    <field id="image" type="node" />
+    <field id="selectedItem" type="node" alias="extrasGrid.selectedItem" alwaysNotify="true" />
+    <function name="setFavoriteColor" />
+  </interface>
+  <children>
+    <Clock translation="[1720, 40]" />
+    <!-- JellyRock port: person details reuse the same bordered biography card and compact action treatment as the shared details screens. -->
+    <LayoutGroup id="main_group"
+      layoutdirection="horiz" translation="[100, 236]" itemSpacings="[72]">
+      <LayoutGroup id="contentColumn" layoutDirection="vert" itemSpacings="[18]">
+        <LayoutGroup id="header_group" layoutdirection="horiz" itemSpacings="[36]">
+          <Text id="name" font="font:LargeBoldSystemFont" width="852" wrap="true" maxLines="2" />
+          <ButtonGroupHoriz id="buttons" itemSpacings="[12]" itemSize="[232, 60]">
+            <TextButton id="favorite-button" focusable="true" iconSide="left"
+              icon="pkg:/images/icons/heart.png" focusIcon="pkg:/images/icons/heart.png"
+              text="Favorite" height="60" width="232" padding="18"
+              background="#55020B2A" focusBackground="#020B2AE6"
+              textColor="#FFFFFF" focusTextColor="#FFFFFF"
+              iconBlendColor="#FFFFFF" />
+          </ButtonGroupHoriz>
+        </LayoutGroup>
+
+        <LayoutGroup id="metaGroup" layoutDirection="vert" itemSpacings="[8]">
+          <Text id="lifeInfo" font="font:SmallestBoldSystemFont" color="#F2F2F2FF" width="1120" visible="false" />
+          <Text id="creditInfo" font="font:SmallestSystemFont" color="#BBBBBBFF" width="1120" visible="false" />
+        </LayoutGroup>
+
+        <Group id="overviewGroup" width="1120" height="472">
+          <Rectangle id="dscrBorder" width="1120" height="472" color="0x00000000">
+            <Rectangle id="overviewBackground" translation="[4, 4]" width="1112" height="464" color="#55020B2A">
+              <Text id="description" focusable="true"
+                height="420" width="1076" wrap="true" maxLines="11" translation="[18, 22]"
+                lineSpacing="5" font="font:SmallestSystemFont" color="#F2F2F2FF"
+                ellipsisText=" ...  (-OK- for More)" />
+            </Rectangle>
+          </Rectangle>
+        </Group>
+      </LayoutGroup>
+
+      <Group id="posterColumn">
+        <Poster id="personImage" width="430" height="645" translation="[0, 10]" loadDisplayMode="scaleToZoom" failedBitmapUri="pkg:/images/baseline_person_white_48dp.png" />
+      </Group>
+    </LayoutGroup>
+    <ExtrasSlider id="personVideos" />
+    <Animation id="personDetailsSlider" duration=".4" repeat="false">
+      <Vector2DFieldInterpolator
+        id="personDetailsSliderInterp"
+        key="[0.0, 1.0]"
+        keyValue="[[100, 236], [100, 236]]"
+        fieldToInterp="main_group.translation" />
+    </Animation>
+  </children>
+
+</component>

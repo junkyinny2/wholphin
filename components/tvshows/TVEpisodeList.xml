@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="TVEpisodeList" extends="Group">
+  <interface>
+    <field id="episodes" type="array" value="" alwaysNotify="true" />
+    <field id="episodeSelected" type="node" alwaysNotify="true" />
+    <field id="selectedEpisode" type="node" />
+    <field id="filterText" type="string" value="" />
+  </interface>
+
+  <children>
+    <MarkupGrid
+      id="episodeGrid"
+      translation="[60, 0]"
+      width="1800"
+      itemComponentName="TVEpisodeListItem"
+      itemSize="[1800, 120]"
+      itemSpacing="[0, 5]"
+      numColumns="1"
+      numRows="6"
+      focusX="1800" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/tvshows/TVEpisodeList.bs" />
+</component>

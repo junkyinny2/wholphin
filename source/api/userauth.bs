@@ -1,0 +1,120 @@
+' Wholphin Roku - User authentication functions
+
+' Authenticate a user by name and password
+function get_token(username as String, password = "" as String) as Object
+    return api.users.AuthenticateByName(username, password)
+end function
+
+' Verify current session by fetching user info
+function AboutMe() as Object
+    return api.users.GetMe()
+end function
+
+' Sign out the current user
+function SignOut() as Object
+    result = api.sessions.Logout()
+    
+    ' Clear session state
+    userId = session.user.GetId()
+    if userId <> "" then
+        ' Save last used user
+        set_setting("last_userId", userId)
+    end if
+    
+    ' Clear queue and stop playback
+    queueManager = m.global.queueManager
+    if queueManager <> invalid then
+        queueManager.callFunc("clear")
+    end if
+    
+    ' Stop audio player
+    audioPlayer = m.global.audioPlayer
+    if audioPlayer <> invalid then
+        audioPlayer.control = "stop"
+    end if
+    
+    ' Clear session
+    session.user.Clear()
+    session.server.Clear()
+    
+    return result
+end function
+
+' Get server information (public info)
+function ServerInfo() as Object
+    return api.system.GetPublicInfo()
+end function
+
+' Get public users list
+function GetPublicUsers() as Object
+    return api.users.GetPublic()
+end function
+
+' Get the users available (requires auth)
+function AvailableUsers() as Object
+    return api.users.Get()
+end function
+
+' Load user abilities from their policy
+function LoadUserAbilities() as Object
+    userData = AboutMe()
+    if userData = invalid then return {}
+    
+    policy = chainLookupReturn(userData, ["Policy"], {})
+    
+    ' Extract key abilities
+    abilities = {
+        IsAdministrator:       chainLookupReturn(policy, ["IsAdministrator"], false)
+        IsHidden:              chainLookupReturn(policy, ["IsHidden"], false)
+        IsDisabled:            chainLookupReturn(policy, ["IsDisabled"], false)
+        EnableLiveTvAccess:    chainLookupReturn(policy, ["EnableLiveTvAccess"], false)
+        EnableLiveTvManagement: chainLookupReturn(policy, ["EnableLiveTvManagement"], false)
+        EnableMediaPlayback:   chainLookupReturn(policy, ["EnableMediaPlayback"], true)
+        EnableAudioPlaybackTranscoding: chainLookupReturn(policy, ["EnableAudioPlaybackTranscoding"], true)
+        EnableVideoPlaybackTranscoding: chainLookupReturn(policy, ["EnableVideoPlaybackTranscoding"], true)
+        EnableContentDeletion: chainLookupReturn(policy, ["EnableContentDeletion"], false)
+        EnableContentDownloading: chainLookupReturn(policy, ["EnableContentDownloading"], false)
+        EnableSyncTranscoding: chainLookupReturn(policy, ["EnableSyncTranscoding"], false)
+        EnableMediaConversion: chainLookupReturn(policy, ["EnableMediaConversion"], false)
+        EnableSharedDevicePlayback: chainLookupReturn(policy, ["EnableSharedDevicePlayback"], true)
+        EnableRemoteAccess:    chainLookupReturn(policy, ["EnableRemoteAccess"], true)
+        EnableRemoteControlOfOtherUsers: chainLookupReturn(policy, ["EnableRemoteControlOfOtherUsers"], false)
+        EnablePlaybackRemuxing: chainLookupReturn(policy, ["EnablePlaybackRemuxing"], true)
+        ForceRemoteSourceTranscoding: chainLookupReturn(policy, ["ForceRemoteSourceTranscoding"], false)
+    }
+    
+    return abilities
+end function
+
+' Initialize Quick Connect
+function initQuickConnect() as Object
+    return api.quickConnect.Initiate()
+end function
+
+' Check Quick Connect status
+function checkQuickConnect(secret as String) as Object
+    return api.quickConnect.Connect(secret)
+end function
+
+' Authenticate via Quick Connect
+function AuthenticateViaQuickConnect(secret as String) as Object
+    return api.quickConnect.Authorize(secret)
+end function
+
+' Check server minimum version requirements
+function serverVersionMeetsMinimumRequirements(version as String) as Boolean
+    if version = "" then return false
+    
+    ' Parse version string (e.g., "10.9.0")
+    parts = version.Split(".")
+    if parts.Count() < 2 then return false
+    
+    major = Val(parts[0])
+    minor = Val(parts[1])
+    
+    ' Require at least Jellyfin 10.8.x
+    if major < 10 then return false
+    if major = 10 and minor < 8 then return false
+    
+    return true
+end function

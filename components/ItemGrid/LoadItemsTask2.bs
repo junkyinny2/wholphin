@@ -1,0 +1,40 @@
+' Wholphin Roku - Async task for loading library items
+
+sub Init()
+    m.top.functionName = "loadItems"
+end sub
+
+sub loadItems()
+    userId = m.top.userId
+    if userId = "" then userId = session.user.GetId()
+
+    params = {
+        userId:     userId
+        Limit:      m.top.limit.ToStr()
+        StartIndex: m.top.startIndex.ToStr()
+        SortBy:     m.top.sortBy
+        SortOrder:  m.top.sortOrder
+        Recursive:  "true"
+        Fields:     "PrimaryImageAspectRatio,BasicSyncInfo,DateCreated"
+        ImageTypeLimit: "1"
+    }
+
+    if m.top.parentId <> "" then params.parentId = m.top.parentId
+    if m.top.includeItemTypes <> "" then params.IncludeItemTypes = m.top.includeItemTypes
+    if m.top.filters <> "" then params.Filters = m.top.filters
+    if m.top.genres <> "" then params.Genres = m.top.genres
+    if m.top.searchTerm <> "" then params.searchTerm = m.top.searchTerm
+
+    result = api.items.Get(params)
+
+    if result <> invalid then
+        items = chainLookupReturn(result, ["Items"], [])
+        m.top.loadedItems = items
+        m.top.totalCount = chainLookupReturn(result, ["TotalRecordCount"], 0)
+        m.top.loadStatus = "loaded"
+    else
+        m.top.loadedItems = []
+        m.top.totalCount = 0
+        m.top.loadStatus = "error"
+    end if
+end sub

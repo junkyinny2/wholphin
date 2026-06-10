@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="LiveTVLibraryView" extends="JFScreen">
+  <interface>
+    <field id="libraryData" type="node" alwaysNotify="true" />
+    <field id="channels" type="array" value="" />
+    <field id="programs" type="array" value="" />
+    <field id="selectedChannel" type="node" />
+    <field id="viewMode" type="string" value="channels" /> <!-- channels, guide, recordings -->
+  </interface>
+
+  <children>
+    <Rectangle
+      width="1920"
+      height="1080"
+      color="0x1A1A2EFF" />
+
+    <Label
+      id="liveTvTitle"
+      translation="[60, 30]"
+      width="500"
+      height="40"
+      font="font:LargeBoldSystemFont"
+      color="0xFFFFFFFF"
+      text=""
+      vertAlign="center" />
+
+    <Group id="liveTvFilterBar" translation="[60, 80]">
+      <JFButton id="btnChannels" translation="[0, 0]" buttonText="Channels" width="160" />
+      <JFButton id="btnGuide" translation="[180, 0]" buttonText="Guide" width="160" />
+      <JFButton id="btnRecordings" translation="[360, 0]" buttonText="Recordings" width="160" />
+    </Group>
+
+    <Label
+      id="liveTvLoadingLabel"
+      translation="[860, 490]"
+      width="200"
+      height="30"
+      font="font:MediumSystemFont"
+      color="0xB0B0B0FF"
+      text="Loading..."
+      horizAlign="center"
+      visible="false" />
+
+    <MarkupGrid
+      id="channelGrid"
+      translation="[60, 130]"
+      width="1800"
+      height="900"
+      itemComponentName="GridItemMedium"
+      itemSize="[290, 200]"
+      itemSpacing="[15, 15]"
+      numColumns="6"
+      numRows="4"
+      visible="false" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/Libraries/LiveTVLibraryView.bs" />
+</component>

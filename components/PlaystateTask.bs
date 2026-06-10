@@ -1,0 +1,70 @@
+' Wholphin Roku - Background task for reporting playback progress
+
+sub Init()
+    m.top.functionName = "processPlaystate"
+end sub
+
+' Main processing function
+sub processPlaystate()
+    while true
+        if m.top.action = "start" then
+            reportPlaying()
+            m.top.action = ""
+        else if m.top.action = "progress" then
+            reportProgress()
+            m.top.action = ""
+        else if m.top.action = "stop" then
+            reportStopped()
+            m.top.action = ""
+        end if
+        
+        ' Sleep to avoid busy-waiting
+        sleep(100)
+    end while
+end sub
+
+' Report that playback has started
+sub reportPlaying()
+    data = buildPlaystateData()
+    if data = invalid then return
+    
+    api.sessions.Playing(data)
+end sub
+
+' Report playback progress
+sub reportProgress()
+    data = buildPlaystateData()
+    if data = invalid then return
+    
+    api.sessions.PostProgress(data)
+end sub
+
+' Report that playback has stopped
+sub reportStopped()
+    data = buildPlaystateData()
+    if data = invalid then return
+    
+    api.sessions.PostStopped(data)
+end sub
+
+' Build the playstate data object
+function buildPlaystateData() as Object
+    if m.top.itemId = "" then return invalid
+    
+    data = {
+        ItemId:          m.top.itemId
+        PlaySessionId:   m.top.playSessionId
+        PositionTicks:   m.top.positionTicks
+        IsPaused:        m.top.isPaused
+        IsMuted:         false
+        AudioStreamIndex: m.top.audioStreamIndex
+        SubtitleStreamIndex: m.top.subtitleStreamIndex
+        VolumeLevel:     m.top.volumeLevel
+        PlayMethod:      m.top.playMethod
+        LiveStream:      m.top.liveStream
+        MediaSourceId:   m.top.mediaSourceId
+        CanSeek:         true
+    }
+    
+    return data
+end function

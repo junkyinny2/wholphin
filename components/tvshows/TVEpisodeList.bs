@@ -1,0 +1,64 @@
+' Wholphin Roku - Episode list for a season
+
+sub Init()
+    m.episodeGrid = m.top.findNode("episodeGrid")
+
+    m.top.observeField("episodes", m.port)
+    m.episodeGrid.observeField("itemSelected", m.port)
+    m.episodeGrid.observeField("focusedItem", m.port)
+end sub
+
+function onEpisodesChange() as Void
+    episodes = m.top.episodes
+    if episodes = invalid or episodes.Count() = 0 then return
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for each episode in episodes
+        child = content.CreateChild("ContentNode")
+        child.id = chainLookupReturn(episode, ["Id"], "")
+        child.title = chainLookupReturn(episode, ["Name"], "")
+        child.type = "Episode"
+        child.json = episode
+
+        episodeNumber = chainLookupReturn(episode, ["IndexNumber"], 0)
+        seasonNumber = chainLookupReturn(episode, ["ParentIndexNumber"], 0)
+        child.episodeNumber = episodeNumber
+        child.seasonNumber = seasonNumber
+
+        runtime = chainLookupReturn(episode, ["RunTimeTicks"], 0)
+        if runtime > 0 then
+            child.runtime = ticksToSeconds(runtime)
+        end if
+
+        overview = chainLookupReturn(episode, ["Overview"], "")
+        if overview <> invalid and Len(overview) > 150 then
+            overview = Left(overview, 150) + "..."
+        end if
+        child.description = overview
+
+        img = PosterImage(child.id, { maxHeight: 120, maxWidth: 200 })
+        if img <> invalid then
+            child.HDPosterUrl = img.url
+        end if
+
+        userData = chainLookupReturn(episode, ["UserData"], {})
+        child.watched = chainLookupReturn(userData, ["Played"], false)
+        child.favorite = chainLookupReturn(userData, ["IsFavorite"], false)
+        child.playbackPosition = chainLookupReturn(userData, ["PlaybackPositionTicks"], 0)
+    end for
+
+    m.episodeGrid.content = content
+    m.episodeGrid.numRows = episodes.Count()
+    m.episodeGrid.setFocus(true)
+end function
+
+function onItemSelected() as Void
+    focused = m.episodeGrid.focusedItem
+    if focused = invalid then return
+    m.top.selectedEpisode = focused.json
+    m.top.episodeSelected = focused
+end function
+
+function onFocusedItem() as Void
+    ' Handle focus change for preview
+end function

@@ -1,0 +1,19 @@
+' Wholphin Roku - PersonType enum
+
+namespace api
+
+    enum PersonType
+        ACTOR                = "Actor"
+        DIRECTOR             = "Director"
+        WRITER               = "Writer"
+        PRODUCER             = "Producer"
+        GUEST                = "Guest"
+        COMPOSER             = "Composer"
+        CONDUCTOR            = "Conductor"
+        LYRICIST             = "Lyricist"
+        ARTIST               = "Artist"
+        ALBUM_ARTIST         = "AlbumArtist"
+        TRACK_ARTIST         = "TrackArtist"
+    end enum
+
+end namespace

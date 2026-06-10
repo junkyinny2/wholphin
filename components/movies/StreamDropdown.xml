@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="StreamDropdown" extends="Group">
+  <interface>
+    <field id="streamType" type="string" value="" /> <!-- audio, subtitle -->
+    <field id="tracks" type="array" value="" alwaysNotify="true" />
+    <field id="selectedIndex" type="int" value="-1" alwaysNotify="true" />
+    <field id="title" type="string" value="Select Track" />
+  </interface>
+
+  <children>
+    <Rectangle
+      id="dropdownBg"
+      width="400"
+      height="500"
+      color="0x16213EFF" />
+
+    <Label
+      id="dropdownTitle"
+      translation="[20, 20]"
+      width="360"
+      height="30"
+      font="font:MediumBoldSystemFont"
+      color="0xFFFFFFFF"
+      text="Select Track"
+      vertAlign="center" />
+
+    <LabelList
+      id="dropdownList"
+      translation="[20, 70]"
+      width="360"
+      height="400"
+      itemSize="[360, 50]"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      focusedColor="0x00A4DCFF"
+      showFocusFootprint="false" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/movies/StreamDropdown.bs" />
+</component>

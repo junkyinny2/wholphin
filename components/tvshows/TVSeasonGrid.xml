@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="TVSeasonGrid" extends="Group">
+  <interface>
+    <field id="seasons" type="array" value="" alwaysNotify="true" />
+    <field id="seriesId" type="string" value="" />
+    <field id="seasonSelected" type="node" alwaysNotify="true" />
+    <field id="selectedSeason" type="node" />
+  </interface>
+
+  <children>
+    <MarkupGrid
+      id="seasonMarkupGrid"
+      translation="[0, 0]"
+      width="1800"
+      height="350"
+      itemComponentName="GridItem"
+      itemSize="[196, 340]"
+      itemSpacing="[10, 0]"
+      numColumns="8"
+      numRows="1" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/tvshows/TVSeasonGrid.bs" />
+</component>

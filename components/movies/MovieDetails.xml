@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="MovieDetails" extends="JFScreen">
+  <interface>
+    <field id="movie" type="node" alwaysNotify="true" />
+    <field id="metaData" type="node" />
+    <field id="isFavorite" type="boolean" value="false" />
+    <field id="isPlayed" type="boolean" value="false" />
+    <field id="versions" type="array" value="" />
+    <field id="selectedVersion" type="int" value="0" />
+    <field id="extras" type="array" value="" />
+  </interface>
+
+  <children>
+    <!-- Backdrop image -->
+    <Poster
+      id="movieBackdrop"
+      translation="[0, 0]"
+      width="1920"
+      height="520"
+      loadDisplayMode="scaleToFit" />
+
+    <Rectangle
+      id="backdropOverlay"
+      translation="[0, 0]"
+      width="1920"
+      height="520"
+      color="0x00000060" />
+
+    <!-- Movie poster -->
+    <Poster
+      id="moviePoster"
+      translation="[60, 80]"
+      width="260"
+      height="390"
+      loadDisplayMode="scaleToFit" />
+
+    <!-- Title section -->
+    <Label
+      id="movieTitle"
+      translation="[360, 80]"
+      width="1000"
+      height="45"
+      font="font:LargeBoldSystemFont"
+      color="0xFFFFFFFF"
+      text=""
+      vertAlign="center" />
+
+    <Label
+      id="movieYear"
+      translation="[360, 130]"
+      width="120"
+      height="30"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      text=""
+      vertAlign="center" />
+
+    <Label
+      id="movieRuntime"
+      translation="[490, 130]"
+      width="120"
+      height="30"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      text=""
+      vertAlign="center" />
+
+    <Label
+      id="movieRating"
+      translation="[620, 130]"
+      width="120"
+      height="30"
+      font="font:SmallSystemFont"
+      color="0xFFC107FF"
+      text=""
+      vertAlign="center" />
+
+    <!-- Overview -->
+    <Label
+      id="movieOverview"
+      translation="[360, 170]"
+      width="1070"
+      height="120"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      text=""
+      wrap="true"
+      vertAlign="top" />
+
+    <!-- Action buttons -->
+    <Group id="actionButtons" translation="[360, 310]">
+      <JFButton id="btnPlay" translation="[0, 0]" buttonText="Play" width="160" />
+      <JFButton id="btnResume" translation="[180, 0]" buttonText="Resume" width="160" visible="false" />
+      <JFButton id="btnTrailer" translation="[360, 0]" buttonText="Trailer" width="160" />
+      <JFButton id="btnFavorite" translation="[540, 0]" buttonText="Favorite" width="160" />
+      <JFButton id="btnMyList" translation="[720, 0]" buttonText="My List" width="160" />
+      <JFButton id="btnSubtitles" translation="[900, 0]" buttonText="Subtitles" width="160" />
+      <JFButton id="btnVersions" translation="[1080, 0]" buttonText="Versions" width="160" visible="false" />
+    </Group>
+
+    <!-- Content section below backdrop -->
+    <Group id="contentSection" translation="[0, 530]">
+      <!-- Extras row -->
+      <Label
+        id="extrasLabel"
+        translation="[60, 20]"
+        width="300"
+        height="30"
+        font="font:MediumBoldSystemFont"
+        color="0xFFFFFFFF"
+        text="Extras"
+        visible="false" />
+
+      <MarkupGrid
+        id="extrasGrid"
+        translation="[60, 60]"
+        width="1800"
+        height="280"
+        itemComponentName="HomeItem"
+        itemSize="[196, 270]"
+        itemSpacing="[10, 0]"
+        numColumns="8"
+        numRows="1"
+        visible="false" />
+
+      <!-- Cast row -->
+      <Label
+        id="castLabel"
+        translation="[60, 360]"
+        width="300"
+        height="30"
+        font="font:MediumBoldSystemFont"
+        color="0xFFFFFFFF"
+        text="Cast"
+        visible="false" />
+
+      <MarkupGrid
+        id="castGrid"
+        translation="[60, 400]"
+        width="1800"
+        height="200"
+        itemComponentName="CastItem"
+        itemSize="[150, 200]"
+        itemSpacing="[10, 0]"
+        numColumns="10"
+        numRows="1"
+        visible="false" />
+    </Group>
+
+    <!-- Version selector side panel -->
+    <Group id="versionPanel" translation="[1920, 0]" width="400" height="1080" visible="false">
+      <Rectangle
+        id="versionPanelBg"
+        width="400"
+        height="1080"
+        color="0x16213EFF" />
+      <Label
+        id="versionPanelTitle"
+        translation="[20, 30]"
+        width="360"
+        height="30"
+        font="font:MediumBoldSystemFont"
+        color="0xFFFFFFFF"
+        text="Select Version" />
+      <LabelList
+        id="versionList"
+        translation="[20, 80]"
+        width="360"
+        height="900"
+        itemSize="[360, 60]"
+        font="font:SmallSystemFont"
+        color="0xB0B0B0FF"
+        focusedColor="0x00A4DCFF" />
+    </Group>
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/movies/MovieDetails.bs" />
+</component>

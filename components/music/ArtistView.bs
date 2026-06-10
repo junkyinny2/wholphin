@@ -1,0 +1,122 @@
+' Wholphin Roku - Music artist detail view
+
+sub Init()
+    m.artistBackdrop = m.top.findNode("artistBackdrop")
+    m.artistImage = m.top.findNode("artistImage")
+    m.artistName = m.top.findNode("artistName")
+    m.artistBio = m.top.findNode("artistBio")
+    m.albumsGrid = m.top.findNode("albumsGrid")
+    m.btnArtistShuffle = m.top.findNode("btnArtistShuffle")
+    m.btnArtistFavorite = m.top.findNode("btnArtistFavorite")
+
+    m.top.observeField("artist", m.port)
+    m.btnArtistShuffle.observeField("buttonSelected", m.port)
+    m.btnArtistFavorite.observeField("buttonSelected", m.port)
+    m.albumsGrid.observeField("itemSelected", m.port)
+end sub
+
+function onArtistChange() as Void
+    LoadData()
+end function
+
+function LoadData() as Void
+    m.top.loadingData = true
+    m.top.overhangTitle = translateText("Artist")
+
+    artist = m.top.artist
+    if artist = invalid then return
+
+    artistId = chainLookupReturn(artist, ["id"], "")
+    if artistId = "" then artistId = chainLookupReturn(artist, ["Id"], "")
+    if artistId = "" then return
+
+    jsonData = chainLookupReturn(artist, ["json"], artist)
+
+    m.artistName.text = chainLookupReturn(jsonData, ["Name"], "")
+
+    bio = chainLookupReturn(jsonData, ["Overview"], "")
+    if bio <> invalid and Len(bio) > 300 then bio = Left(bio, 300) + "..."
+    m.artistBio.text = bio
+
+    img = PosterImage(artistId, { maxHeight: 280, maxWidth: 280 })
+    if img <> invalid then
+        m.artistImage.uri = img.url
+    end if
+
+    backdropUrl = BackdropImageURL(artistId)
+    if backdropUrl <> "" then
+        m.artistBackdrop.uri = backdropUrl
+    end if
+
+    userData = chainLookupReturn(jsonData, ["UserData"], {})
+    m.top.isFavorite = chainLookupReturn(userData, ["IsFavorite"], false)
+    if m.top.isFavorite then
+        m.btnArtistFavorite.buttonText = translateText("Favorited")
+    end if
+
+    loadAlbums(artistId)
+
+    m.top.loadingData = false
+    m.top.dataLoaded = true
+end function
+
+function loadAlbums(artistId as String) as Void
+    albumsData = MusicAlbumList(artistId)
+    if albumsData = invalid then return
+    albums = chainLookupReturn(albumsData, ["Items"], [])
+    if albums = invalid then return
+
+    m.top.albums = albums
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for each album in albums
+        child = content.CreateChild("ContentNode")
+        child.id = chainLookupReturn(album, ["Id"], "")
+        child.title = chainLookupReturn(album, ["Name"], "")
+        child.type = "MusicAlbum"
+        child.json = album
+
+        img = PosterImage(child.id, { maxHeight: 340, maxWidth: 290 })
+        if img <> invalid then
+            child.HDPosterUrl = img.url
+        end if
+    end for
+    m.albumsGrid.content = content
+end function
+
+function onButtonSelected() as Void
+    btn = m.top.lastEventNode
+    if btn = invalid then return
+
+    if btn.id = "btnArtistShuffle" then
+        albums = m.top.albums
+        if albums <> invalid and albums.Count() > 0 then
+            randomAlbum = albums[0]
+            quickplay.album(randomAlbum)
+        end if
+    else if btn.id = "btnArtistFavorite" then
+        artistId = chainLookupReturn(m.top.artist, ["id"], "")
+        if artistId = "" then artistId = chainLookupReturn(m.top.artist, ["Id"], "")
+        if artistId <> "" then
+            MainAction_MarkFavorite(artistId, m.top.isFavorite)
+            m.top.isFavorite = not m.top.isFavorite
+            if m.top.isFavorite then
+                m.btnArtistFavorite.buttonText = translateText("Favorited")
+            else
+                m.btnArtistFavorite.buttonText = translateText("Favorite")
+            end if
+        end if
+    end if
+end function
+
+function onAlbumSelected() as Void
+    focused = m.albumsGrid.focusedItem
+    if focused = invalid then return
+
+    albumData = {
+        id:   focused.id
+        Name: focused.title
+        json: focused.json
+    }
+    CreateAlbumView(albumData)
+end function

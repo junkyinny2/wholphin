@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="Spinner" extends="Group">
+  <interface>
+    <field id="loadingText" type="string" value="" />
+    <field id="spinnerSize" type="int" value="60" />
+  </interface>
+  
+  <children>
+    <!-- Spinner background -->
+    <Rectangle
+      id="spinnerBg"
+      width="200"
+      height="100"
+      color="0x00000080"
+      translation="[-100, -50]" />
+    
+    <!-- Animated spinner poster -->
+    <Poster
+      id="spinnerImage"
+      translation="[-30, -30]"
+      width="60"
+      height="60"
+      uri="pkg:/images/spinner.png"
+      visible="true" />
+    
+    <!-- Loading text -->
+    <Label
+      id="spinnerLabel"
+      translation="[40, -15]"
+      width="160"
+      height="30"
+      font="font:SmallSystemFont"
+      color="0xFFFFFFFF"
+      text=""
+      horizAlign="center"
+      vertAlign="center" />
+  </children>
+  
+  <script type="text/brightscript" uri="pkg:/components/Spinner.bs" />
+</component>

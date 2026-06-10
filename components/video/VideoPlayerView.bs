@@ -1,0 +1,334 @@
+' Wholphin Roku - Full video player logic
+
+sub Init()
+    m.video = m.top.findNode("videoPlayer")
+    m.posterBg = m.top.findNode("posterBackground")
+    m.osd = m.top.findNode("osd")
+    m.nextUpBox = m.top.findNode("nextUpBox")
+    m.nextUpBg = m.top.findNode("nextUpBg")
+    m.nextUpTitle = m.top.findNode("nextUpTitle")
+    m.nextUpImage = m.top.findNode("nextUpImage")
+    m.nextUpLabel = m.top.findNode("nextUpLabel")
+    m.nextUpTimer = m.top.findNode("nextUpTimer")
+    m.skipSegmentButton = m.top.findNode("skipSegmentButton")
+    m.skipSegmentLabel = m.top.findNode("skipSegmentLabel")
+    m.captionGroup = m.top.findNode("captionGroup")
+    m.trickPlayBar = m.top.findNode("trickPlayBar")
+    m.bufferingOverlay = m.top.findNode("bufferingOverlay")
+    m.bufferingLabel = m.top.findNode("bufferingLabel")
+
+    m.top.observeField("videoItem", m.port)
+    m.video.observeField("state", m.port)
+    m.video.observeField("position", m.port)
+    m.video.observeField("duration", m.port)
+    m.video.observeField("bufferingStatus", m.port)
+    m.video.observeField("streamUrl", m.port)
+    m.video.observeField("loadStatus", m.port)
+
+    m.playbackTimer = CreateObject("roSGNode", "Timer")
+    m.playbackTimer.repeat = true
+    m.playbackTimer.duration = 30
+    m.playbackTimer.observeField("fire", m.port)
+
+    m.bufferCheckTimer = CreateObject("roSGNode", "Timer")
+    m.bufferCheckTimer.repeat = true
+    m.bufferCheckTimer.duration = 2
+    m.bufferCheckTimer.observeField("fire", m.port)
+
+    m.bufferRetryCount = 0
+    m.bufferRetryMax = 3
+    m.contentLoaded = false
+end sub
+
+function startPlayback() as Void
+    item = m.top.videoItem
+    if item = invalid then return
+
+    itemId = chainLookupReturn(item, ["id"], "")
+    if itemId = "" then return
+
+    startTimeTicks = m.top.startTimeTicks
+
+    m.posterBg.uri = PosterImage(itemId, { maxHeight: 1080, maxWidth: 1920 }).url
+
+    task = CreateObject("roSGNode", "LoadVideoContentTask")
+    task.itemId = itemId
+    task.mediaSourceId = m.top.mediaSourceId
+    task.audioStreamIndex = m.top.audioStreamIndex
+    task.subtitleStreamIndex = m.top.subtitleStreamIndex
+    task.startTimeTicks = startTimeTicks
+    task.observeField("content", m.port)
+    task.observeField("loadStatus", m.port)
+    task.control = "RUN"
+end function
+
+function onLoadVideoContent() as Void
+    task = m.top.lastEventNode
+    if task = invalid then return
+
+    content = task.content
+    if content = invalid then
+        showError(translateText("Failed to load video content"))
+        return
+    end if
+
+    m.video.content = content
+    m.contentLoaded = true
+
+    if task.playSessionId <> "" then m.top.playSessionId = task.playSessionId
+    if task.mediaSourceId <> "" then m.top.mediaSourceId = task.mediaSourceId
+    if task.playMethod <> "" then m.top.playMethod = task.playMethod
+
+    chapters = task.chapters
+    if chapters <> invalid and chapters.Count() > 0 then
+        m.top.chapters = chapters
+        m.osd.chapters = chapters
+    end if
+
+    m.video.control = "play"
+end function
+
+function onVideoStateChange() as Void
+    state = m.video.state
+    m.top.playerState = state
+
+    if state = "playing" then
+        m.bufferingOverlay.visible = false
+        m.bufferingLabel.visible = false
+        m.bufferCheckTimer.control = "stop"
+        m.bufferRetryCount = 0
+
+        m.playbackTimer.control = "start"
+
+        playstate = m.global.playstateTask
+        if playstate <> invalid then
+            playstate.itemId = m.top.videoItem.id
+            playstate.playSessionId = m.top.playSessionId
+            playstate.mediaSourceId = m.top.mediaSourceId
+            playstate.audioStreamIndex = m.top.audioStreamIndex
+            playstate.subtitleStreamIndex = m.top.subtitleStreamIndex
+            playstate.playMethod = m.top.playMethod
+            playstate.liveStream = m.top.liveStream
+            playstate.action = "start"
+        end if
+
+    else if state = "paused" then
+        m.playbackTimer.control = "stop"
+
+    else if state = "stopped" or state = "finished" then
+        m.playbackTimer.control = "stop"
+        reportPlaybackStopped()
+
+        if state = "finished" then
+            showNextUp()
+        end if
+
+    else if state = "error" or state = "failed" then
+        m.playbackTimer.control = "stop"
+        handlePlaybackError()
+    end if
+
+    m.osd.playerState = state
+end function
+
+function onVideoPositionChange() as Void
+    position = m.video.position
+    duration = m.video.duration
+
+    if duration > 0 then
+        m.osd.position = position
+        m.osd.duration = duration
+        m.top.playbackPosition = position
+    end if
+
+    checkSkipSegments(position)
+end function
+
+function onBufferingStatusChange() as Void
+    status = m.video.bufferingStatus
+    if status = invalid then return
+
+    if status.status = "buffering" then
+        m.bufferingOverlay.visible = true
+        m.bufferingLabel.visible = true
+        m.bufferCheckTimer.control = "start"
+    else if status.status = "playing" then
+        m.bufferingOverlay.visible = false
+        m.bufferingLabel.visible = false
+        m.bufferCheckTimer.control = "stop"
+        m.bufferRetryCount = 0
+    end if
+end function
+
+function handlePlaybackError() as Void
+    m.bufferRetryCount = m.bufferRetryCount + 1
+
+    if m.bufferRetryCount <= m.bufferRetryMax then
+        position = m.video.position
+        if position > 0 then
+            m.video.seek = position - 10
+        end if
+        m.video.control = "play"
+    else
+        showError(translateText("Playback error. Please try again."))
+    end if
+end function
+
+function reportPlaybackStopped() as Void
+    playstate = m.global.playstateTask
+    if playstate <> invalid then
+        playstate.positionTicks = secondsToTicks(m.video.position)
+        playstate.action = "stop"
+    end if
+end function
+
+function showError(message as String) as Void
+    m.bufferingOverlay.visible = true
+    m.bufferingLabel.text = message
+end function
+
+function checkSkipSegments(positionSecs as Integer) as Void
+    segments = m.top.skipSegments
+    if segments = invalid or segments.Count() = 0 then return
+
+    positionTicks = secondsToTicks(positionSecs)
+    for each segment in segments
+        start = chainLookupReturn(segment, ["StartTicks"], 0)
+        endTicks = chainLookupReturn(segment, ["EndTicks"], 0)
+        segType = chainLookupReturn(segment, ["Type"], "")
+
+        if positionTicks >= start and positionTicks < endTicks then
+            if segType = "Intro" then
+                m.skipSegmentLabel.text = translateText("Skip Intro")
+            else if segType = "Outro" then
+                m.skipSegmentLabel.text = translateText("Skip Outro")
+            else if segType = "Commercial" then
+                m.skipSegmentLabel.text = translateText("Skip Commercial")
+            end if
+            m.skipSegmentButton.visible = true
+            return
+        end if
+    end for
+
+    m.skipSegmentButton.visible = false
+end function
+
+function skipToNextSegment() as Void
+    segments = m.top.skipSegments
+    if segments = invalid or segments.Count() = 0 then return
+
+    positionTicks = secondsToTicks(m.video.position)
+    for each segment in segments
+        endTicks = chainLookupReturn(segment, ["EndTicks"], 0)
+        if positionTicks < endTicks then
+            m.video.seek = ticksToSeconds(endTicks)
+            m.skipSegmentButton.visible = false
+            return
+        end if
+    end for
+end function
+
+function showNextUp() as Void
+    nextUp = m.top.nextUpItem
+    if nextUp = invalid then return
+
+    m.nextUpTitle.text = chainLookupReturn(nextUp, ["Name"], "")
+    m.nextUpLabel.text = chainLookupReturn(nextUp, ["Overview"], "")
+    img = PosterImage(chainLookupReturn(nextUp, ["Id"], ""))
+    if img <> invalid then
+        m.nextUpImage.uri = img.url
+    end if
+
+    countdown = 15
+    m.nextUpTimer.text = translateText("Next episode in ") + countdown.ToStr()
+
+    timer = CreateObject("roSGNode", "Timer")
+    timer.duration = 1
+    timer.repeat = true
+    timer.observeField("fire", m.port)
+    m.nextUpTimer.userData = { countdown: countdown, timer: timer }
+    timer.control = "start"
+
+    m.nextUpBox.visible = true
+end function
+
+function hideNextUp() as Void
+    m.nextUpBox.visible = false
+    if m.nextUpTimer.userData <> invalid and m.nextUpTimer.userData.timer <> invalid then
+        m.nextUpTimer.userData.timer.control = "stop"
+    end if
+end function
+
+function playNextUp() as Void
+    hideNextUp()
+    nextUp = m.top.nextUpItem
+    if nextUp <> invalid then
+        m.top.videoItem = nextUp
+        m.top.startTimeTicks = 0
+        startPlayback()
+    end if
+end function
+
+function togglePlayPause() as Void
+    if m.video.state = "playing" then
+        m.video.control = "pause"
+    else
+        m.video.control = "play"
+    end if
+end function
+
+function seekForward(seconds as Integer) as Void
+    position = m.video.position + seconds
+    dur = m.video.duration
+    if position > dur then position = dur
+    m.video.seek = position
+end function
+
+function seekBackward(seconds as Integer) as Void
+    position = m.video.position - seconds
+    if position < 0 then position = 0
+    m.video.seek = position
+end function
+
+function seekToPosition(seconds as Integer) as Void
+    m.video.seek = seconds
+end function
+
+function setSubtitleTrack(index as Integer) as Void
+    m.video.subtitleTrack = index
+    m.top.subtitleStreamIndex = index
+end function
+
+function setAudioTrack(index as Integer) as Void
+    m.video.audioTrack = index
+    m.top.audioStreamIndex = index
+end function
+
+function seekToChapter(index as Integer) as Void
+    chapters = m.top.chapters
+    if chapters = invalid or index >= chapters.Count() then return
+    chapter = chapters[index]
+    startPos = chainLookupReturn(chapter, ["StartPositionTicks"], 0)
+    m.video.seek = ticksToSeconds(startPos)
+    m.top.currentChapter = index
+end function
+
+function onBackPressed() as Boolean
+    if m.nextUpBox.visible then
+        hideNextUp()
+        return true
+    end if
+
+    if m.skipSegmentButton.visible then
+        m.skipSegmentButton.visible = false
+        return true
+    end if
+
+    if m.video.state = "playing" then
+        m.video.control = "pause"
+    end if
+
+    reportPlaybackStopped()
+    m.global.sceneManager.callFunc("popScene")
+    return true
+end function

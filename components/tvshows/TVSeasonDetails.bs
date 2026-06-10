@@ -1,0 +1,113 @@
+' Wholphin Roku - Season details with episode list
+
+sub Init()
+    m.seasonBackdrop = m.top.findNode("seasonBackdrop")
+    m.seasonPoster = m.top.findNode("seasonPoster")
+    m.seasonTitle = m.top.findNode("seasonTitle")
+    m.seasonEpisodeCount = m.top.findNode("seasonEpisodeCount")
+    m.seasonOverview = m.top.findNode("seasonOverview")
+    m.episodeList = m.top.findNode("episodeList")
+    m.btnPlayAll = m.top.findNode("btnPlayAll")
+    m.btnShuffleSeason = m.top.findNode("btnShuffleSeason")
+
+    m.top.observeField("seasonData", m.port)
+    m.btnPlayAll.observeField("buttonSelected", m.port)
+    m.btnShuffleSeason.observeField("buttonSelected", m.port)
+    m.episodeList.observeField("episodeSelected", m.port)
+end sub
+
+function onSeasonDataChange() as Void
+    LoadData()
+end function
+
+function LoadData() as Void
+    m.top.loadingData = true
+
+    season = m.top.seasonData
+    series = m.top.seriesData
+    if season = invalid then return
+
+    seasonId = chainLookupReturn(season, ["id"], "")
+    if seasonId = "" then seasonId = chainLookupReturn(season, ["Id"], "")
+    if seasonId = "" then return
+
+    seriesId = chainLookupReturn(series, ["id"], "")
+    if seriesId = "" then seriesId = chainLookupReturn(series, ["Id"], "")
+    if seriesId = "" then return
+
+    jsonData = chainLookupReturn(season, ["json"], season)
+
+    name = chainLookupReturn(jsonData, ["Name"], "")
+    m.seasonTitle.text = chainLookupReturn(jsonData, ["SeriesName"], "") + " - " + name
+
+    episodeCount = chainLookupReturn(jsonData, ["ChildCount"], 0)
+    m.seasonEpisodeCount.text = episodeCount.ToStr() + " " + translateText("episodes")
+
+    overview = chainLookupReturn(jsonData, ["Overview"], "")
+    if overview <> invalid then
+        if Len(overview) > 300 then overview = Left(overview, 300) + "..."
+        m.seasonOverview.text = overview
+    end if
+
+    posterImg = PosterImage(seasonId, { maxHeight: 240, maxWidth: 160 })
+    if posterImg <> invalid then
+        m.seasonPoster.uri = posterImg.url
+    end if
+
+    backdropUrl = BackdropImageURL(seriesId)
+    if backdropUrl <> "" then
+        m.seasonBackdrop.uri = backdropUrl
+    end if
+
+    loadEpisodes(seriesId, seasonId)
+
+    m.top.loadingData = false
+    m.top.dataLoaded = true
+end function
+
+function loadEpisodes(seriesId as String, seasonId as String) as Void
+    episodesData = api.shows.GetEpisodes(seriesId, seasonId, {
+        userId: session.user.GetId()
+        Fields: "PrimaryImageAspectRatio,BasicSyncInfo,MediaSources"
+        ImageTypeLimit: "1"
+    })
+
+    if episodesData = invalid then return
+    episodes = chainLookupReturn(episodesData, ["Items"], [])
+    if episodes = invalid then return
+
+    m.top.episodes = episodes
+    m.episodeList.episodes = episodes
+end function
+
+function onButtonSelected() as Void
+    btn = m.top.lastEventNode
+    if btn = invalid then return
+
+    if btn.id = "btnPlayAll" then
+        episodes = m.top.episodes
+        if episodes <> invalid and episodes.Count() > 0 then
+            quickplay.shuffle(episodes)
+        end if
+    else if btn.id = "btnShuffleSeason" then
+        episodes = m.top.episodes
+        if episodes <> invalid and episodes.Count() > 0 then
+            quickplay.shuffle(episodes)
+        end if
+    end if
+end function
+
+function onEpisodeSelected() as Void
+    selectedEpisode = m.episodeList.selectedEpisode
+    if selectedEpisode = invalid then return
+
+    itemId = chainLookupReturn(selectedEpisode, ["Id"], "")
+    if itemId = "" then return
+
+    itemNode = CreateObject("roSGNode", "VideoData")
+    itemNode.id = itemId
+    itemNode.json = selectedEpisode
+    itemNode.title = chainLookupReturn(selectedEpisode, ["Name"], "")
+
+    quickplay.video(itemNode)
+end function

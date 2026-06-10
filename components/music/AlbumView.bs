@@ -1,0 +1,150 @@
+' Wholphin Roku - Album detail view with track list
+
+sub Init()
+    m.albumBackdrop = m.top.findNode("albumBackdrop")
+    m.albumCover = m.top.findNode("albumCover")
+    m.albumTitle = m.top.findNode("albumTitle")
+    m.albumArtist = m.top.findNode("albumArtist")
+    m.albumYear = m.top.findNode("albumYear")
+    m.trackList = m.top.findNode("trackList")
+    m.btnAlbumPlay = m.top.findNode("btnAlbumPlay")
+    m.btnAlbumShuffle = m.top.findNode("btnAlbumShuffle")
+    m.btnAlbumFavorite = m.top.findNode("btnAlbumFavorite")
+
+    m.top.observeField("album", m.port)
+    m.btnAlbumPlay.observeField("buttonSelected", m.port)
+    m.btnAlbumShuffle.observeField("buttonSelected", m.port)
+    m.btnAlbumFavorite.observeField("buttonSelected", m.port)
+    m.trackList.observeField("itemSelected", m.port)
+end sub
+
+function onAlbumChange() as Void
+    LoadData()
+end function
+
+function LoadData() as Void
+    m.top.loadingData = true
+    m.top.overhangTitle = translateText("Album")
+
+    album = m.top.album
+    if album = invalid then return
+
+    albumId = chainLookupReturn(album, ["id"], "")
+    if albumId = "" then albumId = chainLookupReturn(album, ["Id"], "")
+    if albumId = "" then return
+
+    jsonData = chainLookupReturn(album, ["json"], album)
+
+    m.albumTitle.text = chainLookupReturn(jsonData, ["Name"], "")
+
+    artist = chainLookupReturn(jsonData, ["AlbumArtist"], "")
+    if artist = "" then artist = chainLookupReturn(jsonData, ["Artists", 0], "")
+    m.albumArtist.text = artist
+
+    year = chainLookupReturn(jsonData, ["ProductionYear"], "")
+    if year <> invalid then
+        m.albumYear.text = year.ToStr()
+    end if
+
+    img = PosterImage(albumId, { maxHeight: 240, maxWidth: 240 })
+    if img <> invalid then
+        m.albumCover.uri = img.url
+    end if
+
+    backdropUrl = BackdropImageURL(albumId)
+    if backdropUrl <> "" then
+        m.albumBackdrop.uri = backdropUrl
+    end if
+
+    userData = chainLookupReturn(jsonData, ["UserData"], {})
+    m.top.isFavorite = chainLookupReturn(userData, ["IsFavorite"], false)
+    if m.top.isFavorite then
+        m.btnAlbumFavorite.buttonText = translateText("Favorited")
+    end if
+
+    loadTracks(albumId)
+
+    m.top.loadingData = false
+    m.top.dataLoaded = true
+end function
+
+function loadTracks(albumId as String) as Void
+    tracksData = api.items.GetByFolder(albumId, {
+        userId: session.user.GetId()
+        SortBy: "SortName"
+        SortOrder: "Ascending"
+        Fields: "PrimaryImageAspectRatio,BasicSyncInfo"
+        ImageTypeLimit: "1"
+    })
+
+    if tracksData = invalid then return
+    tracks = chainLookupReturn(tracksData, ["Items"], [])
+    if tracks = invalid then return
+
+    m.top.tracks = tracks
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for i = 0 to tracks.Count() - 1
+        track = tracks[i]
+        child = content.CreateChild("ContentNode")
+        child.id = chainLookupReturn(track, ["Id"], "")
+        trackNum = chainLookupReturn(track, ["IndexNumber"], i + 1)
+        name = chainLookupReturn(track, ["Name"], "")
+        runtime = chainLookupReturn(track, ["RunTimeTicks"], 0)
+        runtimeStr = ""
+        if runtime > 0 then
+            runtimeStr = formatTime(ticksToSeconds(runtime))
+        end if
+        child.title = leftPad(trackNum.ToStr(), 2, "0") + ". " + name + "  " + runtimeStr
+        child.json = track
+    end for
+    m.trackList.content = content
+end function
+
+function onButtonSelected() as Void
+    btn = m.top.lastEventNode
+    if btn = invalid then return
+
+    album = m.top.album
+
+    if btn.id = "btnAlbumPlay" then
+        if album <> invalid then
+            quickplay.album(album)
+        end if
+    else if btn.id = "btnAlbumShuffle" then
+        if album <> invalid then
+            quickplay.album(album)
+        end if
+    else if btn.id = "btnAlbumFavorite" then
+        albumId = chainLookupReturn(album, ["id"], "")
+        if albumId = "" then albumId = chainLookupReturn(album, ["Id"], "")
+        if albumId <> "" then
+            MainAction_MarkFavorite(albumId, m.top.isFavorite)
+            m.top.isFavorite = not m.top.isFavorite
+            if m.top.isFavorite then
+                m.btnAlbumFavorite.buttonText = translateText("Favorited")
+            else
+                m.btnAlbumFavorite.buttonText = translateText("Favorite")
+            end if
+        end if
+    end if
+end function
+
+function onTrackSelected() as Void
+    focused = m.trackList.focusedItem
+    if focused = invalid then return
+
+    tracks = m.top.tracks
+    if tracks = invalid then return
+
+    for i = 0 to tracks.Count() - 1
+        if chainLookupReturn(tracks[i], ["Id"], "") = focused.id then
+            trackNode = CreateObject("roSGNode", "MusicSongData")
+            trackNode.id = focused.id
+            trackNode.json = focused.json
+            trackNode.title = chainLookupReturn(focused.json, ["Name"], "")
+            quickplay.audio(trackNode)
+            exit for
+        end if
+    end for
+end function

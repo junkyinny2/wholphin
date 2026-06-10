@@ -1,0 +1,23 @@
+' Wholphin Roku - Small grid item variant
+
+sub Init()
+    m.itemSmallPoster = m.top.findNode("itemSmallPoster")
+    m.itemSmallLabel = m.top.findNode("itemSmallLabel")
+
+    m.top.observeField("itemContent", m.port)
+end sub
+
+function onItemContentChange() as Void
+    content = m.top.itemContent
+    if content = invalid then return
+
+    url = content.HDPosterUrl
+    if url <> "" then
+        m.itemSmallPoster.uri = url
+    end if
+
+    m.top.itemTitle = content.title
+    m.itemSmallLabel.text = content.title
+
+    m.top.itemType = content.type
+end function

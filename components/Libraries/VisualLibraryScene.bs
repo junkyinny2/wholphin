@@ -1,0 +1,201 @@
+' Wholphin Roku - Visual library browser (movies, TV shows)
+
+sub Init()
+    m.libraryTitle = m.top.findNode("libraryTitle")
+    m.itemGrid = m.top.findNode("itemGrid")
+    m.loadingLabel = m.top.findNode("loadingLabel")
+    m.alphaJump = m.top.findNode("alphaJump")
+    m.btnSort = m.top.findNode("btnSort")
+    m.btnFilter = m.top.findNode("btnFilter")
+    m.btnViewMode = m.top.findNode("btnViewMode")
+    m.btnSearch = m.top.findNode("btnSearch")
+    m.libSpinner = m.top.findNode("libSpinner")
+
+    m.top.observeField("libraryData", m.port)
+    m.top.observeField("mediaType", m.port)
+    m.itemGrid.observeField("itemSelected", m.port)
+    m.itemGrid.observeField("focusedItem", m.port)
+    m.btnSort.observeField("buttonSelected", m.port)
+    m.btnFilter.observeField("buttonSelected", m.port)
+    m.btnViewMode.observeField("buttonSelected", m.port)
+    m.btnSearch.observeField("buttonSelected", m.port)
+    m.alphaJump.observeField("letterSelected", m.port)
+
+    m.currentPage = 0
+    m.pageSize = 100
+end sub
+
+function onLibraryDataChange() as Void
+    LoadData()
+end function
+
+function onMediaTypeChange() as Void
+    LoadData()
+end function
+
+function LoadData() as Void
+    m.top.loadingData = true
+    m.loadingLabel.visible = true
+
+    libData = m.top.libraryData
+    if libData = invalid then return
+
+    libName = chainLookupReturn(libData, ["title"], "")
+    if libName = "" then
+        libName = chainLookupReturn(libData, ["Name"], "")
+    end if
+    m.libraryTitle.text = libName
+    m.top.overhangTitle = libName
+
+    libId = chainLookupReturn(libData, ["id"], "")
+    if libId = "" then libId = chainLookupReturn(libData, ["Id"], "")
+
+    mediaType = m.top.mediaType
+
+    params = {
+        userId:     session.user.GetId()
+        parentId:   libId
+        Limit:      m.pageSize.ToStr()
+        StartIndex: (m.currentPage * m.pageSize).ToStr()
+        SortBy:     m.top.sortBy
+        SortOrder:  m.top.sortOrder
+        Recursive:  "true"
+        Fields:     "PrimaryImageAspectRatio,BasicSyncInfo"
+        ImageTypeLimit: "1"
+    }
+
+    if mediaType <> "" then
+        params.IncludeItemTypes = mediaType
+    end if
+
+    result = api.items.Get(params)
+    if result = invalid then
+        m.loadingLabel.visible = false
+        m.top.loadingData = false
+        return
+    end if
+
+    items = chainLookupReturn(result, ["Items"], [])
+    if items = invalid or items.Count() = 0 then
+        m.loadingLabel.visible = false
+        m.top.loadingData = false
+        return
+    end if
+
+    m.top.items = items
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for each item in items
+        child = content.CreateChild("ContentNode")
+        child.id = chainLookupReturn(item, ["Id"], "")
+        child.title = chainLookupReturn(item, ["Name"], "")
+        child.type = chainLookupReturn(item, ["Type"], "")
+        child.json = item
+
+        img = PosterImage(child.id)
+        if img <> invalid then
+            child.HDPosterUrl = img.url
+            child.SDPosterUrl = img.url
+        end if
+    end for
+
+    m.itemGrid.content = content
+    m.itemGrid.visible = true
+    m.loadingLabel.visible = false
+    m.itemGrid.setFocus(true)
+
+    totalCount = chainLookupReturn(result, ["TotalRecordCount"], 0)
+    if totalCount > 100 then
+        m.alphaJump.visible = true
+    end if
+
+    m.top.loadingData = false
+    m.top.dataLoaded = true
+end function
+
+function onItemSelected() as Void
+    focused = m.itemGrid.focusedItem
+    if focused = invalid then return
+
+    HandleItemSelection(m.top.id, focused)
+end function
+
+function onFocusedItem() as Void
+    focused = m.itemGrid.focusedItem
+    if focused = invalid then return
+
+    ' Update backdrop
+    scene = m.top.getScene()
+    if scene <> invalid then
+        backdropUrl = BackdropImageURL(focused.id)
+        if backdropUrl <> "" then
+            scene.setBackground(backdropUrl)
+        end if
+    end if
+end function
+
+function onButtonSelected() as Void
+    btn = m.top.lastEventNode
+    if btn = invalid then return
+
+    if btn.id = "btnSort" then
+        showSortDialog()
+    else if btn.id = "btnFilter" then
+        showFilterDialog()
+    else if btn.id = "btnViewMode" then
+        toggleViewMode()
+    else if btn.id = "btnSearch" then
+        CreateSearchPage()
+    end if
+end function
+
+function showSortDialog() as Void
+    dialog = CreateObject("roSGNode", "LibrarySettingDialog")
+    dialog.title = translateText("Sort By")
+    dialog.observeField("selectedValue", m.port)
+    m.scene.dialog = dialog
+end function
+
+function showFilterDialog() as Void
+    dialog = CreateObject("roSGNode", "LibraryFilterDialog")
+    dialog.title = translateText("Filters")
+    dialog.observeField("selectedValue", m.port)
+    m.scene.dialog = dialog
+end function
+
+function toggleViewMode() as Void
+    if m.top.viewMode = "poster" then
+        m.top.viewMode = "list"
+        m.itemGrid.itemComponentName = "GridItemSmall"
+    else
+        m.top.viewMode = "poster"
+        m.itemGrid.itemComponentName = "GridItem"
+    end if
+end function
+
+function onLetterSelected() as Void
+    letter = m.alphaJump.selectedLetter
+    if letter = "" then return
+
+    content = m.itemGrid.content
+    if content = invalid then return
+
+    for i = 0 to content.GetChildCount() - 1
+        child = content.GetChild(i)
+        if child <> invalid then
+            title = child.title
+            if title <> "" then
+                firstChar = Left(title, 1).ToUpper()
+                if firstChar = letter then
+                    m.itemGrid.itemFocused = i
+                    exit for
+                end if
+            end if
+        end if
+    end for
+end function
+
+function onBackPressed() as Boolean
+    m.global.sceneManager.callFunc("popScene")
+    return true
+end function

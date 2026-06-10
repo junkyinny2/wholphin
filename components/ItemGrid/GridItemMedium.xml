@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="GridItemMedium" extends="Group">
+  <interface>
+    <field id="itemContent" type="node" alwaysNotify="true" />
+    <field id="itemTitle" type="string" value="" />
+    <field id="itemType" type="string" value="" />
+    <field id="watched" type="bool" value="false" />
+  </interface>
+
+  <children>
+    <Poster
+      id="itemMediumPoster"
+      translation="[0, 0]"
+      width="290"
+      height="290"
+      loadDisplayMode="scaleToFit" />
+
+    <Label
+      id="itemMediumLabel"
+      translation="[0, 295]"
+      width="290"
+      height="40"
+      font="font:SmallestSystemFont"
+      color="0xFFFFFFFF"
+      text=""
+      wrap="true"
+      vertAlign="top" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/ItemGrid/GridItemMedium.bs" />
+</component>

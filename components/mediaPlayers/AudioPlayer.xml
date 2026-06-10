@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="AudioPlayer" extends="Group">
+  <interface>
+    <field id="content" type="node" alwaysNotify="true" />
+    <field id="state" type="string" value="idle" alwaysNotify="true" />
+    <field id="position" type="int" value="0" />
+    <field id="duration" type="int" value="0" />
+    <field id="control" type="string" value="" /> <!-- play, pause, stop, next, prev -->
+    <field id="currentItem" type="node" alwaysNotify="true" />
+  </interface>
+  
+  <script type="text/brightscript" uri="pkg:/components/mediaPlayers/AudioPlayer.bs" />
+</component>

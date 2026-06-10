@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="BaseScene" extends="Scene">
+  <interface>
+    <field id="sceneManager" type="node" alwaysNotify="true" />
+    <field id="queueManager" type="node" alwaysNotify="true" />
+    <field id="audioPlayer" type="node" alwaysNotify="true" />
+    <field id="spinner" type="node" alwaysNotify="true" />
+  </interface>
+  
+  <children>
+    <!-- Background image -->
+    <Poster
+      id="imageBackground"
+      translation="[0, 0]"
+      width="1920"
+      height="1080"
+      loadDisplayMode="scaleToFit"
+      visible="true"
+      uri="" />
+    
+    <!-- Main content area where scenes are displayed -->
+    <Group
+      id="content"
+      translation="[0, 0]">
+    </Group>
+    
+    <!-- Navigation sidebar -->
+    <WholphinSidebar
+      id="sidebar"
+      translation="[0, 0]"
+      visible="false" />
+    
+    <!-- Top bar overlay -->
+    <JFOverhang
+      id="overhang"
+      translation="[0, 0]"
+      visible="true" />
+    
+    <!-- Mini audio player bar -->
+    <Group
+      id="audioMiniPlayer"
+      translation="[0, 980]"
+      visible="false">
+      <Poster
+        id="miniPlayerBackground"
+        width="1920"
+        height="100"
+        uri="" />
+    </Group>
+    
+    <!-- Loading spinner overlay -->
+    <Spinner
+      id="spinner"
+      translation="[860, 490]"
+      visible="false" />
+  </children>
+  
+  <script type="text/brightscript" uri="pkg:/components/BaseScene.bs" />
+</component>

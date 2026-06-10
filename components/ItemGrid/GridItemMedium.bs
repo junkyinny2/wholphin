@@ -1,0 +1,27 @@
+' Wholphin Roku - Medium grid item variant
+
+sub Init()
+    m.itemMediumPoster = m.top.findNode("itemMediumPoster")
+    m.itemMediumLabel = m.top.findNode("itemMediumLabel")
+
+    m.top.observeField("itemContent", m.port)
+end sub
+
+function onItemContentChange() as Void
+    content = m.top.itemContent
+    if content = invalid then return
+
+    url = content.HDPosterUrl
+    if url <> "" then
+        m.itemMediumPoster.uri = url
+    end if
+
+    m.top.itemTitle = content.title
+    m.itemMediumLabel.text = content.title
+
+    m.top.itemType = content.type
+
+    userData = chainLookupReturn(content, ["json", "UserData"], {})
+    played = chainLookupReturn(userData, ["Played"], false)
+    m.top.watched = played
+end function

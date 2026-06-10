@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="LoadItemsTask2" extends="Task">
+  <interface>
+    <field id="parentId" type="string" value="" />
+    <field id="includeItemTypes" type="string" value="" />
+    <field id="sortBy" type="string" value="SortName" />
+    <field id="sortOrder" type="string" value="Ascending" />
+    <field id="limit" type="int" value="100" />
+    <field id="startIndex" type="int" value="0" />
+    <field id="filters" type="string" value="" />
+    <field id="genres" type="string" value="" />
+    <field id="searchTerm" type="string" value="" />
+    <field id="userId" type="string" value="" />
+    <field id="loadedItems" type="array" value="" />
+    <field id="totalCount" type="int" value="0" />
+    <field id="loadStatus" type="string" value="" />
+  </interface>
+
+  <script type="text/brightscript" uri="pkg:/components/ItemGrid/LoadItemsTask2.bs" />
+</component>

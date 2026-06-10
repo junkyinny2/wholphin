@@ -1,0 +1,33 @@
+' Wholphin Roku - Alphabetical jump list for large libraries
+
+sub Init()
+    m.alphaList = m.top.findNode("alphaList")
+
+    m.alphaList.observeField("itemSelected", m.port)
+    m.top.observeField("visible", m.port)
+
+    letters = "#ABCDEFGHIJKLMNOPQRSTUVWXYZ"
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for i = 1 to Len(letters)
+        letter = Mid(letters, i, 1)
+        child = content.CreateChild("ContentNode")
+        child.title = letter
+    end for
+
+    m.alphaList.content = content
+end sub
+
+function onVisibleChange() as Void
+    if m.top.visible then
+        m.alphaList.setFocus(true)
+    end if
+end function
+
+function onLetterSelected() as Void
+    focused = m.alphaList.focusedItem
+    if focused = invalid then return
+
+    m.top.selectedLetter = focused.title
+    m.top.letterSelected = focused.title
+end function

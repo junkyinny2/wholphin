@@ -1,0 +1,15 @@
+' Wholphin Roku - MediaPlaybackState enum
+
+namespace api
+
+    enum MediaPlaybackState
+        NONE                 = "none"
+        PLAYING              = "playing"
+        PAUSED               = "paused"
+        STOPPED              = "stopped"
+        FINISHED             = "finished"
+        BUFFERING            = "buffering"
+        ERROR                = "error"
+    end enum
+
+end namespace

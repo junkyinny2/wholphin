@@ -1,0 +1,63 @@
+' Wholphin Roku - Auto-discover Jellyfin servers on the network
+
+sub Init()
+    m.top.functionName = "discoverServers"
+end sub
+
+sub discoverServers()
+    discovered = []
+
+    ' Try Jellyfin server list API
+    serverList = api.system.GetPublicInfo()
+    if serverList <> invalid then
+        serverInfo = {
+            Name:    chainLookupReturn(serverList, ["ServerName"], translateText("Jellyfin Server"))
+            Url:     session.server.GetUrl()
+            Version: chainLookupReturn(serverList, ["Version"], "")
+            Id:      chainLookupReturn(serverList, ["Id"], "")
+        }
+        discovered.Push(serverInfo)
+    end if
+
+    if discovered.Count() = 0 then
+        ' Try common local network addresses
+        ip = getLocalIP()
+        if ip <> "" then
+            baseParts = ip.Tokenize(".")
+            if baseParts.Count() >= 3 then
+                base = baseParts[0] + "." + baseParts[1] + "." + baseParts[2] + "."
+
+                for i = 1 to 254
+                    tryUrl = "http://" + base + i.ToStr() + ":8096"
+                    session.server.Populate({ Url: tryUrl })
+                    info = ServerInfo()
+                    if info <> invalid then
+                        serverInfo = {
+                            Name:    chainLookupReturn(info, ["Name"], translateText("Jellyfin Server"))
+                            Url:     tryUrl
+                            Version: chainLookupReturn(info, ["Version"], "")
+                            Id:      chainLookupReturn(info, ["Id"], "")
+                        }
+                        discovered.Push(serverInfo)
+                        exit for
+                    end if
+                end for
+            end if
+        end if
+    end if
+
+    m.top.discoveredServers = discovered
+    m.top.loadStatus = "done"
+end sub
+
+function getLocalIP() as String
+    networkInfo = CreateObject("roNetworkConfiguration", 0)
+    ipInfo = networkInfo.GetCurrentConfig()
+    if ipInfo = invalid then return ""
+    return chainLookupReturn(ipInfo, ["ip4"], "")
+end function
+
+function ServerInfo() as Object
+    req = APIRequest("/System/Info/Public")
+    return getJson(req)
+end function

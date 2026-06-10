@@ -1,0 +1,47 @@
+' Wholphin Roku - Loading spinner component
+
+sub Init()
+    m.spinnerImage = m.top.findNode("spinnerImage")
+    m.spinnerLabel = m.top.findNode("spinnerLabel")
+    
+    ' Set up rotation animation
+    m.rotationAnimation = m.top.findNode("spinnerRotation")
+    if m.rotationAnimation = invalid then
+        ' Create rotation animation
+        m.rotationAnimation = CreateObject("roSGNode", "Animation")
+        m.rotationAnimation.duration = 1.5
+        m.rotationAnimation.repeat = true
+        m.rotationAnimation.easeFunction = "linear"
+        
+        rotateField = CreateObject("roSGNode", "Vector2DFieldInterpolator")
+        rotateField.key = [0.0, 1.0]
+        rotateField.keyValue = [[0, 0], [360, 0]]
+        rotateField.fieldToInterp = "rotation"
+        
+        m.rotationAnimation.appendChild(rotateField)
+        m.top.appendChild(m.rotationAnimation)
+    end if
+    
+    ' Observe visibility to control animation
+    m.top.observeField("visible", m.port)
+end sub
+
+' Handle visibility changes
+function onVisibleChange() as Void
+    if m.top.visible then
+        if m.rotationAnimation <> invalid then
+            m.rotationAnimation.control = "start"
+        end if
+    else
+        if m.rotationAnimation <> invalid then
+            m.rotationAnimation.control = "stop"
+        end if
+    end if
+end function
+
+' Update loading text
+function setLoadingText(text as String) as Void
+    if m.spinnerLabel <> invalid then
+        m.spinnerLabel.text = text
+    end if
+end function

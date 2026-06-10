@@ -1,0 +1,91 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="MainScene" extends="Scene">
+  <interface>
+    <field id="currentTab" type="string" value="home" alwaysNotify="true" />
+    <field id="currentItem" type="assocarray" />
+    <field id="detailsVisible" type="boolean" value="false" alwaysNotify="true" />
+    <field id="showPlayback" type="node" alwaysNotify="true" />
+  </interface>
+
+  <children>
+    <!-- Background image or solid dark backdrop -->
+    <Poster
+      id="background"
+      translation="[0, 0]"
+      width="1920"
+      height="1080"
+      loadDisplayMode="scaleToFit"
+      uri="pkg:/images/background.jpg" />
+    <Rectangle
+      id="backgroundOverlay"
+      translation="[0, 0]"
+      width="1920"
+      height="1080"
+      color="0x000000CC" />
+
+    <!-- Top navigation tabs -->
+    <LabelList
+      id="tabList"
+      translation="[60, 20]"
+      itemSize="[200, 60]"
+      itemSpacing="[10, 0]"
+      wrap="false"
+      focusX="0"
+      focusBitmapBlendColor="0x00000000"
+      focusedColor="0xFFFFFFFF"
+      focusedFont="font:MediumBoldSystemFont"
+      textColor="0x888888FF"
+      font="font:SmallSystemFont"
+      horizFocusAnimationStyle="floatingFocus"
+      showFocusFootprint="false"
+      drawFocusFeedback="false" />
+
+    <!-- Main poster rows -->
+    <RowList
+      id="posterRowList"
+      translation="[60, 100]"
+      itemSize="[300, 450]"
+      itemSpacing="[20, 0]"
+      rowItemSpacing="[0, 30]"
+      numRows="0"
+      visible="true"
+      focusX="18"
+      focusBitmapBlendColor="0x00000000"
+      showRowLabel="true"
+      rowLabelOffset="[0, 20]"
+      rowLabelColor="0xFFFFFFFF"
+      rowLabelFont="font:MediumBoldSystemFont"
+      wrap="false"
+      showFocusFootprint="false"
+      drawFocusFeedback="false" />
+
+    <!-- Right-side action bar -->
+    <MarkupList
+      id="actionBar"
+      translation="[1840, 100]"
+      itemSize="[60, 60]"
+      itemSpacing="[0, 20]"
+      visible="true"
+      showFocusFootprint="false"
+      drawFocusFeedback="false" />
+
+    <!-- Details panel overlay -->
+    <Group
+      id="detailsGroup"
+      translation="[0, 0]"
+      visible="false">
+      <Rectangle
+        id="detailsOverlay"
+        translation="[0, 0]"
+        width="1920"
+        height="1080"
+        color="0x000000CC" />
+      <DetailsPanel
+        id="detailsPanel"
+        translation="[200, 150]"
+        visible="true" />
+    </Group>
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/MainScene.brs" />
+</component>

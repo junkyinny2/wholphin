@@ -1,0 +1,163 @@
+' Wholphin Roku - Scene stack manager for navigation
+
+sub Init()
+    ? "[SceneManager] Init() called"
+    m.sceneStack = []
+    m.top.sceneStack = m.sceneStack
+    m.top.activeScene = invalid
+    m.top.sceneCount = 0
+    ? "[SceneManager] Init() complete"
+end sub
+
+' Push a new scene onto the stack
+function pushScene(scene as Object) as Void
+    if scene = invalid then
+        ? "[SceneManager] pushScene: scene is invalid!"
+        return
+    end if
+    
+    ? "[SceneManager] pushScene: "; scene.Subtype()
+    
+    if m.sceneStack.Count() > 0 then
+        currentScene = m.sceneStack.Peek()
+        if currentScene <> invalid then
+            if currentScene.Subtype() = "JFScreen" or currentScene.HasField("screenHidden") then
+                currentScene.screenHidden = true
+                currentScene.screenShown = false
+            end if
+        end if
+    end if
+    
+    contentGroup = m.top.getScene().findNode("content")
+    if contentGroup <> invalid then
+        ? "[SceneManager] content group found, appending"
+        contentGroup.appendChild(scene)
+    else
+        ? "[SceneManager] ERROR: content group NOT found!"
+    end if
+    
+    m.sceneStack.Push(scene)
+    m.top.sceneStack = m.sceneStack
+    m.top.activeScene = scene
+    m.top.sceneCount = m.sceneStack.Count()
+    
+    if scene.Subtype() = "JFScreen" or scene.HasField("screenShown") then
+        scene.screenShown = true
+        scene.screenHidden = false
+    end if
+    
+    if scene.HasField("OnScreenShown") then
+        scene.callFunc("OnScreenShown")
+    end if
+    
+    scene.setFocus(true)
+    ? "[SceneManager] pushScene complete, stack="; m.sceneStack.Count()
+end function
+
+' Pop the top scene from the stack
+function popScene() as Void
+    if m.sceneStack.Count() = 0 then return
+    
+    ' Get the scene to remove
+    sceneToRemove = m.sceneStack.Pop()
+    
+    ' Call OnScreenHidden if available
+    if sceneToRemove.HasField("OnScreenHidden") then
+        sceneToRemove.callFunc("OnScreenHidden")
+    end if
+    
+    ' Remove from scene graph
+    contentGroup = m.top.getScene().findNode("content")
+    if contentGroup <> invalid and sceneToRemove <> invalid then
+        contentGroup.removeChild(sceneToRemove)
+    end if
+    
+    ' Show the previous scene
+    if m.sceneStack.Count() > 0 then
+        previousScene = m.sceneStack.Peek()
+        m.top.activeScene = previousScene
+        
+        if previousScene.Subtype() = "JFScreen" or previousScene.HasField("screenShown") then
+            previousScene.screenShown = true
+            previousScene.screenHidden = false
+        end if
+        
+        ' Call OnScreenShown if available
+        if previousScene.HasField("OnScreenShown") then
+            previousScene.callFunc("OnScreenShown")
+        end if
+        
+        ' Update overhang
+        if previousScene.HasField("overhangTitle") then
+            sceneManager = m.top.getScene()
+            if sceneManager <> invalid then
+                sceneManager.setOverhangTitle(previousScene.overhangTitle)
+            end if
+        end if
+        
+        ' Set focus to previous scene
+        previousScene.setFocus(true)
+    else
+        m.top.activeScene = invalid
+    end if
+    
+    m.top.sceneStack = m.sceneStack
+    m.top.sceneCount = m.sceneStack.Count()
+end function
+
+' Clear all scenes from the stack
+function clearScenes() as Void
+    contentGroup = m.top.getScene().findNode("content")
+    if contentGroup <> invalid then
+        for each scene in m.sceneStack
+            if contentGroup <> invalid and scene <> invalid then
+                contentGroup.removeChild(scene)
+            end if
+        end for
+    end if
+    
+    m.sceneStack = []
+    m.top.sceneStack = m.sceneStack
+    m.top.activeScene = invalid
+    m.top.sceneCount = 0
+end function
+
+' Get the active (top) scene
+function getActiveScene() as Object
+    if m.sceneStack.Count() > 0 then
+        return m.sceneStack.Peek()
+    end if
+    return invalid
+end function
+
+' Get the number of scenes on the stack
+function getSceneCount() as Integer
+    return m.sceneStack.Count()
+end function
+
+' Remove the scene below the top (e.g., after navigation)
+function clearPreviousScene() as Void
+    if m.sceneStack.Count() >= 2 then
+        sceneToRemove = m.sceneStack[m.sceneStack.Count() - 2]
+        contentGroup = m.top.getScene().findNode("content")
+        if contentGroup <> invalid and sceneToRemove <> invalid then
+            contentGroup.removeChild(sceneToRemove)
+        end if
+        
+        newStack = []
+        for i = 0 to m.sceneStack.Count() - 1
+            if i <> m.sceneStack.Count() - 2 then
+                newStack.Push(m.sceneStack[i])
+            end if
+        end for
+        m.sceneStack = newStack
+        m.top.sceneStack = m.sceneStack
+        m.top.sceneCount = m.sceneStack.Count()
+    end if
+end function
+
+' Replace the top scene (pop + push)
+function replaceScene(newScene as Object) as Void
+    popScene()
+    pushScene(newScene)
+end function

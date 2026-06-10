@@ -1,0 +1,100 @@
+' Wholphin Roku - Audiobook library browser
+
+sub Init()
+    m.bookLibTitle = m.top.findNode("bookLibTitle")
+    m.bookGrid = m.top.findNode("bookGrid")
+    m.bookLoadingLabel = m.top.findNode("bookLoadingLabel")
+
+    m.top.observeField("libraryData", m.port)
+    m.bookGrid.observeField("itemSelected", m.port)
+end sub
+
+function onLibraryDataChange() as Void
+    LoadData()
+end function
+
+function LoadData() as Void
+    m.top.loadingData = true
+    m.bookLoadingLabel.visible = true
+
+    libData = m.top.libraryData
+    if libData = invalid then return
+
+    libName = chainLookupReturn(libData, ["title"], "")
+    if libName = "" then libName = chainLookupReturn(libData, ["Name"], "")
+    m.bookLibTitle.text = libName
+    m.top.overhangTitle = libName
+
+    libId = chainLookupReturn(libData, ["id"], "")
+    if libId = "" then libId = chainLookupReturn(libData, ["Id"], "")
+
+    result = api.items.Get({
+        userId:          session.user.GetId()
+        parentId:        libId
+        IncludeItemTypes: "AudioBook,Book"
+        Recursive:       "true"
+        Limit:           "100"
+        SortBy:          "SortName"
+        SortOrder:       "Ascending"
+        Fields:          "PrimaryImageAspectRatio,BasicSyncInfo"
+        ImageTypeLimit:  "1"
+    })
+
+    if result = invalid then
+        m.bookLoadingLabel.visible = false
+        m.top.loadingData = false
+        return
+    end if
+
+    items = chainLookupReturn(result, ["Items"], [])
+    if items = invalid or items.Count() = 0 then
+        m.bookLoadingLabel.visible = false
+        m.top.loadingData = false
+        return
+    end if
+
+    m.top.items = items
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for each item in items
+        child = content.CreateChild("ContentNode")
+        child.id = chainLookupReturn(item, ["Id"], "")
+        child.title = chainLookupReturn(item, ["Name"], "")
+        child.type = chainLookupReturn(item, ["Type"], "")
+        child.json = item
+
+        img = PosterImage(child.id, { maxHeight: 340, maxWidth: 290 })
+        if img <> invalid then
+            child.HDPosterUrl = img.url
+        end if
+    end for
+
+    m.bookGrid.content = content
+    m.bookGrid.visible = true
+    m.bookLoadingLabel.visible = false
+    m.bookGrid.setFocus(true)
+
+    m.top.loadingData = false
+    m.top.dataLoaded = true
+end function
+
+function onItemSelected() as Void
+    focused = m.bookGrid.focusedItem
+    if focused = invalid then return
+
+    itemType = focused.type
+
+    if itemType = "AudioBook" or itemType = "Book" then
+        itemData = {
+            id:   focused.id
+            Name: focused.title
+            json: focused.json
+        }
+        quickplay.audioBook(itemData)
+    end if
+end function
+
+function onBackPressed() as Boolean
+    m.global.sceneManager.callFunc("popScene")
+    return true
+end function

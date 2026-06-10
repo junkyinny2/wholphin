@@ -1,0 +1,38 @@
+' Wholphin Roku - Horizontal user row for login selection
+
+sub Init()
+    m.userGrid = m.top.findNode("userGrid")
+
+    m.top.observeField("users", m.port)
+    m.userGrid.observeField("itemSelected", m.port)
+end sub
+
+function onUsersChange() as Void
+    users = m.top.users
+    if users = invalid or users.Count() = 0 then return
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for each user in users
+        child = content.CreateChild("ContentNode")
+        child.id = chainLookupReturn(user, ["Id"], "")
+        child.title = chainLookupReturn(user, ["Name"], "")
+        child.hasPassword = chainLookupReturn(user, ["HasPassword"], true)
+        child.json = user
+
+        imgUrl = UserImageURL(child.id)
+        if imgUrl <> "" then
+            child.HDPosterUrl = imgUrl
+        end if
+    end for
+
+    m.userGrid.content = content
+    m.userGrid.numColumns = users.Count()
+    m.userGrid.setFocus(true)
+end function
+
+function onItemSelected() as Void
+    focused = m.userGrid.focusedItem
+    if focused = invalid then return
+    m.top.selectedUser = focused.json
+    m.top.userSelected = focused
+end function

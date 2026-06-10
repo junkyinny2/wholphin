@@ -1,0 +1,13 @@
+' Wholphin Roku - SubtitleSelection enum
+
+namespace api
+
+    enum SubtitleSelection
+        OFF                  = -1
+        NONE                 = 0
+        BURN_IN              = 1
+        EXTERNAL             = 2
+        EMBEDDED             = 3
+    end enum
+
+end namespace

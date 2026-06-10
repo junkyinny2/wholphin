@@ -1,0 +1,46 @@
+' Wholphin Roku - Version selector for multi-edition movies
+
+sub Init()
+    m.versionTitleLabel = m.top.findNode("versionTitleLabel")
+    m.versionItemList = m.top.findNode("versionItemList")
+
+    m.top.observeField("versions", m.port)
+    m.top.observeField("dialogTitle", m.port)
+    m.versionItemList.observeField("itemSelected", m.port)
+    m.versionItemList.observeField("focusedItem", m.port)
+end sub
+
+function onVersionsChange() as Void
+    versions = m.top.versions
+    if versions = invalid or versions.Count() = 0 then return
+
+    content = CreateObject("roSGNode", "ContentNode")
+    index = 0
+    for each version in versions
+        child = content.CreateChild("ContentNode")
+        child.title = chainLookupReturn(version, ["Name"], translateText("Version ") + (index + 1).ToStr())
+        child.id = chainLookupReturn(version, ["Id"], "")
+        child.index = index
+        container = chainLookupReturn(version, ["Container"], "")
+        if container <> "" then
+            child.title = child.title + " (" + container + ")"
+        end if
+        index = index + 1
+    end for
+    m.versionItemList.content = content
+    m.versionItemList.setFocus(true)
+end function
+
+function onDialogTitleChange() as Void
+    if m.versionTitleLabel <> invalid then
+        m.versionTitleLabel.text = m.top.dialogTitle
+    end if
+end function
+
+function onVersionSelected() as Void
+    focused = m.versionItemList.focusedItem
+    if focused = invalid then return
+
+    m.top.selectedVersionIndex = focused.index
+    m.top.selectedVersionId = focused.id
+end function

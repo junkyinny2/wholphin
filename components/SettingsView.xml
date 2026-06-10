@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="SettingsView" extends="JFScreen">
+  <interface>
+    <field id="settingsData" type="assocarray" />
+    <field id="selectedSetting" type="string" alwaysNotify="true" />
+  </interface>
+  <children>
+    <Label id="pageTitle" text="Settings" font="font:LargeBoldSystemFont" translation="[100, 80]" />
+    <LabelList id="settingsList"
+      translation="[100, 150]"
+      itemSize="[1720, 72]"
+      itemSpacing="[0, 4]"
+      vertFocusAnimationStyle="floatingFocus"
+      focusBitmapBlendColor="#7B2FBE" />
+    <Group id="detailPanel" translation="[100, 200]" visible="false">
+      <Label id="settingTitle" font="font:MediumBoldSystemFont" width="1720" />
+      <Label id="settingDescription" font="font:SmallestSystemFont" color="#BBBBBB" width="1720" maxLines="3" wrap="true" translation="[0, 40]" />
+      <LabelList id="valueList"
+        translation="[0, 100]"
+        itemSize="[1720, 56]"
+        itemSpacing="[0, 2]"
+        vertFocusAnimationStyle="floatingFocus"
+        focusBitmapBlendColor="#7B2FBE" />
+    </Group>
+  </children>
+</component>

@@ -1,0 +1,39 @@
+' Wholphin Roku - ImageType enum
+
+namespace api
+
+    enum ImageType
+        PRIMARY              = "Primary"
+        BACKDROP             = "Backdrop"
+        LOGO                 = "Logo"
+        THUMB                = "Thumb"
+        BANNER               = "Banner"
+        SCREENSHOT           = "Screenshot"
+        CHAPTER              = "Chapter"
+        MENU_CARD            = "MenuCard"
+        MENU_PAGE            = "MenuPage"
+        MINI_SERIES_POSTER   = "MiniSeriesPoster"
+        POSTER               = "Poster"
+        THUMBNAIL            = "Thumbnail"
+        TRACK                = "Track"
+        COLLECTION           = "Collection"
+        ARTIST               = "Artist"
+        BACKGROUND           = "Background"
+        BANNER_DARK          = "BannerDark"
+        TV_POSTER            = "TVPoster"
+        TV_BANNER            = "TVBanner"
+        TV_THUMB             = "TVThumb"
+        SPANISH_TITLE        = "SpanishTitle"
+        SUBTITLE             = "Subtitle"
+        FOLDER               = "Folder"
+        FOLDER_BIG           = "FolderBig"
+        FRAME                = "Frame"
+        LOGO_LIGHT           = "LogoLight"
+        MENU                  = "Menu"
+        PICTURE              = "Picture"
+        THUMB_CARD           = "ThumbCard"
+        TV_POSTER_SM         = "TVPosterSm"
+        VIDEO                = "Video"
+    end enum
+
+end namespace

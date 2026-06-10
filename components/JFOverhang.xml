@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="JFOverhang" extends="Group">
+  <interface>
+    <field id="title" type="string" value="Wholphin" />
+    <field id="userImage" type="string" value="" />
+    <field id="userName" type="string" value="" />
+    <field id="clock" type="string" value="" />
+    <field id="showClock" type="boolean" value="true" />
+  </interface>
+  
+  <children>
+    <!-- Overhang background -->
+    <Rectangle
+      id="overhangBg"
+      width="1920"
+      height="90"
+      color="0x1A1A2E80" />
+    
+    <!-- Title text -->
+    <Label
+      id="overlayTitle"
+      translation="[60, 25]"
+      width="1000"
+      height="45"
+      font="font:MediumBoldSystemFont"
+      color="0xFFFFFFFF"
+      text="Wholphin"
+      vertAlign="center" />
+    
+    <!-- Clock -->
+    <Label
+      id="overlayClock"
+      translation="[1400, 25]"
+      width="200"
+      height="45"
+      font="font:MediumBoldSystemFont"
+      color="0xB0B0B0FF"
+      text=""
+      horizAlign="right"
+      vertAlign="center" />
+    
+    <!-- User profile image -->
+    <Poster
+      id="overlayCurrentUserProfileImage"
+      translation="[1640, 15]"
+      width="60"
+      height="60"
+      loadDisplayMode="scaleToFit"
+      uri="" />
+    
+    <!-- User name -->
+    <Label
+      id="overlayCurrentUser"
+      translation="[1720, 35]"
+      width="200"
+      height="30"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      text=""
+      vertAlign="center" />
+  </children>
+  
+  <script type="text/brightscript" uri="pkg:/components/JFOverhang.bs" />
+</component>

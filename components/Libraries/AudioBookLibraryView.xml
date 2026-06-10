@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="AudioBookLibraryView" extends="JFScreen">
+  <interface>
+    <field id="libraryData" type="node" alwaysNotify="true" />
+    <field id="items" type="array" value="" />
+  </interface>
+
+  <children>
+    <Rectangle
+      width="1920"
+      height="1080"
+      color="0x1A1A2EFF" />
+
+    <Label
+      id="bookLibTitle"
+      translation="[60, 30]"
+      width="500"
+      height="40"
+      font="font:LargeBoldSystemFont"
+      color="0xFFFFFFFF"
+      text=""
+      vertAlign="center" />
+
+    <Label
+      id="bookLoadingLabel"
+      translation="[860, 490]"
+      width="200"
+      height="30"
+      font="font:MediumSystemFont"
+      color="0xB0B0B0FF"
+      text="Loading..."
+      horizAlign="center"
+      visible="false" />
+
+    <MarkupGrid
+      id="bookGrid"
+      translation="[60, 100]"
+      width="1800"
+      height="930"
+      itemComponentName="GridItemMedium"
+      itemSize="[290, 340]"
+      itemSpacing="[15, 20]"
+      numColumns="6"
+      numRows="3"
+      visible="false" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/Libraries/AudioBookLibraryView.bs" />
+</component>

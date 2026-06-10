@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="LoadVideoContentTask" extends="Task">
+  <interface>
+    <field id="itemId" type="string" value="" />
+    <field id="mediaSourceId" type="string" value="" />
+    <field id="audioStreamIndex" type="int" value="-1" />
+    <field id="subtitleStreamIndex" type="int" value="-1" />
+    <field id="startTimeTicks" type="int" value="0" />
+    <field id="content" type="node" />
+    <field id="playSessionId" type="string" value="" />
+    <field id="playMethod" type="string" value="" />
+    <field id="mediaSourceIdOut" type="string" value="" />
+    <field id="chapters" type="array" value="" />
+    <field id="loadStatus" type="string" value="" />
+  </interface>
+
+  <script type="text/brightscript" uri="pkg:/components/ItemGrid/LoadVideoContentTask.bs" />
+</component>

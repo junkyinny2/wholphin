@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="MovieOptions" extends="Group">
+  <interface>
+    <field id="itemData" type="node" alwaysNotify="true" />
+    <field id="optionSelected" type="string" value="" alwaysNotify="true" />
+  </interface>
+
+  <children>
+    <Rectangle
+      id="optionsBg"
+      width="400"
+      height="980"
+      color="0x16213EFF" />
+
+    <Label
+      id="optionsTitle"
+      translation="[20, 30]"
+      width="360"
+      height="30"
+      font="font:MediumBoldSystemFont"
+      color="0xFFFFFFFF"
+      text="Options"
+      vertAlign="center" />
+
+    <LabelList
+      id="optionsList"
+      translation="[20, 80]"
+      width="360"
+      height="850"
+      itemSize="[360, 55]"
+      font="font:SmallSystemFont"
+      color="0xB0B0B0FF"
+      focusedColor="0x00A4DCFF"
+      showFocusFootprint="false" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/movies/MovieOptions.bs" />
+</component>

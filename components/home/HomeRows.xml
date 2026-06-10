@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="HomeRows" extends="RowList">
+  <interface>
+    <field id="rowFocusChanged" type="int" value="-1" alwaysNotify="true" />
+    <field id="onItemSelected" type="string" value="" alwaysNotify="true" />
+  </interface>
+  
+  <script type="text/brightscript" uri="pkg:/components/home/HomeRows.bs" />
+</component>

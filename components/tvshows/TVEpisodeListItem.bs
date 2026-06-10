@@ -1,0 +1,62 @@
+' Wholphin Roku - Individual episode row item
+
+sub Init()
+    m.itemBg = m.top.findNode("itemBg")
+    m.episodeThumb = m.top.findNode("episodeThumb")
+    m.episodeNumLabel = m.top.findNode("episodeNumLabel")
+    m.episodeTitleLabel = m.top.findNode("episodeTitleLabel")
+    m.episodeRuntime = m.top.findNode("episodeRuntime")
+    m.episodeWatchedIcon = m.top.findNode("episodeWatchedIcon")
+    m.episodeDesc = m.top.findNode("episodeDesc")
+    m.episodeProgress = m.top.findNode("episodeProgress")
+
+    m.top.observeField("itemContent", m.port)
+    m.top.observeField("focused", "onFocusChange")
+end sub
+
+function onItemContentChange() as Void
+    content = m.top.itemContent
+    if content = invalid then return
+
+    m.episodeTitleLabel.text = content.title
+    m.episodeNumLabel.text = content.seasonNumber.ToStr() + "x" + leftPad(content.episodeNumber.ToStr(), 2, "0")
+    m.episodeDesc.text = content.description
+
+    runtime = content.runtime
+    if runtime > 0 then
+        m.episodeRuntime.text = formatTime(runtime)
+    end if
+
+    m.top.watched = content.watched
+    m.top.favorite = content.favorite
+    m.top.episodeNumber = content.episodeNumber
+    m.top.seasonNumber = content.seasonNumber
+    m.top.description = content.description
+    m.top.runtime = content.runtime
+    m.top.playbackPosition = content.playbackPosition
+
+    m.episodeWatchedIcon.visible = content.watched
+
+    thumbUrl = content.HDPosterUrl
+    if thumbUrl <> "" then
+        m.episodeThumb.uri = thumbUrl
+    end if
+
+    if content.playbackPosition > 0 and not content.watched then
+        duration = content.runtime * 10000000
+        if duration > 0 then
+            pct = (content.playbackPosition / duration) * 1800
+            m.episodeProgress.width = Int(pct)
+        end if
+    else
+        m.episodeProgress.width = 0
+    end if
+end function
+
+function onFocusChange() as Void
+    if m.top.focused then
+        m.itemBg.color = "0x16213EFF"
+    else
+        m.itemBg.color = "0x1A1A2E80"
+    end if
+end function

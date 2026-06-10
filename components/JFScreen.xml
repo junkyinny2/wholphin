@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="JFScreen" extends="JFGroup">
+  <interface>
+    <field id="screenShown" type="boolean" alwaysNotify="true" />
+    <field id="screenHidden" type="boolean" alwaysNotify="true" />
+    <field id="dataLoaded" type="boolean" value="false" />
+    <field id="loadingData" type="boolean" value="false" />
+  </interface>
+  
+  <script type="text/brightscript" uri="pkg:/components/JFScreen.bs" />
+</component>

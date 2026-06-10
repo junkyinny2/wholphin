@@ -1,0 +1,106 @@
+
+sub init()
+  m.pageTitle = m.top.findNode("pageTitle")
+  m.sectionTabs = m.top.findNode("sectionTabs")
+  m.itemGrid = m.top.findNode("itemGrid")
+  m.seerrTask = invalid
+  m.currentSection = "trending"
+  m.sections = [
+    { id: "trending", title: translateText("Trending"), endpoint: "discover/trending" }
+    { id: "movies", title: translateText("Movies"), endpoint: "discover/movies" }
+    { id: "tv", title: translateText("TV Shows"), endpoint: "discover/tv" }
+    { id: "upcoming", title: translateText("Upcoming"), endpoint: "discover/movies/upcoming" }
+  ]
+  setupTabs()
+  m.sectionTabs.observeField("itemSelected", "onTabSelected")
+  m.itemGrid.observeField("itemSelected", "onItemSelected")
+  m.top.overhangTitle = translateText("Discover")
+end sub
+
+sub setupTabs()
+  content = CreateObject("roSGNode", "ContentNode")
+  for each section in m.sections
+    node = content.CreateChild("ContentNode")
+    node.title = section.title
+    node.id = section.id
+    node.endpoint = section.endpoint
+  end for
+  m.sectionTabs.content = content
+end sub
+
+sub onTabSelected()
+  selected = m.sectionTabs.itemSelected
+  if selected = invalid then return
+  m.currentSection = selected.id
+  loadSection(selected.endpoint)
+end sub
+
+sub loadSection(endpoint as String)
+  if m.top.serverUrl = "" or m.top.apiKey = "" then return
+  m.seerrTask = CreateObject("roSGNode", "SeerrRequestTask")
+  m.seerrTask.serverUrl = m.top.serverUrl
+  m.seerrTask.apiKey = m.top.apiKey
+  m.seerrTask.endpoint = endpoint
+  m.seerrTask.httpMethod = "GET"
+  m.seerrTask.queryParams = { page: "1" }
+  m.seerrTask.observeField("loadStatus", "onDataLoaded")
+  m.seerrTask.control = "RUN"
+end sub
+
+sub onDataLoaded()
+  if m.seerrTask.loadStatus <> "done" then return
+  items = m.seerrTask.responseArray
+  if items = invalid then return
+  m.top.items = items
+  gridContent = CreateObject("roSGNode", "ContentNode")
+  for each item in items
+    child = gridContent.CreateChild("ContentNode")
+    if item.mediaType = "tv"
+      child.title = item.name
+      child.TITLE = item.name
+    else
+      child.title = item.title
+      child.TITLE = item.title
+    end if
+    child.hdPosterUrl = buildPosterUrl(item.posterPath)
+    child.id = item.id.ToStr()
+    child.mediaType = item.mediaType
+    if item.mediaInfo <> invalid
+      child.availabilityStatus = item.mediaInfo.status
+    else
+      child.availabilityStatus = 1
+    end if
+  end for
+  m.itemGrid.content = gridContent
+  m.itemGrid.setFocus(true)
+end sub
+
+function buildPosterUrl(path as String) as String
+  if path = invalid or path = "" then return "pkg:/images/default_poster.png"
+  ' Prefer direct TMDB URL
+  return "https://image.tmdb.org/t/p/w500" + path
+end function
+
+sub onItemSelected()
+  selected = m.itemGrid.itemSelected
+  if selected = invalid then return
+  itemData = {}
+  itemData.id = selected.id
+  itemData.title = selected.title
+  itemData.mediaType = selected.mediaType
+  itemData.posterUrl = selected.hdPosterUrl
+  itemData.availabilityStatus = selected.availabilityStatus
+  m.top.selectedItem = itemData
+end sub
+
+function onKeyEvent(key as String, press as Boolean) as Boolean
+  if not press then return false
+  if key = "back"
+    if m.itemGrid.isInFocusChain() and m.itemGrid.itemFocused >= 0
+    else
+      m.global.sceneManager.callFunc("popScene")
+      return true
+    end if
+  end if
+  return false
+end function

@@ -1,0 +1,106 @@
+' Wholphin Roku - Async task for loading video playback content
+
+sub Init()
+    m.top.functionName = "loadVideoContent"
+end sub
+
+sub loadVideoContent()
+    itemId = m.top.itemId
+    if itemId = "" then
+        m.top.loadStatus = "error"
+        return
+    end if
+
+    mediaSourceId = m.top.mediaSourceId
+    audioStreamIndex = m.top.audioStreamIndex
+    subtitleStreamIndex = m.top.subtitleStreamIndex
+    startTimeTicks = m.top.startTimeTicks
+
+    playbackInfo = ItemPostPlaybackInfo(itemId, mediaSourceId, audioStreamIndex, subtitleStreamIndex, startTimeTicks)
+    if playbackInfo = invalid then
+        m.top.loadStatus = "error"
+        return
+    end if
+
+    mediaSources = chainLookupReturn(playbackInfo, ["MediaSources"], [])
+    if mediaSources = invalid or mediaSources.Count() = 0 then
+        mediaSources = chainLookupReturn(playbackInfo, ["MediaSource"], [])
+    end if
+    if mediaSources = invalid or mediaSources.Count() = 0 then
+        m.top.loadStatus = "error"
+        return
+    end if
+
+    mediaSource = mediaSources[0]
+    if mediaSourceId <> "" then
+        for each ms in mediaSources
+            if chainLookupReturn(ms, ["Id"], "") = mediaSourceId then
+                mediaSource = ms
+                exit for
+            end if
+        end for
+    end if
+
+    m.top.playSessionId = chainLookupReturn(playbackInfo, ["PlaySessionId"], "")
+
+    mediaUrl = chainLookupReturn(mediaSource, ["DirectStreamUrl"], "")
+    if mediaUrl = "" then
+        mediaUrl = chainLookupReturn(mediaSource, ["TranscodingUrl"], "")
+    end if
+
+    if mediaUrl = "" then
+        mediaSourceId = chainLookupReturn(mediaSource, ["Id"], "")
+        container = chainLookupReturn(mediaSource, ["Container"], "")
+        mediaUrl = api.videos.GetStreamURL(itemId, container, startTimeTicks)
+    end if
+
+    if mediaUrl = "" then
+        m.top.loadStatus = "error"
+        return
+    end if
+
+    m.top.mediaSourceIdOut = chainLookupReturn(mediaSource, ["Id"], "")
+    m.top.playMethod = chainLookupReturn(mediaSource, ["PlayMethod"], "")
+
+    chapters = chainLookupReturn(mediaSource, ["Chapters"], [])
+    if chapters.Count() = 0 then
+        chapters = chainLookupReturn(playbackInfo, ["Chapters"], [])
+    end if
+    m.top.chapters = chapters
+
+    content = CreateObject("roSGNode", "ContentNode")
+    content.url = mediaUrl
+    content.streamformat = chainLookupReturn(mediaSource, ["Container"], "")
+
+    ' Set up audio tracks
+    mediaStreams = chainLookupReturn(mediaSource, ["MediaStreams"], [])
+    audioTracks = []
+    subtitleTracks = []
+    for each stream in mediaStreams
+        streamType = chainLookupReturn(stream, ["Type"], "")
+        if streamType = "Audio" then
+            audioTracks.Push(stream)
+        else if streamType = "Subtitle" then
+            subtitleTracks.Push(stream)
+        end if
+    end for
+
+    if audioTracks.Count() > 0 then
+        content.AudioTracks = audioTracks
+        if audioStreamIndex >= 0 and audioStreamIndex < audioTracks.Count() then
+            content.AudioTrackIndex = audioStreamIndex
+        else
+            content.AudioTrackIndex = 0
+        end if
+    end if
+
+    if subtitleTracks.Count() > 0 then
+        content.SubtitleTracks = subtitleTracks
+        content.SubtitleTrackIndex = subtitleStreamIndex
+    end if
+
+    content.Streams = mediaStreams
+
+    m.top.content = content
+    m.top.loadStatus = "loaded"
+end sub

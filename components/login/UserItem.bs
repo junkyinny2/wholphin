@@ -1,0 +1,25 @@
+' Wholphin Roku - Individual user tile for login screen
+
+sub Init()
+    m.userProfileImage = m.top.findNode("userProfileImage")
+    m.userNameLabel = m.top.findNode("userNameLabel")
+    m.lockIcon = m.top.findNode("lockIcon")
+
+    m.top.observeField("itemContent", m.port)
+end sub
+
+function onItemContentChange() as Void
+    content = m.top.itemContent
+    if content = invalid then return
+
+    m.top.userName = content.title
+    m.userNameLabel.text = content.title
+
+    m.top.hasPassword = content.hasPassword
+    m.lockIcon.visible = content.hasPassword
+
+    imgUrl = content.HDPosterUrl
+    if imgUrl <> "" then
+        m.userProfileImage.uri = imgUrl
+    end if
+end function

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="GridItemSmall" extends="Group">
+  <interface>
+    <field id="itemContent" type="node" alwaysNotify="true" />
+    <field id="itemTitle" type="string" value="" />
+    <field id="itemType" type="string" value="" />
+  </interface>
+
+  <children>
+    <Poster
+      id="itemSmallPoster"
+      translation="[0, 0]"
+      width="120"
+      height="180"
+      loadDisplayMode="scaleToFit" />
+
+    <Label
+      id="itemSmallLabel"
+      translation="[0, 185]"
+      width="120"
+      height="30"
+      font="font:SmallestSystemFont"
+      color="0xFFFFFFFF"
+      text=""
+      wrap="true"
+      vertAlign="top" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/ItemGrid/GridItemSmall.bs" />
+</component>

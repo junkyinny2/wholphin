@@ -1,0 +1,108 @@
+' Wholphin Roku - Main action handlers for user interactions
+
+namespace MainAction
+
+    ' Handle Play button press
+    function Play(item as Object, startTimeTicks = 0 as Integer) as Void
+        itemType = chainLookupReturn(item, ["type"], "")
+        
+        if itemType = "Movie" or itemType = "Video" then
+            quickplay.video(item, "", -1, -1, startTimeTicks)
+        else if itemType = "Episode" then
+            quickplay.video(item, "", -1, -1, startTimeTicks)
+        else if itemType = "Audio" then
+            quickplay.audio(item, startTimeTicks)
+        else if itemType = "MusicAlbum" then
+            quickplay.album(item)
+        else if itemType = "Playlist" then
+            quickplay.playlist(item)
+        else if itemType = "Series" then
+            quickplay.series(item.id)
+        else if itemType = "Season" then
+            quickplay.season(item.seriesId, item.id)
+        else if itemType = "AudioBook" then
+            quickplay.audioBook(item, startTimeTicks)
+        else if itemType = "Folder" then
+            quickplay.folder(item)
+        end if
+    end function
+
+    ' Handle Resume action
+    function Resume(item as Object) as Void
+        userData = chainLookupReturn(item, ["json", "UserData"], {})
+        position = chainLookupReturn(userData, ["PlaybackPositionTicks"], 0)
+        
+        if position > 0 then
+            Play(item, position)
+        else
+            Play(item)
+        end if
+    end function
+
+    ' Handle Mark as Favorite
+    function MarkFavorite(itemId as String, isFavorite as Boolean) as Void
+        if isFavorite then
+            api.users.UnmarkFavorite(itemId)
+        else
+            api.users.MarkFavorite(itemId)
+        end if
+    end function
+
+    ' Handle Mark as Played
+    function MarkPlayed(itemId as String, isPlayed as Boolean) as Void
+        if isPlayed then
+            api.users.UnmarkPlayed(itemId)
+        else
+            api.users.MarkPlayed(itemId)
+        end if
+    end function
+
+    ' Handle Add to My List (collection)
+    function AddToMyList(itemId as String) as Void
+        ' My List is typically managed via a collection or manual playlist
+        ' For now, mark as favorite as a proxy
+        api.users.MarkFavorite(itemId)
+    end function
+
+    ' Handle Remove from My List
+    function RemoveFromMyList(itemId as String) as Void
+        api.users.UnmarkFavorite(itemId)
+    end function
+
+    ' Handle Play Trailer
+    function PlayTrailer(itemId as String) as Void
+        ' Get intros/trailers for the item
+        intros = GetIntros(itemId)
+        if intros = invalid then return
+        
+        items = chainLookupReturn(intros, ["Items"], [])
+        if items.Count() > 0 then
+            trailerData = items[0]
+            trailerNode = CreateObject("roSGNode", "VideoData")
+            trailerNode.id = chainLookupReturn(trailerData, ["Id"], "")
+            trailerNode.json = trailerData
+            trailerNode.title = chainLookupReturn(trailerData, ["Name"], translateText("Trailer"))
+            
+            quickplay.video(trailerNode)
+        end if
+    end function
+
+    ' Handle Edit Subtitles
+    function EditSubtitles(itemId as String) as Void
+        ' Show subtitle selection dialog
+        dialog = CreateObject("roSGNode", "RemoteSubtitleDialog")
+        dialog.itemId = itemId
+        m.scene.dialog = dialog
+    end function
+
+    ' Handle Mark Unwatched
+    function MarkUnwatched(itemId as String) as Void
+        api.users.UnmarkPlayed(itemId)
+    end function
+
+    ' Handle setting item as Watched
+    function MarkWatched(itemId as String) as Void
+        api.users.MarkPlayed(itemId)
+    end function
+
+end namespace

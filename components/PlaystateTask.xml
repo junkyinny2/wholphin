@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="PlaystateTask" extends="Task">
+  <interface>
+    <field id="itemId" type="string" value="" />
+    <field id="playSessionId" type="string" value="" />
+    <field id="positionTicks" type="int" value="0" />
+    <field id="isPaused" type="bool" value="false" />
+    <field id="isPlaying" type="bool" value="false" />
+    <field id="action" type="string" value="" /> <!-- start, progress, stop -->
+    <field id="mediaSourceId" type="string" value="" />
+    <field id="audioStreamIndex" type="int" value="-1" />
+    <field id="subtitleStreamIndex" type="int" value="-1" />
+    <field id="volumeLevel" type="int" value="100" />
+    <field id="playMethod" type="string" value="DirectPlay" />
+    <field id="liveStream" type="bool" value="false" />
+  </interface>
+  
+  <script type="text/brightscript" uri="pkg:/components/PlaystateTask.bs" />
+</component>

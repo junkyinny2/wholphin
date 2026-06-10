@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="FavoriteItemsTask" extends="Task">
+  <interface>
+    <field id="itemId" type="string" value="" />
+    <field id="isFavorite" type="boolean" value="false" />
+    <field id="action" type="string" value="" /> <!-- mark, unmark -->
+    <field id="result" type="boolean" value="false" />
+    <field id="loadStatus" type="string" value="" />
+  </interface>
+
+  <script type="text/brightscript" uri="pkg:/components/ItemGrid/FavoriteItemsTask.bs" />
+</component>

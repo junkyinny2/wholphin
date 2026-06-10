@@ -1,0 +1,12 @@
+' Wholphin Roku - ResumePopupAction enum
+
+namespace api
+
+    enum ResumePopupAction
+        PLAY_FROM_BEGINNING  = 0
+        RESUME               = 1
+        MARK_PLAYED          = 2
+        CANCEL               = 3
+    end enum
+
+end namespace

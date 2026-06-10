@@ -1,0 +1,62 @@
+
+sub init()
+  m.top.functionName = "executeRequest"
+end sub
+
+sub executeRequest()
+  serverUrl = m.top.serverUrl
+  apiKey = m.top.apiKey
+  if serverUrl = "" or apiKey = ""
+    m.top.loadStatus = "error"
+    return
+  end if
+  if right(serverUrl, 1) <> "/" then serverUrl = serverUrl + "/"
+  if instr(1, serverUrl, "/api/v1") = 0 then serverUrl = serverUrl + "api/v1/"
+  if right(serverUrl, 1) <> "/" then serverUrl = serverUrl + "/"
+  fullUrl = serverUrl + m.top.endpoint
+  params = m.top.queryParams
+  if params <> invalid
+    sep = "?"
+    for each key in params
+      fullUrl = fullUrl + sep + key + "=" + HttpEncode(params[key].ToStr())
+      sep = "&"
+    end for
+  end if
+  req = CreateObject("roUrlTransfer")
+  req.SetUrl(fullUrl)
+  req.AddHeader("X-Api-Key", apiKey)
+  req.AddHeader("Accept", "application/json")
+  req.SetCertificatesFile("common:/certs/ca-certificates.crt")
+  req.InitClientCertificates()
+  if m.top.httpMethod = "GET"
+    respStr = req.GetToString()
+  else if m.top.httpMethod = "POST"
+    req.AddHeader("Content-Type", "application/json")
+    body = m.top.requestBody
+    jsonBody = ""
+    if body <> invalid then jsonBody = FormatJson(body)
+    respStr = req.PostFromString(jsonBody)
+  else if m.top.httpMethod = "DELETE"
+    req.AddHeader("Content-Type", "application/json")
+    respStr = req.DeleteFromString()
+  else
+    m.top.loadStatus = "error"
+    return
+  end if
+  if respStr = invalid or respStr = ""
+    m.top.loadStatus = "error"
+    return
+  end if
+  parsed = ParseJson(respStr)
+  if parsed = invalid
+    m.top.loadStatus = "error"
+    return
+  end if
+  if parsed.results <> invalid
+    m.top.responseArray = parsed.results
+    m.top.responseData = parsed
+  else
+    m.top.responseData = parsed
+  end if
+  m.top.loadStatus = "done"
+end sub

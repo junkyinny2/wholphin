@@ -1,0 +1,72 @@
+' Wholphin Roku - Movie options side panel logic
+
+sub Init()
+    m.optionsTitle = m.top.findNode("optionsTitle")
+    m.optionsList = m.top.findNode("optionsList")
+
+    m.top.observeField("itemData", m.port)
+    m.optionsList.observeField("itemSelected", m.port)
+    m.optionsList.observeField("focusedItem", m.port)
+end sub
+
+function onItemDataChange() as Void
+    item = m.top.itemData
+    if item = invalid then return
+
+    userData = chainLookupReturn(item, ["json", "UserData"], {})
+    isFavorite = chainLookupReturn(userData, ["IsFavorite"], false)
+    isPlayed = chainLookupReturn(userData, ["Played"], false)
+
+    options = []
+
+    if isPlayed then
+        options.Push({ label: translateText("Mark Unwatched"), action: "markUnwatched" })
+    else
+        options.Push({ label: translateText("Mark Watched"), action: "markWatched" })
+    end if
+
+    if isFavorite then
+        options.Push({ label: translateText("Remove from Favorites"), action: "unfavorite" })
+    else
+        options.Push({ label: translateText("Add to Favorites"), action: "favorite" })
+    end if
+
+    options.Push({ label: translateText("Edit Subtitles"), action: "subtitles" })
+    options.Push({ label: translateText("View Versions"), action: "versions" })
+    options.Push({ label: translateText("Rate"), action: "rate" })
+    options.Push({ label: translateText("Play Trailer"), action: "trailer" })
+    options.Push({ label: translateText("More Info"), action: "info" })
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for each opt in options
+        child = content.CreateChild("ContentNode")
+        child.title = opt.label
+        child.action = opt.action
+    end for
+    m.optionsList.content = content
+end function
+
+function onOptionSelected() as Void
+    focused = m.optionsList.focusedItem
+    if focused = invalid then return
+
+    action = focused.action
+    m.top.optionSelected = action
+end function
+
+function show() as Void
+    m.top.visible = true
+    m.optionsList.setFocus(true)
+end function
+
+function hide() as Void
+    m.top.visible = false
+end function
+
+function onBackPressed() as Boolean
+    if m.top.visible then
+        hide()
+        return true
+    end if
+    return false
+end function

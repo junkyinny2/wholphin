@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="HomeRow" extends="Group">
+  <interface>
+    <field id="rowTitle" type="string" value="" />
+    <field id="rowType" type="string" value="" />
+  </interface>
+  
+  <children>
+    <!-- Row title -->
+    <Label
+      id="rowLabel"
+      translation="[0, 0]"
+      width="1720"
+      height="30"
+      font="font:MediumBoldSystemFont"
+      color="0xFFFFFFFF"
+      text=""
+      vertAlign="center" />
+    
+    <!-- Row item grid (MarkupGrid) -->
+    <MarkupGrid
+      id="rowGrid"
+      translation="[0, 35]"
+      width="1720"
+      height="280"
+      itemComponentName="HomeItem"
+      itemSize="[196, 340]"
+      itemSpacing="[10, 0]"
+      numColumns="8"
+      numRows="1" />
+  </children>
+  
+  <script type="text/brightscript" uri="pkg:/components/home/HomeRow.bs" />
+</component>

@@ -1,0 +1,18 @@
+' Wholphin Roku - SettingType enum
+
+namespace api
+
+    enum SettingType
+        BOOL                 = "bool"
+        STRING               = "string"
+        INT                  = "int"
+        FLOAT                = "float"
+        SELECT               = "select"
+        MULTISELECT          = "multiselect"
+        LABEL                = "label"
+        BUTTON               = "button"
+        SEPARATOR            = "separator"
+        GROUP                = "group"
+    end enum
+
+end namespace
