@@ -5,11 +5,11 @@ sub Init()
     m.serverUrlLabel = m.top.findNode("serverUrlLabel")
     m.serverVersionLabel = m.top.findNode("serverVersionLabel")
 
-    m.top.observeField("serverInfo", m.port)
-    m.top.observeField("serverName", m.port)
-    m.top.observeField("serverUrl", m.port)
-    m.top.observeField("serverVersion", m.port)
-    m.top.observeField("selected", m.port)
+    m.top.observeField("serverInfo", "onServerInfoChange")
+    m.top.observeField("serverName", "onServerNameChange")
+    m.top.observeField("serverUrl", "onServerUrlChange")
+    m.top.observeField("serverVersion", "onServerVersionChange")
+    m.top.observeField("selected", "onSelectedChange")
     m.top.observeField("focused", "onFocusChange")
 end sub
 

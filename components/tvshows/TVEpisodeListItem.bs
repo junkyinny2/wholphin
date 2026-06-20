@@ -10,7 +10,7 @@ sub Init()
     m.episodeDesc = m.top.findNode("episodeDesc")
     m.episodeProgress = m.top.findNode("episodeProgress")
 
-    m.top.observeField("itemContent", m.port)
+    m.top.observeField("itemContent", "onItemContentChange")
     m.top.observeField("focused", "onFocusChange")
 end sub
 

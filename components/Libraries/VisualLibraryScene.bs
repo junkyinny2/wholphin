@@ -11,15 +11,15 @@ sub Init()
     m.btnSearch = m.top.findNode("btnSearch")
     m.libSpinner = m.top.findNode("libSpinner")
 
-    m.top.observeField("libraryData", m.port)
-    m.top.observeField("mediaType", m.port)
-    m.itemGrid.observeField("itemSelected", m.port)
-    m.itemGrid.observeField("focusedItem", m.port)
-    m.btnSort.observeField("buttonSelected", m.port)
-    m.btnFilter.observeField("buttonSelected", m.port)
-    m.btnViewMode.observeField("buttonSelected", m.port)
-    m.btnSearch.observeField("buttonSelected", m.port)
-    m.alphaJump.observeField("letterSelected", m.port)
+    m.top.observeField("libraryData", "onLibraryDataChange")
+    m.top.observeField("mediaType", "onMediaTypeChange")
+    m.itemGrid.observeField("itemSelected", "onItemSelected")
+    m.itemGrid.observeField("focusedItem", "onFocusedItem")
+    m.btnSort.observeField("buttonSelected", "onButtonSelected")
+    m.btnFilter.observeField("buttonSelected", "onButtonSelected")
+    m.btnViewMode.observeField("buttonSelected", "onButtonSelected")
+    m.btnSearch.observeField("buttonSelected", "onButtonSelected")
+    m.alphaJump.observeField("letterSelected", "onLetterSelected")
 
     m.currentPage = 0
     m.pageSize = 100
@@ -152,14 +152,14 @@ end function
 function showSortDialog() as Void
     dialog = CreateObject("roSGNode", "LibrarySettingDialog")
     dialog.title = translateText("Sort By")
-    dialog.observeField("selectedValue", m.port)
+    dialog.observeField("selectedValue", "onSortSelected")
     m.scene.dialog = dialog
 end function
 
 function showFilterDialog() as Void
     dialog = CreateObject("roSGNode", "LibraryFilterDialog")
     dialog.title = translateText("Filters")
-    dialog.observeField("selectedValue", m.port)
+    dialog.observeField("selectedValue", "onFilterSelected")
     m.scene.dialog = dialog
 end function
 
@@ -198,4 +198,12 @@ end function
 function onBackPressed() as Boolean
     m.global.sceneManager.callFunc("popScene")
     return true
+end function
+
+function onSortSelected() as Void
+    ' Stub
+end function
+
+function onFilterSelected() as Void
+    ' Stub
 end function

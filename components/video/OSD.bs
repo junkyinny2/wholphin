@@ -18,16 +18,16 @@ sub Init()
     m.btnChapters = m.top.findNode("btnChapters")
     m.btnInfo = m.top.findNode("btnInfo")
 
-    m.top.observeField("playerState", m.port)
-    m.top.observeField("position", m.port)
-    m.top.observeField("duration", m.port)
-    m.top.observeField("itemTitle", m.port)
-    m.top.observeField("visible", m.port)
+    m.top.observeField("playerState", "onPlayerStateChange")
+    m.top.observeField("position", "onPositionChange")
+    m.top.observeField("duration", "onDurationChange")
+    m.top.observeField("itemTitle", "onItemTitleChange")
+    m.top.observeField("visible", "onOSDVisibleChange")
 
     m.hideTimer = CreateObject("roSGNode", "Timer")
     m.hideTimer.duration = 5
     m.hideTimer.repeat = false
-    m.hideTimer.observeField("fire", m.port)
+    m.hideTimer.observeField("fire", "onFire")
 
     m.osdVisible = true
     show()
@@ -36,7 +36,7 @@ sub Init()
     m.clockTimer = CreateObject("roSGNode", "Timer")
     m.clockTimer.repeat = true
     m.clockTimer.duration = 30
-    m.clockTimer.observeField("fire", m.port)
+    m.clockTimer.observeField("fire", "onClockUpdate")
     m.clockTimer.control = "start"
 
     m.trickplayData = []
@@ -112,6 +112,13 @@ function onFire() as Void
     hide()
 end function
 
+sub onOSDVisibleChange()
+end sub
+
+sub onClockUpdate()
+    updateClock()
+end sub
+
 function updateClock() as Void
     now = CreateObject("roDateTime")
     hours = now.GetHours()
@@ -163,7 +170,7 @@ function showSubtitleSelector() as Void
     end for
     dialog.items = items
     dialog.selectedValue = m.top.currentSubtitleIndex
-    dialog.observeField("selectedValue", m.port)
+    dialog.observeField("selectedValue", "onRadioDialogSelected")
     m.scene.dialog = dialog
 end function
 
@@ -180,7 +187,7 @@ function showAudioSelector() as Void
     end for
     dialog.items = items
     dialog.selectedValue = m.top.currentAudioIndex
-    dialog.observeField("selectedValue", m.port)
+    dialog.observeField("selectedValue", "onRadioDialogSelected")
     m.scene.dialog = dialog
 end function
 
@@ -197,7 +204,7 @@ function showChapterList() as Void
         items.Push({ label: name, value: i })
     end for
     dialog.items = items
-    dialog.observeField("selectedValue", m.port)
+    dialog.observeField("selectedValue", "onRadioDialogSelected")
     m.scene.dialog = dialog
 end function
 

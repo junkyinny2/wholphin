@@ -9,16 +9,31 @@ sub Init()
     ' Set initial values
     UpdateUserInfo()
     
-    ' Start clock timer
+    ' Start clock timer with callback
     m.clockTimer = CreateObject("roSGNode", "Timer")
     m.clockTimer.repeat = true
     m.clockTimer.duration = 30
-    m.clockTimer.observeField("fire", m.port)
+    m.clockTimer.observeField("fire", "onClockTick")
     m.clockTimer.control = "start"
     
     ' Update title when it changes
-    m.top.observeField("title", m.port)
-    m.top.observeField("clock", m.port)
+    m.top.observeField("title", "onTitleChange")
+end sub
+
+sub onClockTick()
+    if m.clockLabel <> invalid then
+        now = CreateObject("roDateTime")
+        hours = now.GetHours()
+        minutes = now.GetMinutes()
+        timeStr = leftPad(hours.ToStr(), 2, "0") + ":" + leftPad(minutes.ToStr(), 2, "0")
+        m.clockLabel.text = timeStr
+    end if
+end sub
+
+sub onTitleChange()
+    if m.titleLabel <> invalid and m.top.title <> invalid then
+        m.titleLabel.text = m.top.title
+    end if
 end sub
 
 ' Update the title display

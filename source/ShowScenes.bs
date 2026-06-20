@@ -1,10 +1,83 @@
 ' Wholphin Roku - Scene creation and login flow
 
 ' ============================================================
+' Helper: Get sceneManager safely from both main thread and render thread
+function _sm() as Object
+    gaa = getGlobalAA()
+    if gaa <> invalid and gaa.sceneManager <> invalid then return gaa.sceneManager
+    if m <> invalid and m.global <> invalid and m.global.sceneManager <> invalid then return m.global.sceneManager
+    return invalid
+end function
+
+' Helper: Push scene directly to content group (avoids callFunc crash on this firmware)
+' ============================================================
+sub PushScene(screenNode as Object)
+    sm = _sm()
+    if sm = invalid then return
+    sm.callFunc("pushScene", screenNode)
+end sub
+
+' Pop current scene from stack without callFunc (avoids Void→sub hang on this firmware)
+function PopCurrentScene() as Boolean
+    sm = _sm()
+    if sm = invalid then return false
+    stack = sm.sceneStack
+    if stack = invalid or stack.Count() = 0 then return false
+    sceneToRemove = stack.Pop()
+    sm.sceneStack = stack
+    sm.sceneCount = stack.Count()
+    if sceneToRemove <> invalid then
+        baseScene = sm.getScene()
+        if baseScene <> invalid then
+            content = baseScene.findNode("content")
+            if content <> invalid and sceneToRemove.parent = content then
+                content.removeChild(sceneToRemove)
+            else
+                sceneToRemove.visible = false
+            end if
+        end if
+    end if
+    if stack.Count() > 0 then
+        sm.activeScene = stack.Peek()
+        stack.Peek().setFocus(true)
+    else
+        sm.activeScene = invalid
+    end if
+    return true
+end function
+
+' Clear all scenes from stack without callFunc (avoids Void→sub hang on this firmware)
+function ClearAllScenes() as Boolean
+    sm = _sm()
+    if sm = invalid then return false
+    stack = sm.sceneStack
+    if stack = invalid or stack.Count() = 0 then
+        sm.sceneStack = []
+        sm.sceneCount = 0
+        sm.activeScene = invalid
+        return true
+    end if
+    baseScene = sm.getScene()
+    content = invalid
+    if baseScene <> invalid then content = baseScene.findNode("content")
+    for each scene in stack
+        if content <> invalid and scene <> invalid and scene.parent = content then
+            content.removeChild(scene)
+        else if scene <> invalid then
+            scene.visible = false
+        end if
+    end for
+    sm.sceneStack = []
+    sm.sceneCount = 0
+    sm.activeScene = invalid
+    return true
+end function
+
+' ============================================================
 ' Login Flow
 ' ============================================================
 
-' Main login flow - blocks until user is authenticated
+' Main login flow - event-driven, non-blocking
 function LoginFlow() as Boolean
     ' Check for saved server
     savedServer = get_setting("server", "")
@@ -27,19 +100,20 @@ function LoginFlow() as Boolean
         end if
     end if
     
-    ' If no server configured, show server entry screen
+    ' If no server configured, show server entry screen and RETURN
+    ' The main event loop will handle keyboard OK -> ProcessServerUrl -> ShowLoginScreen
     if savedServer = "" then
-        success = CreateServerGroup()
-        if not success then return false
-        
-        ' Server should now be set in session
-        savedServer = session.server.GetUrl()
-        if savedServer = "" then return false
+        ? "[LoginFlow] No saved server, showing SetServerScreen"
+        CreateServerGroup()
+        ? "[LoginFlow] SetServerScreen shown, returning to event loop"
+        return false
     end if
+    ? "[LoginFlow] Past server check, server='"; savedServer; "'"
     
     ' Check for saved user
     lastUserId = get_setting("last_userId", "")
     savedToken = ""
+    ? "[LoginFlow] lastUserId="; lastUserId
     
     if lastUserId <> "" then
         savedToken = get_user_setting(lastUserId, "accessToken", "")
@@ -59,6 +133,7 @@ function LoginFlow() as Boolean
             caps = getDeviceCapabilities()
             api.sessions.PostCapabilities(caps)
             
+            ' Main.bs will call CreateHomeGroup on return true
             return true
         else
             ' Token expired - clear and re-auth
@@ -68,29 +143,63 @@ function LoginFlow() as Boolean
     end if
     
     ' Need to authenticate - show user selection
-    return ShowLoginScreen()
+    ' Return false so Main.bs does NOT push HomeScreen on top
+    ? "[LoginFlow] Calling ShowLoginScreen"
+    ShowLoginScreen()
+    ? "[LoginFlow] ShowLoginScreen returned"
+    return false
 end function
 
 ' Show the login screen flow
 function ShowLoginScreen() as Boolean
+    ? "[ShowLoginScreen] Starting"
     ' Get public users
     publicUsers = GetPublicUsers()
+    ? "[ShowLoginScreen] GetPublicUsers returned: "; publicUsers
     
-    ' Check for Quick Connect availability
+    ' Check for Quick Connect availability (DISABLED - was blocking on this firmware)
     quickConnectEnabled = false
-    quickConnectData = initQuickConnect()
-    if quickConnectData <> invalid then
-        quickConnectEnabled = chainLookupReturn(quickConnectData, ["Enabled"], false)
-    end if
     
-    ' Show user selection screen
-    userSelect = CreateObject("roSGNode", "UserSelect")
+    ' Use static UserSelect from BaseScene (avoid appendChild bug)
+    sm = _sm()
+    scene = sm.getScene()
+    if scene = invalid then
+        ? "[ShowLoginScreen] ERROR: no scene"
+        return false
+    end if
+    userSelect = scene.findNode("userSelect")
+    if userSelect = invalid then
+        ? "[ShowLoginScreen] ERROR: userSelect not found!"
+        return false
+    end if
     userSelect.users = publicUsers
     userSelect.quickConnectEnabled = quickConnectEnabled
-    m.global.sceneManager.callFunc("pushScene", userSelect)
+    ? "[ShowLoginScreen] configured userSelect"
     
-    ' Wait for user selection
-    ' (In the event loop, UserSelect will trigger authentication)
+    ' Hide serverScreen, show userSelect
+    serverScreen = scene.findNode("serverScreen")
+    if serverScreen <> invalid then serverScreen.visible = false
+    userSelect.visible = true
+    
+    ' Push to scene manager for key event forwarding
+    sm.callFunc("pushScene", userSelect)
+    
+    ' Explicitly focus the grid from main thread (after users field is set)
+    userRow = userSelect.findNode("userRow")
+    if userRow <> invalid then
+        grid = userRow.findNode("userGrid")
+        if grid <> invalid then
+            grid.setFocus(true)
+            ? "[ShowLoginScreen] grid.setFocus(true) called"
+        else
+            userSelect.setFocus(true)
+            ? "[ShowLoginScreen] userSelect.setFocus(true) (grid not found)"
+        end if
+    else
+        userSelect.setFocus(true)
+        ? "[ShowLoginScreen] userSelect.setFocus(true) (userRow not found)"
+    end if
+    ? "[ShowLoginScreen] userSelect shown and focused"
     
     return true
 end function
@@ -121,48 +230,60 @@ end function
 
 ' Show the sign-in screen for password entry
 function ShowSignInScreen(username as String) as Boolean
-    signIn = CreateObject("roSGNode", "SigninScene")
+    sm = _sm()
+    if sm = invalid then return false
+    scene = sm.getScene()
+    if scene = invalid then return false
+    signIn = scene.findNode("signinScene")
+    if signIn = invalid then return false
     signIn.username = username
-    m.global.sceneManager.callFunc("pushScene", signIn)
+    signIn.visible = true
+    ' Hide user select
+    userSelect = scene.findNode("userSelect")
+    if userSelect <> invalid then userSelect.visible = false
+    ' Push to scene manager for key event forwarding
+    sm.callFunc("pushScene", signIn)
+    signIn.setFocus(true)
     return true
 end function
 
 ' Attempt to authenticate a user
 function AuthenticateUser(username as String, password as String) as Boolean
+    ? "[AuthUser] getting token..."
     authResult = get_token(username, password)
+    ? "[AuthUser] get_token returned: "; Type(authResult)
     if authResult = invalid then return false
     
-    ' Check if authentication succeeded
     accessToken = chainLookupReturn(authResult, ["AccessToken"], "")
+    ? "[AuthUser] accessToken='"; accessToken; "'"
     if accessToken = "" then return false
     
-    ' Populate session
     session.user.Populate(authResult)
+    ? "[AuthUser] session populated"
     
-    ' Save credentials
     userId = chainLookupReturn(authResult, ["User", "Id"], "")
     if userId <> "" then
         set_user_setting(userId, "accessToken", accessToken)
-        if password <> "" then
-            set_user_setting(userId, "password", password)
-        end if
+        ' Note: password is NOT saved. Access token is used for re-auth.
         set_setting("last_userId", userId)
     end if
     
-    ' Save server
     set_setting("server", session.server.GetUrl())
     saveServer(session.server.GetUrl())
+    ? "[AuthUser] credentials saved"
     
-    ' Send capabilities
     caps = getDeviceCapabilities()
+    ? "[AuthUser] posting capabilities..."
     api.sessions.PostCapabilities(caps)
+    ? "[AuthUser] capabilities posted"
     
-    ' Get full user info
     myInfo = AboutMe()
+    ? "[AuthUser] AboutMe returned: "; Type(myInfo)
     if myInfo <> invalid then
         session.user.UpdateFromAboutMe(myInfo)
     end if
     
+    ? "[AuthUser] returning true"
     return true
 end function
 
@@ -172,14 +293,45 @@ end function
 
 ' Show server selection/entry screen
 function CreateServerGroup() as Boolean
-    serverScreen = CreateObject("roSGNode", "SetServerScreen")
-    serverScreen.savedServers = getSavedServers()
-    gaa = getGlobalAA()
-    if gaa.sceneManager = invalid then
+    ? "[CreateServerGroup] Finding SetServerScreen"
+    sm = _sm()
+    if sm = invalid then
         ? "[CreateServerGroup] ERROR: sceneManager is invalid!"
         return false
     end if
-    gaa.sceneManager.callFunc("pushScene", serverScreen)
+    baseScene = sm.getScene()
+    ? "[CreateServerGroup] baseScene = "; baseScene
+    if baseScene = invalid then
+        ? "[CreateServerGroup] ERROR: no baseScene"
+        return false
+    end if
+    serverScreen = baseScene.findNode("serverScreen")
+    if serverScreen = invalid then
+        ? "[CreateServerGroup] ERROR: serverScreen not found!"
+        return false
+    end if
+    serverScreen.savedServers = getSavedServers()
+    ? "[CreateServerGroup] savedServers set"
+    serverScreen.visible = true
+    ? "[CreateServerGroup] serverScreen visible"
+    
+    ' Push to scene manager so BaseScene forwards key events
+    sm.callFunc("pushScene", serverScreen)
+    ? "[CreateServerGroup] pushed to sceneManager"
+    
+    btnGroup = serverScreen.findNode("serverButtons")
+    if btnGroup <> invalid then
+        btnConnect = btnGroup.findNode("btnConnect")
+        if btnConnect <> invalid and btnConnect.setFocus(true) then
+            ? "[CreateServerGroup] focus set on btnConnect"
+        else
+            btnGroup.setFocus(true)
+            ? "[CreateServerGroup] focus set on serverButtons (fallback)"
+        end if
+    else
+        serverScreen.setFocus(true)
+        ? "[CreateServerGroup] focus set on serverScreen (fallback)"
+    end if
     return true
 end function
 
@@ -237,8 +389,15 @@ end function
 
 ' Create and push the home screen group
 function CreateHomeGroup() as Object
-    home = CreateObject("roSGNode", "Home")
-    m.global.sceneManager.callFunc("pushScene", home)
+    ? "[CreateHomeGroup] creating HomeScreen node..."
+    home = CreateObject("roSGNode", "HomeScreen")
+    ? "[CreateHomeGroup] Home node: "; Type(home)
+    if home <> invalid then
+        PushScene(home)
+        ? "[CreateHomeGroup] Home pushed"
+    else
+        ? "[CreateHomeGroup] ERROR: Home is invalid!"
+    end if
     return home
 end function
 
@@ -251,7 +410,7 @@ function CreateMovieDetailsGroup(movie as Object, preloadedMetadata = invalid as
         details.metaData = preloadedMetadata
     end if
     
-    m.global.sceneManager.callFunc("pushScene", details)
+    PushScene(details)
     return details
 end function
 
@@ -259,7 +418,7 @@ end function
 function CreateSeriesDetailsGroup(seriesId as String) as Object
     series = CreateObject("roSGNode", "TVSeriesDetails")
     series.id = seriesId
-    m.global.sceneManager.callFunc("pushScene", series)
+    PushScene(series)
     return series
 end function
 
@@ -268,7 +427,7 @@ function CreateSeasonDetailsGroup(series as Object, season as Object) as Object
     seasonDetails = CreateObject("roSGNode", "TVSeasonDetails")
     seasonDetails.seriesData = series
     seasonDetails.seasonData = season
-    m.global.sceneManager.callFunc("pushScene", seasonDetails)
+    PushScene(seasonDetails)
     return seasonDetails
 end function
 
@@ -276,7 +435,7 @@ end function
 function CreateArtistView(artist as Object) as Object
     artistView = CreateObject("roSGNode", "ArtistView")
     artistView.artist = artist
-    m.global.sceneManager.callFunc("pushScene", artistView)
+    PushScene(artistView)
     return artistView
 end function
 
@@ -284,7 +443,7 @@ end function
 function CreateAlbumView(album as Object) as Object
     albumView = CreateObject("roSGNode", "AlbumView")
     albumView.album = album
-    m.global.sceneManager.callFunc("pushScene", albumView)
+    PushScene(albumView)
     return albumView
 end function
 
@@ -292,14 +451,14 @@ end function
 function CreatePlaylistView(playlist as Object) as Object
     playlistView = CreateObject("roSGNode", "AlbumView")
     playlistView.album = playlist
-    m.global.sceneManager.callFunc("pushScene", playlistView)
+    PushScene(playlistView)
     return playlistView
 end function
 
 ' Create search page
 function CreateSearchPage() as Object
     search = CreateObject("roSGNode", "searchResults")
-    m.global.sceneManager.callFunc("pushScene", search)
+    PushScene(search)
     return search
 end function
 
@@ -307,7 +466,7 @@ end function
 function CreatePersonView(personData as Object) as Object
     personView = CreateObject("roSGNode", "PersonDetails")
     personView.person = personData
-    m.global.sceneManager.callFunc("pushScene", personView)
+    PushScene(personView)
     return personView
 end function
 
@@ -316,7 +475,7 @@ function CreateVisualLibraryScene(libraryItem as Object, mediaType as String) as
     library = CreateObject("roSGNode", "VisualLibraryScene")
     library.libraryData = libraryItem
     library.mediaType = mediaType
-    m.global.sceneManager.callFunc("pushScene", library)
+    PushScene(library)
     return library
 end function
 
@@ -324,7 +483,7 @@ end function
 function CreateMusicLibraryView(libraryItem as Object) as Object
     library = CreateObject("roSGNode", "MusicLibraryView")
     library.libraryData = libraryItem
-    m.global.sceneManager.callFunc("pushScene", library)
+    PushScene(library)
     return library
 end function
 
@@ -332,7 +491,7 @@ end function
 function CreateOtherLibrary(libraryItem as Object) as Object
     library = CreateObject("roSGNode", "OtherLibrary")
     library.libraryData = libraryItem
-    m.global.sceneManager.callFunc("pushScene", library)
+    PushScene(library)
     return library
 end function
 
@@ -340,7 +499,7 @@ end function
 function CreateLiveTVLibraryView(libraryItem as Object) as Object
     library = CreateObject("roSGNode", "LiveTVLibraryView")
     library.libraryData = libraryItem
-    m.global.sceneManager.callFunc("pushScene", library)
+    PushScene(library)
     return library
 end function
 
@@ -348,14 +507,14 @@ end function
 function CreateBookLibraryView(libraryItem as Object) as Object
     library = CreateObject("roSGNode", "AudioBookLibraryView")
     library.libraryData = libraryItem
-    m.global.sceneManager.callFunc("pushScene", library)
+    PushScene(library)
     return library
 end function
 
 ' Create settings screen
 function CreateSettingsScreen() as Object
     settings = CreateObject("roSGNode", "SettingsView")
-    m.global.sceneManager.callFunc("pushScene", settings)
+    PushScene(settings)
     settings.callFunc("loadSettings")
     return settings
 end function
@@ -368,6 +527,6 @@ function CreateDiscoverPage() as Object
         discover.serverUrl = chainLookupReturn(config, "discover.serverUrl", "")
         discover.apiKey = chainLookupReturn(config, "discover.apiKey", "")
     end if
-    m.global.sceneManager.callFunc("pushScene", discover)
+    PushScene(discover)
     return discover
 end function

@@ -4,9 +4,9 @@ sub Init()
     m.optionsTitle = m.top.findNode("optionsTitle")
     m.optionsList = m.top.findNode("optionsList")
 
-    m.top.observeField("itemData", m.port)
-    m.optionsList.observeField("itemSelected", m.port)
-    m.optionsList.observeField("focusedItem", m.port)
+    m.top.observeField("itemData", "onItemDataChange")
+    m.optionsList.observeField("itemSelected", "onOptionSelected")
+    m.optionsList.observeField("focusedItem", "onOptionFocused")
 end sub
 
 function onItemDataChange() as Void
@@ -53,6 +53,9 @@ function onOptionSelected() as Void
     action = focused.action
     m.top.optionSelected = action
 end function
+
+sub onOptionFocused()
+end sub
 
 function show() as Void
     m.top.visible = true

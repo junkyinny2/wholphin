@@ -9,7 +9,7 @@ sub Init()
 end sub
 
 ' Called when this screen becomes the active (top) scene
-function OnScreenShown() as Void
+function OnScreenShown() as Boolean
     m.top.screenShown = true
     m.top.screenHidden = false
     
@@ -22,6 +22,7 @@ function OnScreenShown() as Void
     else
         setFocus(true)
     end if
+    return true
 end function
 
 ' Called when this screen is no longer active (hidden by another scene)

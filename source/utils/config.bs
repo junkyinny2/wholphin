@@ -51,6 +51,16 @@ function user_registry_delete(userId as String) as Void
     sec.Flush()
 end function
 
+' Delete a specific key from a user-specific registry section
+function registry_delete_user_key(userId as String, key as String) as Void
+    sectionName = "Wholphin_" + userId
+    sec = CreateObject("roRegistrySection", sectionName)
+    if sec.Exists(key) then
+        sec.Delete(key)
+        sec.Flush()
+    end if
+end function
+
 ' Get a global setting value
 function get_setting(key as String, defaultValue = "" as Dynamic) as Dynamic
     value = registry_read(key, "")

@@ -7,7 +7,13 @@ sub Init()
     m.userImage = m.top.findNode("sidebarUserImage")
     m.userName = m.top.findNode("sidebarUserName")
     
-    ' Set up destinations
+    m.top.translation = [-350, 0]
+    
+    m.slideTimer = CreateObject("roSGNode", "Timer")
+    m.slideTimer.duration = 0.016
+    m.slideTimer.repeat = true
+    m.slideTimer.observeField("fire", "onSlideTimer")
+    
     discoverEnabled = chainLookupReturn(m.global, "session.user.settings.discover.enabled", "false")
     destinationItems = [
         { title: translateText("Search"),       id: "search" }
@@ -24,7 +30,6 @@ sub Init()
     content = CreateObject("roSGNode", "ContentNode")
     for each item in destinationItems
         if item.separator = true then
-            ' Skip separator in content (handled differently)
         else
             node = content.CreateChild("ContentNode")
             node.title = item.title
@@ -33,20 +38,17 @@ sub Init()
     end for
     
     m.destinations.content = content
-    m.destinations.observeField("itemSelected", m.port)
-    m.destinations.observeField("focusedItem", m.port)
+    m.top.observeField("visible", "onVisibleChange")
+    ? "[WholphinSidebar] destinations content set, count="; content.GetChildCount()
     
-    ' Update user info from session
     UpdateUserInfo()
 end sub
 
-' Update user info display
 function UpdateUserInfo() as Void
     if m.global.session = invalid then return
     if m.userName <> invalid then
         m.userName.text = session.user.GetDisplayName()
     end if
-    
     if m.userImage <> invalid then
         imgUrl = session.user.GetImageUrl()
         if imgUrl <> "" then
@@ -55,12 +57,118 @@ function UpdateUserInfo() as Void
     end if
 end function
 
+function onKeyEvent(key as String, press as Boolean) as Boolean
+    if not press then return false
+
+    focusedDests = m.destinations <> invalid and m.destinations.hasFocus()
+    focusedLibs = m.libraryList <> invalid and m.libraryList.hasFocus()
+
+    if key = "left" then
+        scene = m.top.getScene()
+        if scene <> invalid and scene.hideSidebarAndRestoreFocus <> invalid then
+            scene.hideSidebarAndRestoreFocus()
+        else
+            m.top.visible = false
+        end if
+        return true
+    end if
+
+    if key = "OK" then
+        if focusedDests then
+            selectedIndex = m.destinations.itemFocused
+            content = m.destinations.content
+            if content <> invalid then
+                item = content.getChild(selectedIndex)
+                if item <> invalid then
+                    onDestinationSelectedByContent(item)
+                    return true
+                end if
+            end if
+        else if focusedLibs then
+            selectedIndex = m.libraryList.itemFocused
+            content = m.libraryList.content
+            if content <> invalid then
+                item = content.getChild(selectedIndex)
+                if item <> invalid then
+                    onLibrarySelectedByContent(item)
+                    return true
+                end if
+            end if
+        end if
+    end if
+
+    if key = "down" then
+        if focusedDests then
+            lastIndex = m.destinations.content.getChildCount() - 1
+            focusedIndex = m.destinations.itemFocused
+            if focusedIndex >= lastIndex and m.libraryList <> invalid then
+                m.libraryList.setFocus(true)
+                return true
+            end if
+        end if
+    end if
+
+    if key = "up" then
+        if focusedLibs and m.destinations <> invalid then
+            focusedIndex = m.libraryList.itemFocused
+            if focusedIndex <= 0 then
+                m.destinations.setFocus(true)
+                return true
+            end if
+        end if
+    end if
+
+    return false
+end function
+
+sub onVisibleChange()
+    ? "[WholphinSidebar] onVisibleChange visible="; m.top.visible
+    if m.top.visible then
+        m.slideTarget = 0
+        m.slideStart = -350
+        m.slideStartTime = 0
+        m.slideTimer.control = "start"
+        if m.destinations <> invalid then
+            m.destinations.setFocus(true)
+        end if
+    else
+        m.slideTarget = -350
+        m.slideStart = 0
+        m.slideStartTime = 0
+        m.slideTimer.control = "start"
+    end if
+end sub
+
+sub onSlideTimer()
+    if m.slideStartTime = 0 then
+        m.slideStartTime = CreateObject("roDateTime").GetMilliseconds()
+    end if
+    elapsed = CreateObject("roDateTime").GetMilliseconds() - m.slideStartTime
+    progress = elapsed / 200.0  ' 200ms duration
+    if progress >= 1.0 then
+        progress = 1.0
+        m.slideTimer.control = "stop"
+        m.slideStartTime = 0
+    end if
+    ' Ease out quad
+    eased = 1.0 - (1.0 - progress) * (1.0 - progress)
+    currentX = m.slideStart + (m.slideTarget - m.slideStart) * eased
+    m.top.translation = [currentX, 0]
+end sub
+
 ' Handle destination selection
-function onDestinationSelected() as Void
-    focused = m.destinations.focusedItem
-    if focused = invalid then return
+sub onDestinationFocused()
+end sub
+
+function onDestinationSelectedByContent(focused as Object) as Void
+    ? "[WholphinSidebar] onDestinationSelectedByContent FIRED"
+    if focused = invalid then
+        ? "[WholphinSidebar] onDestinationSelectedByContent: focused is invalid"
+        return
+    end if
     
     destinationId = focused.id
+    ? "[WholphinSidebar] onDestinationSelectedByContent: id="; destinationId
     if destinationId = invalid then return
     
     m.top.selectedDestination = destinationId
@@ -106,16 +214,19 @@ function loadLibraries(libraries as Object) as Void
     end for
     
     m.libraryList.content = content
-    m.libraryList.observeField("itemSelected", m.port)
 end function
 
 ' Handle library selection
-function onLibrarySelected() as Void
-    focused = m.libraryList.focusedItem
-    if focused = invalid then return
+function onLibrarySelectedByContent(focused as Object) as Void
+    ? "[WholphinSidebar] onLibrarySelectedByContent FIRED"
+    if focused = invalid then
+        ? "[WholphinSidebar] onLibrarySelectedByContent: focused is invalid"
+        return
+    end if
     
     libraryId = focused.id
     libraryName = focused.title
+    ? "[WholphinSidebar] onLibrarySelectedByContent: id="; libraryId; " title="; libraryName
     
     ' Navigate to the library
     libraryItem = {

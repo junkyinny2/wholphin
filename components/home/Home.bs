@@ -5,62 +5,58 @@ sub Init()
     m.backdropTransition = m.top.findNode("backdropTransition")
     m.heroBanner = m.top.findNode("heroBanner")
     m.homeRows = m.top.findNode("homeRows")
-    
+    m.pendingRows = []
+
     m.top.overhangTitle = translateText("Home")
-    
-    ' Set up backdrop cross-fade animation
+
     m.backdropSwapAnimation = CreateObject("roSGNode", "Animation")
     m.backdropSwapAnimation.duration = 0.5
     m.backdropSwapAnimation.easeFunction = "linear"
-    
+
+    m.homeRows.observeField("rowItemSelected", "onRowItemSelected")
+    m.homeRows.observeField("rowItemFocused", "onRowItemFocused")
+
     backdropInterp = CreateObject("roSGNode", "FloatFieldInterpolator")
     backdropInterp.key = [0.0, 1.0]
     backdropInterp.keyValue = [0.0, 1.0]
-    backdropInterp.fieldToInterp = "opacity"
+    backdropInterp.fieldToInterp = "backdropTransition.opacity"
     m.backdropSwapAnimation.appendChild(backdropInterp)
     m.top.appendChild(m.backdropSwapAnimation)
-    
-    ' Observe row focus changes for backdrop updates
-    m.homeRows.observeField("rowFocusChanged", m.port)
-    m.heroBanner.observeField("heroItemFocused", m.port)
-    
-    ' Load data
-    loadLibraries()
+
+    startLoading()
 end sub
 
-' Called when the screen is shown
-function OnScreenShown() as Void
-    ' Reload data if needed
-    if not m.top.dataLoaded then
-        LoadData()
+sub startLoading()
+    m.loadingLabel = m.top.findNode("loadingLabel")
+    if m.loadingLabel <> invalid then
+        m.loadingLabel.visible = true
+        m.loadingLabel.text = "Loading..."
     end if
-end function
 
-' Load home screen data
-function LoadData() as Void
+    if m.top.loadingData then return
     m.top.loadingData = true
-    
-    ' Load libraries
-    loadLibraries()
-    
-    ' Load hero items
-    loadHeroItems()
-    
-    ' Load home rows
-    loadHomeRows()
-    
-    m.top.loadingData = false
-    m.top.dataLoaded = true
-end function
 
-' Load user libraries
-function loadLibraries() as Void
-    viewResult = GetUserViews()
-    if viewResult = invalid then return
-    
-    items = chainLookupReturn(viewResult, ["Items"], [])
-    if items = invalid then return
-    
+    userId = session.user.GetId()
+
+    m.libTask = CreateObject("roSGNode", "LoadItemsTask")
+    m.libTask.itemsToLoad = "libraries"
+    m.libTask.userId = userId
+    m.libTask.observeField("loadStatus", "onLibrariesLoaded")
+    m.top.appendChild(m.libTask)
+    m.libTask.control = "RUN"
+end sub
+
+sub onLibrariesLoaded(event as Object)
+    ? "[Home.onLibrariesLoaded] FIRED"
+    task = event.getRoSGNode()
+    if task.loadStatus <> "loaded" then
+        finishLoading()
+        return
+    end if
+
+    items = task.loadedItems
+    if items = invalid then items = []
+
     libraries = []
     for each item in items
         lib = {
@@ -71,159 +67,175 @@ function loadLibraries() as Void
         }
         libraries.Push(lib)
     end for
-    
-    m.top.libraries = libraries
-    
-    ' Update sidebar with libraries
-    sidebar = m.top.getScene().sidebar
-    if sidebar <> invalid then
-        sidebar.loadLibraries(items)
-    end if
-end function
 
-' Load hero banner items
-function loadHeroItems() as Void
-    ' Get latest items or resume items for hero
-    resumeParams = {
-        userId:    session.user.GetId()
-        Limit:     "10"
-        Fields:    "PrimaryImageAspectRatio,BasicSyncInfo"
-        ImageTypeLimit: "1"
-    }
-    
-    api.items.GetLatest(session.user.GetId(), resumeParams).Then(sub(data)
-        items = data
-        if items = invalid or items.Count() = 0 then
-            ' Fallback to resume items
-            resumeResult = api.items.Get({
-                userId:        session.user.GetId()
-                Limit:         "10"
-                Filters:       "IsResumable"
-                SortBy:        "DatePlayed"
-                SortOrder:     "Descending"
-                Recursive:     "true"
-                Fields:        "PrimaryImageAspectRatio,BasicSyncInfo"
-                ImageTypeLimit: "1"
-            })
-            if resumeResult <> invalid then
-                items = chainLookupReturn(resumeResult, ["Items"], items)
-            end if
-        end if
-        
-        if items <> invalid and items.Count() > 0 then
+    m.top.libraries = libraries
+    sidebar = m.top.getScene().sidebar
+    if sidebar <> invalid then sidebar.loadLibraries(items)
+
+    userId = session.user.GetId()
+    m.pendingSections = 5
+    m.sectionTasks = []
+
+    launchOneTask("hero", userId, "onSectionLoaded")
+    launchOneTask("resume", userId, "onSectionLoaded")
+    launchOneTask("nextup", userId, "onSectionLoaded")
+    launchOneTask("latestmedia", userId, "onSectionLoaded")
+    launchOneTask("favorites", userId, "onSectionLoaded")
+end sub
+
+sub launchOneTask(ftype as String, userId as String, cb as String)
+    task = CreateObject("roSGNode", "LoadItemsTask")
+    task.itemsToLoad = ftype
+    task.userId = userId
+    task.observeField("loadStatus", cb)
+    m.top.appendChild(task)
+    task.control = "RUN"
+    m.sectionTasks.Push(task)
+end sub
+
+sub onSectionLoaded(event as Object)
+    task = event.getRoSGNode()
+    ? "[Home.onSectionLoaded] status="; task.loadStatus; " type="; task.itemsToLoad
+    if task.loadStatus = "loaded" then
+        items = task.loadedItems
+        if items = invalid then items = []
+
+        st = task.itemsToLoad
+        ? "[Home.onSectionLoaded] type="; st; " count="; items.Count()
+        if st = "hero" and items.Count() > 0 then
+            ? "[Home.onSectionLoaded] SETTING hero items"
             m.top.heroItems = items
             m.heroBanner.items = items
+        else if st = "resume" and items.Count() > 0 then
+            if m.homeRows <> invalid then addRowToHomeRows(translateText("Continue Watching"), items, "resume")
+        else if st = "nextup" and items.Count() > 0 then
+            if m.homeRows <> invalid then addRowToHomeRows(translateText("Next Up"), items, "nextup")
+        else if st = "latestmedia" and items.Count() > 0 then
+            if m.homeRows <> invalid then addRowToHomeRows(translateText("Latest Media"), items, "latestmedia")
+        else if st = "favorites" and items.Count() > 0 then
+            if m.homeRows <> invalid then addRowToHomeRows(translateText("Favorites"), items, "favorites")
+        else
+            ? "[Home.onSectionLoaded] NO MATCH for type="; st; " count="; items.Count()
         end if
-    End Sub)
-end function
-
-' Load home screen rows
-function loadHomeRows() as Void
-    ' Load different sections based on user settings
-    sections = [
-        { type: "resume",      title: translateText("Continue Watching") }
-        { type: "nextup",      title: translateText("Next Up") }
-        { type: "latestmedia", title: translateText("Latest Media") }
-        { type: "favorites",   title: translateText("Favorites") }
-    ]
-    
-    ' Load each section
-    for each section in sections
-        loadSection(section)
-    end for
-end function
-
-' Load a home screen section
-function loadSection(section as Object) as Void
-    if section.type = "resume" then
-        api.items.Get({
-            userId:     session.user.GetId()
-            Limit:      "20"
-            Filters:    "IsResumable"
-            SortBy:     "DatePlayed"
-            SortOrder:  "Descending"
-            Recursive:  "true"
-            Fields:     "PrimaryImageAspectRatio,BasicSyncInfo"
-            ImageTypeLimit: "1"
-        }).Then(sub(data)
-            items = chainLookupReturn(data, ["Items"], [])
-            if items.Count() > 0 then
-                m.homeRows.addRow(section.title, items, "resume")
-            end if
-        End Sub)
-        
-    else if section.type = "nextup" then
-        api.shows.GetNextUp({
-            userId:    session.user.GetId()
-            Limit:     "20"
-            Fields:    "PrimaryImageAspectRatio,BasicSyncInfo"
-            ImageTypeLimit: "1"
-        }).Then(sub(data)
-            items = chainLookupReturn(data, ["Items"], [])
-            if items.Count() > 0 then
-                m.homeRows.addRow(section.title, items, "nextup")
-            end if
-        End Sub)
-        
-    else if section.type = "latestmedia" then
-        api.items.GetLatest(session.user.GetId(), {
-            Limit:     "20"
-            Fields:    "PrimaryImageAspectRatio,BasicSyncInfo"
-            ImageTypeLimit: "1"
-        }).Then(sub(data)
-            items = data
-            if items <> invalid and items.Count() > 0 then
-                m.homeRows.addRow(section.title, items, "latestmedia")
-            end if
-        End Sub)
-        
-    else if section.type = "favorites" then
-        api.items.Get({
-            userId:     session.user.GetId()
-            Limit:      "20"
-            Filters:    "IsFavorite"
-            SortBy:     "SortName"
-            SortOrder:  "Ascending"
-            Recursive:  "true"
-            Fields:     "PrimaryImageAspectRatio,BasicSyncInfo"
-            ImageTypeLimit: "1"
-        }).Then(sub(data)
-            items = chainLookupReturn(data, ["Items"], [])
-            if items.Count() > 0 then
-                m.homeRows.addRow(section.title, items, "favorites")
-            end if
-        End Sub)
     end if
+
+    m.pendingSections = m.pendingSections - 1
+    if m.pendingSections <= 0 then finishLoading()
+end sub
+
+sub addRowToHomeRows(rowTitle as String, items as Object, rowType as String)
+    ? "[Home.addRowToHomeRows] FIRED title="; rowTitle; " type="; rowType; " items="; items.Count()
+    if items = invalid or items.Count() = 0 then return
+    m.pendingRows.Push({ title: rowTitle, rowType: rowType, items: items })
+    ? "[Home.addRowToHomeRows] stored, total pending="; m.pendingRows.Count()
+end sub
+
+sub finishLoading()
+    m.top.loadingData = false
+    m.top.dataLoaded = true
+    if m.loadingLabel <> invalid then m.loadingLabel.visible = false
+
+    content = CreateObject("roSGNode", "ContentNode")
+    for each rowData in m.pendingRows
+        rowNode = content.CreateChild("ContentNode")
+        rowNode.title = rowData.title
+        rowNode.AddFields({ rowType: rowData.rowType })
+        for each item in rowData.items
+            child = rowNode.CreateChild("ContentNode")
+            child.id = chainLookupReturn(item, ["Id"], "")
+            child.title = chainLookupReturn(item, ["Name"], "")
+            itemType = chainLookupReturn(item, ["Type"], "")
+            child.AddFields({ type: itemType, json: item })
+            img = PosterImage(child.id)
+            if img <> invalid then
+                child.HDPosterUrl = img.url
+                child.SDPosterUrl = img.url
+            end if
+        end for
+    end for
+
+    ? "[Home.finishLoading] built "; content.GetChildCount(); " rows"
+    m.homeRows.content = content
+    m.homeRows.numRows = content.GetChildCount()
+
+    if m.homeRows <> invalid then
+        m.homeRows.setFocus(true)
+        ? "[Home.finishLoading] focus set to homeRows"
+    else
+        ? "[Home.finishLoading] ERROR: m.homeRows invalid"
+    end if
+end sub
+
+function onRowItemSelected() as Void
+    rowIndex = m.homeRows.rowItemSelected[0]
+    colIndex = m.homeRows.rowItemSelected[1]
+    ? "[Home.onRowItemSelected] row="; rowIndex; " col="; colIndex
+
+    content = m.homeRows.content
+    if content = invalid then return
+
+    row = content.GetChild(rowIndex)
+    if row = invalid then return
+
+    item = row.GetChild(colIndex)
+    if item = invalid then return
+
+    ? "[Home.onRowItemSelected] item="; item.title
+    HandleItemSelection(m.homeRows.id, item)
 end function
 
-' Update backdrop when a row item is focused
+function onRowItemFocused() as Void
+    rowIndex = m.homeRows.rowItemFocused[0]
+    colIndex = m.homeRows.rowItemFocused[1]
+
+    content = m.homeRows.content
+    if content = invalid then return
+
+    row = content.GetChild(rowIndex)
+    if row = invalid then return
+
+    item = row.GetChild(colIndex)
+    if item = invalid then return
+
+    updateBackdrop(item)
+end function
+
+function onKeyEvent(key as String, press as Boolean) as Boolean
+    if not press then return false
+    if key = "back" then
+        return false
+    end if
+    if key = "left" then
+        if m.homeRows <> invalid then
+            focused = m.homeRows.rowItemFocused
+            if focused.Count() >= 2 and focused[1] = 0 then
+                scene = m.top.getScene()
+                if scene <> invalid then
+                    scene.showSidebar()
+                    return true
+                end if
+            end if
+        end if
+        return false
+    end if
+    return false
+end function
+
 function updateBackdrop(item as Object) as Void
     if item = invalid then return
-    
-    ' Get backdrop image URL
     itemId = chainLookupReturn(item, ["Id"], "")
     if itemId = "" then return
-    
     backdropUrl = BackdropImageURL(itemId)
     if backdropUrl = "" then
-        ' Try primary image as fallback
         img = PosterImage(itemId, { maxHeight: 720, maxWidth: 1280 })
         if img <> invalid then backdropUrl = img.url
     end if
-    
     if backdropUrl = "" then return
-    
-    ' Cross-fade backdrop
     if m.backdrop.uri <> "" then
-        ' Move current backdrop to transition
         m.backdropTransition.uri = m.backdrop.uri
         m.backdropTransition.opacity = 1.0
         m.backdropTransition.visible = true
-        
-        ' Set new backdrop
         m.backdrop.uri = backdropUrl
-        
-        ' Animate transition
         interp = m.backdropSwapAnimation.getChild(0)
         if interp <> invalid then
             interp.keyValue = [1.0, 0.0]

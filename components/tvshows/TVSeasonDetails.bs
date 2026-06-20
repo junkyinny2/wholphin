@@ -10,10 +10,10 @@ sub Init()
     m.btnPlayAll = m.top.findNode("btnPlayAll")
     m.btnShuffleSeason = m.top.findNode("btnShuffleSeason")
 
-    m.top.observeField("seasonData", m.port)
-    m.btnPlayAll.observeField("buttonSelected", m.port)
-    m.btnShuffleSeason.observeField("buttonSelected", m.port)
-    m.episodeList.observeField("episodeSelected", m.port)
+    m.top.observeField("seasonData", "onSeasonDataChange")
+    m.btnPlayAll.observeField("buttonSelected", "onButtonSelected")
+    m.btnShuffleSeason.observeField("buttonSelected", "onButtonSelected")
+    m.episodeList.observeField("episodeSelected", "onEpisodeSelected")
 end sub
 
 function onSeasonDataChange() as Void

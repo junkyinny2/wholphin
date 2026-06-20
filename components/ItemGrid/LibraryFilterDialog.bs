@@ -4,9 +4,9 @@ sub Init()
     m.filterDialogTitle = m.top.findNode("filterDialogTitle")
     m.filterOptionsList = m.top.findNode("filterOptionsList")
 
-    m.top.observeField("title", m.port)
-    m.top.observeField("filterType", m.port)
-    m.filterOptionsList.observeField("itemSelected", m.port)
+    m.top.observeField("title", "onTitleChange")
+    m.top.observeField("filterType", "onFilterTypeChange")
+    m.filterOptionsList.observeField("itemSelected", "onOptionSelected")
 end sub
 
 function onTitleChange() as Void

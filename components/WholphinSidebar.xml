@@ -6,6 +6,8 @@
     <field id="libraryList" type="array" value="" />
     <field id="userName" type="string" value="" />
     <field id="userImage" type="string" value="" />
+    <field id="sidebarState" type="string" value="closed" />
+    <function name="loadLibraries" />
   </interface>
   
   <children>

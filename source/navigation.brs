@@ -13,34 +13,34 @@ function createNavigator() as Object
     }
 
     nav.setTab = function(index as Integer) as Void
-        if index >= 0 and index < m.tabNames.Count() then
-            m.currentTab = index
-            m.currentRow = 0
-            m.currentCol = 0
-            m.rowData = {}
+        if index >= 0 and index < nav.tabNames.Count() then
+            nav.currentTab = index
+            nav.currentRow = 0
+            nav.currentCol = 0
+            nav.rowData = {}
         end if
     end function
 
     nav.getCurrentTab = function() as String
-        if m.currentTab >= 0 and m.currentTab < m.tabNames.Count() then
-            return m.tabNames[m.currentTab]
+        if nav.currentTab >= 0 and nav.currentTab < nav.tabNames.Count() then
+            return nav.tabNames[nav.currentTab]
         end if
         return "home"
     end function
 
     nav.pushHistory = function(state as Object) as Void
-        m.history.Push({
-            tab: m.currentTab
-            row: m.currentRow
-            col: m.currentCol
-            zone: m.focusZone
+        nav.history.Push({
+            tab: nav.currentTab
+            row: nav.currentRow
+            col: nav.currentCol
+            zone: nav.focusZone
             details: state
         })
     end function
 
     nav.popHistory = function() as Object
-        if m.history.Count() > 0 then
-            return m.history.Pop()
+        if nav.history.Count() > 0 then
+            return nav.history.Pop()
         end if
         return invalid
     end function

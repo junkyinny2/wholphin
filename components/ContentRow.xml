@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="ContentRow" extends="Group">
+  <interface>
+    <field id="rowTitle" type="string" value="" />
+    <field id="rowType" type="string" value="" />
+    <field id="content" type="node" alwaysNotify="true" />
+  </interface>
+
+  <children>
+    <!-- Row title -->
+    <Label
+      id="rowLabel"
+      translation="[0, 0]"
+      width="1700"
+      height="40"
+      font="font:MediumBoldSystemFont"
+      color="0xFFFFFFFF"
+      text=""
+      vertAlign="center" />
+
+    <!-- Horizontal item grid -->
+    <MarkupGrid
+      id="rowGrid"
+      translation="[0, 50]"
+      itemComponentName="HomeItem"
+      itemSize="[196, 340]"
+      itemSpacing="[15, 0]"
+      numColumns="10"
+      numRows="1" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/ContentRow.brs" />
+</component>

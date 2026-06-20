@@ -1,11 +1,11 @@
 # ================================
-# Roku Dev Mode Monitor
-# Logs button presses + video traces
+# Roku Dev Mode Monitor — Smart Filter
+# Suppresses noise, highlights diagnostics
 # Usage: .\rokudebug.ps1 [RokuIP]
 #   If IP is provided, connects directly.
-#   If omitted, prompts with default 192.168.1.196.
+#   If omitted, prompts with default from ROKU_IP env var or 192.168.1.100.
 #
-# !!! WARNING: The Living Room Roku IP is 192.168.1.196. DO NOT CHANGE IT !!!
+# Set ROKU_IP environment variable or pass IP as argument
 # ================================
 
 param(
@@ -15,7 +15,9 @@ param(
 $port = 8085
 
 if ($RokuIP -eq "") {
-    $ip = "192.168.1.196"
+    $defaultIP = $env:ROKU_IP
+    if (-not $defaultIP) { $defaultIP = "192.168.1.100" }
+    $ip = $defaultIP
 } else {
     $ip = $RokuIP
 }
@@ -23,9 +25,14 @@ if ($RokuIP -eq "") {
 $target = "$ip`:$port"
 $logFile = Join-Path $PSScriptRoot ("roku_monitor_" + (Get-Date -Format "yyyyMMdd_HHmmss") + ".log")
 
-Write-Host "=== Roku Dev Monitor ===" -ForegroundColor Cyan
+# Suppression counters
+$suppressedCount = 0
+$lastSuppressed = ""
+$maxShow = 3  # show first N of a suppressed pattern, then collapse
+
+Write-Host "=== Roku Dev Monitor (Smart Filter) ===" -ForegroundColor Cyan
 Write-Host ("Target: {0}" -f $target)
-Write-Host ("Saving log to: {0}" -f $logFile)
+Write-Host ("Saving full log to: {0}" -f $logFile)
 Write-Host "Press Ctrl+C to stop"
 Write-Host "========================`n"
 
@@ -47,20 +54,65 @@ try {
             $line = $reader.ReadLine()
 
             if ($line -ne $null) {
+                $ts = Get-Date -Format "HH:mm:ss.fff"
+                $display = "[$ts] $line"
 
-                # Highlight button presses
-                if ($line -match "ButtonPressed") {
-                    Write-Host $line -ForegroundColor Yellow
-                }
-                # Highlight video playback traces
-                elseif ($line -match "Video" -or $line -match "play" -or $line -match "stream") {
-                    Write-Host $line -ForegroundColor Cyan
-                }
-                else {
-                    Write-Host $line
+                # NOISE PATTERNS — suppress repetitive garbage
+                $isNoise = $false
+                if ($line -match "pendingShowSignIn=''") {
+                    $isNoise = $true
                 }
 
-                # Log everything
+                if ($isNoise) {
+                    if ($lastSuppressed -ne $line) {
+                        $suppressedCount = 0
+                        $lastSuppressed = $line
+                    }
+                    $suppressedCount++
+                    if ($suppressedCount -le $maxShow) {
+                        Write-Host $display -ForegroundColor DarkGray
+                    } elseif ($suppressedCount -eq $maxShow + 1) {
+                        Write-Host "  ... suppressing further identical lines ..." -ForegroundColor DarkGray
+                    }
+                } else {
+                    # Flush suppression counter when new content appears
+                    if ($suppressedCount -gt $maxShow) {
+                        Write-Host ("  [suppressed $suppressedCount repetitions of: $lastSuppressed]") -ForegroundColor DarkGray
+                    }
+                    $suppressedCount = 0
+                    $lastSuppressed = ""
+
+                    # COLORIZE important diagnostics
+                    if ($line -match "ButtonPressed") {
+                        Write-Host $display -ForegroundColor Yellow
+                    }
+                    elseif ($line -match "\[Home\." -or $line -match "\[HomeRows" -or $line -match "\[HomeRow" -or $line -match "addRow") {
+                        Write-Host $display -ForegroundColor Green
+                    }
+                    elseif ($line -match "\[LoadItemsTask") {
+                        Write-Host $display -ForegroundColor Green
+                    }
+                    elseif ($line -match "Video" -or $line -match "playback" -or $line -match "stream") {
+                        Write-Host $display -ForegroundColor Cyan
+                    }
+                    elseif ($line -match "ERROR|FAIL|invalid") {
+                        Write-Host $display -ForegroundColor Red
+                    }
+                    elseif ($line -match "signin|pendingShowSignIn='[^']|AuthUser|Authenticate") {
+                        Write-Host $display -ForegroundColor Magenta
+                    }
+                    elseif ($line -match "Home shown|Creating Home|Setting focus") {
+                        Write-Host $display -ForegroundColor Cyan
+                    }
+                    elseif ($line -match "onRowItemSelect|rowItemSelected|itemSelected") {
+                        Write-Host $display -ForegroundColor Yellow
+                    }
+                    else {
+                        Write-Host $display
+                    }
+                }
+
+                # Log everything (raw, no timestamp) to file
                 $line | Out-File -FilePath $logFile -Append
             }
         }
@@ -78,6 +130,6 @@ finally {
     if ($client) { $client.Close() }
 
     Write-Host "Disconnected." -ForegroundColor Yellow
-    Write-Host ("`nLog saved to: {0}" -f $logFile) -ForegroundColor Green
+    Write-Host ("`nFull log saved to: {0}" -f $logFile) -ForegroundColor Green
     Write-Host "Share this file or paste its contents.`n" -ForegroundColor Green
 }

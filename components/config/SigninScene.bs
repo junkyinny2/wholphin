@@ -1,67 +1,190 @@
 ' Wholphin Roku - Sign-in screen logic
 
 sub Init()
-    m.usernameInputText = m.top.findNode("usernameInputText")
-    m.passwordInputText = m.top.findNode("passwordInputText")
+    m.usernameLabel = m.top.findNode("usernameInputText")
+    m.usernameBg = m.top.findNode("usernameInputBg")
+    m.passwordLabel = m.top.findNode("passwordInputText")
+    m.passwordBg = m.top.findNode("passwordInputBg")
     m.errorLabel = m.top.findNode("errorLabel")
     m.btnSignIn = m.top.findNode("btnSignIn")
     m.btnCancel = m.top.findNode("btnCancel")
 
-    m.top.observeField("username", m.port)
-    m.btnSignIn.observeField("buttonSelected", m.port)
-    m.btnCancel.observeField("buttonSelected", m.port)
+    m.top.observeField("username", "onUsernameChange")
+    m.top.observeField("authErrorMessage", "onAuthErrorChange")
+    m.btnSignIn.observeField("buttonSelected", "onSignInPressed")
+    m.btnCancel.observeField("buttonSelected", "onCancelPressed")
+
+    m.focusItems = [
+        { node: m.top.findNode("usernameInputGroup"), id: "usernameInputGroup", type: "field" },
+        { node: m.top.findNode("passwordInputGroup"), id: "passwordInputGroup", type: "field" },
+        { node: m.btnSignIn, id: "btnSignIn", type: "button" },
+        { node: m.btnCancel, id: "btnCancel", type: "button" }
+    ]
+    m.focusIndex = 0
+    updateItemFocus()
+    ? "[SigninScene] Init done, items="; m.focusItems.Count()
 end sub
 
 function onUsernameChange() as Void
-    if m.usernameInputText <> invalid then
-        m.usernameInputText.text = m.top.username
+    ? "[SigninScene] onUsernameChange, username="; m.top.username
+    if m.usernameLabel <> invalid then
+        m.usernameLabel.text = m.top.username
     end if
 end function
 
-function onButtonSelected() as Void
-    btn = m.top.lastEventNode
-    if btn = invalid then return
+sub updateItemFocus()
+    ? "[SigninScene] updateItemFocus, index="; m.focusIndex
+    for i = 0 to m.focusItems.Count() - 1
+        item = m.focusItems[i]
+        if item.type = "field"
+            if item.id = "usernameInputGroup" then bg = item.node.findNode("usernameInputBg")
+            if item.id = "passwordInputGroup" then bg = item.node.findNode("passwordInputBg")
+            if bg <> invalid
+                if i = m.focusIndex then bg.color = "0x3A3A5EFF" else bg.color = "0x16213EFF"
+            end if
+        else if item.type = "button"
+            item.node.buttonFocused = (i = m.focusIndex)
+            if i = m.focusIndex then item.node.setFocus(true)
+        end if
+    end for
+end sub
 
-    if btn.id = "btnSignIn" then
-        performSignIn()
-    else if btn.id = "btnCancel" then
-        m.global.sceneManager.callFunc("popScene")
+function onKeyEvent(key as String, press as Boolean) as Boolean
+    ? "[SigninScene.onKeyEvent] key="; key; " press="; press; " idx="; m.focusIndex
+    if not press then return true
+    if key = "back" then
+        scene = m.top.getScene()
+        if scene <> invalid then
+            sidebar = scene.findNode("sidebar")
+            if sidebar <> invalid and sidebar.visible then
+                ? "[SigninScene.onKeyEvent] sidebar visible, passing back"
+                return false
+            end if
+        end if
+        ? "[SigninScene.onKeyEvent] back pressed, hiding"
+        hideSignIn()
+        return true
     end if
+    if key = "up" then
+        m.focusIndex = (m.focusIndex - 1 + m.focusItems.Count()) mod m.focusItems.Count()
+        updateItemFocus()
+        return true
+    end if
+    if key = "down" then
+        m.focusIndex = (m.focusIndex + 1) mod m.focusItems.Count()
+        updateItemFocus()
+        return true
+    end if
+    if key = "OK" then
+        current = m.focusItems[m.focusIndex]
+        ? "[SigninScene.onKeyEvent] OK on "; current.id
+        if current.id = "usernameInputGroup" then
+            showKeyboard("username")
+        else if current.id = "passwordInputGroup" then
+            showKeyboard("password")
+        end if
+        return true
+    end if
+    return false
 end function
 
-function performSignIn() as Void
-    username = m.usernameInputText.text
-    password = m.passwordInputText.text
+sub onSignInPressed()
+    ? "[SigninScene] onSignInPressed"
+    performSignIn()
+end sub
 
-    if username = "" then
-        showError(translateText("Please enter a username"))
+sub onCancelPressed()
+    ? "[SigninScene] onCancelPressed"
+    hideSignIn()
+end sub
+
+sub showKeyboard(fieldName as String)
+    ? "[SigninScene] showKeyboard field="; fieldName
+    scene = m.top.getScene()
+    if scene = invalid then
+        ? "[SigninScene] showKeyboard - no scene"
         return
     end if
-
-    m.top.isAuthenticating = true
-    m.btnSignIn.buttonText = translateText("Signing in...")
-
-    result = AuthenticateUser(username, password)
-
-    m.top.isAuthenticating = false
-    m.btnSignIn.buttonText = translateText("Sign In")
-
-    if result then
-        m.global.sceneManager.callFunc("popScene")
-        if m.global.sceneManager.callFunc("getSceneCount") = 0 then
-            CreateHomeGroup()
-        end if
+    keyboard = CreateObject("roSGNode", "KeyboardDialog")
+    keyboard.buttons = ["OK", "Cancel"]
+    if fieldName = "password" then
+        keyboard.title = "Enter password"
     else
-        showError(translateText("Invalid username or password"))
+        keyboard.title = "Enter username"
     end if
+    keyboard.id = "SigninKeyboard"
+    m.keyboardTarget = fieldName
+    keyboard.observeField("buttonSelected", "onKeyboardButton")
+    keyboard.observeField("wasClosed", "onKeyboardClosed")
+    scene.dialog = keyboard
+    ? "[SigninScene] keyboard shown"
+end sub
+
+function onKeyboardButton() as Void
+    scene = m.top.getScene()
+    if scene = invalid or scene.dialog = invalid then return
+    text = scene.dialog.text
+    ? "[SigninScene] onKeyboardButton target="; m.keyboardTarget; " text='"; text; "'"
+    if text <> "" then
+        if m.keyboardTarget = "password" then
+            m.passwordLabel.text = text
+            m.top.password = text
+        else if m.keyboardTarget = "username" then
+            m.usernameLabel.text = text
+            m.top.username = text
+        end if
+    end if
+    scene.dialog = invalid
+end function
+
+function onKeyboardClosed() as Void
+    ? "[SigninScene] onKeyboardClosed"
+    scene = m.top.getScene()
+    if scene = invalid then return
+    if scene.dialog <> invalid then return
+    updateItemFocus()
+end function
+
+sub hideSignIn()
+    ? "[SigninScene] hideSignIn"
+    PopCurrentScene()
+    m.top.visible = false
+    scene = m.top.getScene()
+    if scene = invalid then return
+    userSelect = scene.findNode("userSelect")
+    if userSelect <> invalid then
+        userSelect.visible = true
+    end if
+end sub
+
+function performSignIn() as Void
+    username = m.usernameLabel.text
+    password = m.passwordLabel.text
+    ? "[SigninScene] performSignIn user='"; username; "'"
+    if username = "" then
+        showError("Please enter a username")
+        return
+    end if
+    m.top.isAuthenticating = true
+    m.btnSignIn.buttonText = "Signing in..."
+    scene = m.top.getScene()
+    if scene <> invalid then
+        scene.setField("pendingServerAction", "signin")
+        scene.setField("pendingUserName", username)
+        scene.setField("pendingUserPassword", password)
+    end if
+end function
+
+function onAuthErrorChange() as Void
+    msg = m.top.authErrorMessage
+    ? "[SigninScene] onAuthErrorChange msg='"; msg; "'"
+    m.top.isAuthenticating = false
+    m.btnSignIn.buttonText = "Sign In"
+    if msg <> "" then showError(msg)
 end function
 
 function showError(message as String) as Void
+    ? "[SigninScene] error="; message
     m.errorLabel.text = message
     m.errorLabel.visible = true
-end function
-
-function onBackPressed() as Boolean
-    m.global.sceneManager.callFunc("popScene")
-    return true
 end function

@@ -114,11 +114,9 @@ end sub
 sub applyThemeToScene(colors as Object)
   scene = m.top.getScene()
   if scene = invalid then return
-  if scene.hasField("overhang")
-    overhang = scene.findNode("overhang")
-    if overhang <> invalid and overhang.hasField("color")
-      overhang.color = colors.primary
-    end if
+  overhang = scene.findNode("overhang")
+  if overhang <> invalid and overhang.hasField("color")
+    overhang.color = colors.primary
   end if
 end sub
 

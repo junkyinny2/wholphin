@@ -11,11 +11,11 @@ sub Init()
     m.btnAlbumShuffle = m.top.findNode("btnAlbumShuffle")
     m.btnAlbumFavorite = m.top.findNode("btnAlbumFavorite")
 
-    m.top.observeField("album", m.port)
-    m.btnAlbumPlay.observeField("buttonSelected", m.port)
-    m.btnAlbumShuffle.observeField("buttonSelected", m.port)
-    m.btnAlbumFavorite.observeField("buttonSelected", m.port)
-    m.trackList.observeField("itemSelected", m.port)
+    m.top.observeField("album", "onAlbumChange")
+    m.btnAlbumPlay.observeField("buttonSelected", "onButtonSelected")
+    m.btnAlbumShuffle.observeField("buttonSelected", "onButtonSelected")
+    m.btnAlbumFavorite.observeField("buttonSelected", "onButtonSelected")
+    m.trackList.observeField("itemSelected", "onTrackSelected")
 end sub
 
 function onAlbumChange() as Void

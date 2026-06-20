@@ -10,8 +10,6 @@
     <MarkupGrid
       id="userGrid"
       translation="[0, 0]"
-      width="1920"
-      height="300"
       itemComponentName="UserItem"
       itemSize="[200, 280]"
       itemSpacing="[20, 0]"

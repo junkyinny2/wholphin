@@ -2,10 +2,8 @@
 
 ' Set all global constants used across the app
 function setConstants() as Void
-    gaa = getGlobalAA()
-    
     ' Theme definitions — 6 Wholphin color themes
-    gaa.themes = {
+    m.global.themes = {
         blue: {
             primary:         "#00A4DC"
             primaryDark:     "#007299"
@@ -141,10 +139,10 @@ function setConstants() as Void
     }
 
     ' Default to blue theme
-    gaa.colors = gaa.themes.blue
+    m.global.colors = m.global.themes.blue
 
     ' Default icon set
-    gaa.icons = {
+    m.global.icons = {
         search:           "pkg:/images/icons/search.png"
         home:             "pkg:/images/icons/home.png"
         settings:         "pkg:/images/icons/settings.png"
@@ -182,8 +180,7 @@ end function
 
 ' Save app info to global
 function SaveAppToGlobal() as Void
-    gaa = getGlobalAA()
-    gaa.appInfo = {
+    m.global.appInfo = {
         name:        "wholphin"
         displayName: "Wholphin"
         version:     "0.1.0"
@@ -194,10 +191,9 @@ end function
 
 ' Save device info to global
 function SaveDeviceToGlobal() as Void
-    gaa = getGlobalAA()
     di = CreateObject("roDeviceInfo")
     
-    gaa.deviceInfo = {
+    m.global.deviceInfo = {
         model:           di.GetModel()
         firmwareVersion: di.GetVersion()
         modelDisplay:    di.GetModelDisplayName()
@@ -229,10 +225,10 @@ function SaveDeviceToGlobal() as Void
     
     mappedLocale = localeMap.Lookup(deviceLocale)
     if mappedLocale = invalid then mappedLocale = "en_US"
-    gaa.locale = mappedLocale
+    m.global.locale = mappedLocale
     
     ' Load translations
-    gaa.localeTranslations = loadTranslations(mappedLocale)
+    m.global.localeTranslations = loadTranslations(mappedLocale)
 end function
 
 ' Check if we're in debug mode

@@ -7,7 +7,9 @@ end sub
 sub loadItems()
     itemsToLoad = m.top.itemsToLoad
     userId = m.top.userId
+    ? "[LoadItemsTask] loadItems: "; itemsToLoad; " userId="; userId
     if itemsToLoad = "" then
+        ? "[LoadItemsTask] error: empty itemsToLoad"
         m.top.loadStatus = "error"
         return
     end if
@@ -15,12 +17,16 @@ sub loadItems()
     result = invalid
 
     if itemsToLoad = "hero" then
+        ? "[LoadItemsTask] calling GetLatest for hero"
         result = api.items.GetLatest(userId, {
             Limit:     "10"
             Fields:    "PrimaryImageAspectRatio,BasicSyncInfo"
             ImageTypeLimit: "1"
         })
-        if result = invalid or result.Count() = 0 then
+        shouldFallback = (result = invalid)
+        if not shouldFallback and result.Count() = 0 then shouldFallback = true
+        if shouldFallback then
+            ? "[LoadItemsTask] GetLatest empty, trying fallback Get"
             result = api.items.Get({
                 userId:    userId
                 Limit:     "10"
@@ -89,12 +95,19 @@ sub loadItems()
         if m.top.parentId <> "" then params.parentId = m.top.parentId
         result = api.items.Get(params)
         if result <> invalid then result = result.Items
+        
+    else if itemsToLoad = "libraries" then
+        result = GetUserViews(userId)
+        if result <> invalid then result = result.Items
     end if
 
+    ? "[LoadItemsTask] "; itemsToLoad; " result="; Type(result)
     if result <> invalid then
+        ? "[LoadItemsTask] "; itemsToLoad; " success, count="; result.Count()
         m.top.loadedItems = result
         m.top.loadStatus = "loaded"
     else
+        ? "[LoadItemsTask] "; itemsToLoad; " FAILED - setting error"
         m.top.loadedItems = []
         m.top.loadStatus = "error"
     end if

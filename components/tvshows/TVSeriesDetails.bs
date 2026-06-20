@@ -18,14 +18,14 @@ sub Init()
     m.btnFavSeries = m.top.findNode("btnFavSeries")
     m.btnMyListSeries = m.top.findNode("btnMyListSeries")
 
-    m.top.observeField("seriesId", m.port)
-    m.btnPlayNext.observeField("buttonSelected", m.port)
-    m.btnResumeSeries.observeField("buttonSelected", m.port)
-    m.btnShuffle.observeField("buttonSelected", m.port)
-    m.btnFavSeries.observeField("buttonSelected", m.port)
-    m.btnMyListSeries.observeField("buttonSelected", m.port)
-    m.seasonGrid.observeField("seasonSelected", m.port)
-    m.seriesCastGrid.observeField("itemSelected", m.port)
+    m.top.observeField("seriesId", "onSeriesIdChange")
+    m.btnPlayNext.observeField("buttonSelected", "onButtonSelected")
+    m.btnResumeSeries.observeField("buttonSelected", "onButtonSelected")
+    m.btnShuffle.observeField("buttonSelected", "onButtonSelected")
+    m.btnFavSeries.observeField("buttonSelected", "onButtonSelected")
+    m.btnMyListSeries.observeField("buttonSelected", "onButtonSelected")
+    m.seasonGrid.observeField("seasonSelected", "onSeasonSelected")
+    m.seriesCastGrid.observeField("itemSelected", "onCastItemSelected")
 end sub
 
 function onSeriesIdChange() as Void

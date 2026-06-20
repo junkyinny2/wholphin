@@ -3,36 +3,72 @@
 sub Init()
     m.userGrid = m.top.findNode("userGrid")
 
-    m.top.observeField("users", m.port)
-    m.userGrid.observeField("itemSelected", m.port)
+    m.top.observeField("users", "onUsersChange")
+    m.userGrid.observeField("itemSelected", "onItemSelected")
+    m.userGrid.observeField("focusedItem", "onFocusedItem")
+    ? "[UserRow] Init done"
 end sub
 
 function onUsersChange() as Void
+    ? "[UserRow] onUsersChange called"
     users = m.top.users
-    if users = invalid or users.Count() = 0 then return
+    if users = invalid or users.Count() = 0 then
+        ? "[UserRow] No users or invalid"
+        return
+    end if
 
     content = CreateObject("roSGNode", "ContentNode")
     for each user in users
         child = content.CreateChild("ContentNode")
         child.id = chainLookupReturn(user, ["Id"], "")
         child.title = chainLookupReturn(user, ["Name"], "")
+        child.AddField("hasPassword", "boolean", false)
         child.hasPassword = chainLookupReturn(user, ["HasPassword"], true)
-        child.json = user
-
-        imgUrl = UserImageURL(child.id)
-        if imgUrl <> "" then
-            child.HDPosterUrl = imgUrl
-        end if
     end for
 
     m.userGrid.content = content
     m.userGrid.numColumns = users.Count()
-    m.userGrid.setFocus(true)
+    ? "[UserRow] content set, numColumns="; users.Count()
+
+    numCols = users.Count()
+    itemWidth = 200
+    spacing = 20
+    totalWidth = numCols * itemWidth + (numCols - 1) * spacing
+    gridX = Int((1920 - totalWidth) / 2)
+    m.userGrid.translation = [gridX, 0]
+    ? "[UserRow] Grid centered at x="; gridX
 end function
 
 function onItemSelected() as Void
-    focused = m.userGrid.focusedItem
-    if focused = invalid then return
-    m.top.selectedUser = focused.json
-    m.top.userSelected = focused
+    ? "[UserRow] itemSelected fired"
+    grid = m.userGrid
+    content = grid.content
+    if content = invalid then
+        ? "[UserRow] content is invalid"
+        return
+    end if
+    focused = grid.focusedItem
+    if focused = invalid then
+        ? "[UserRow] focusedItem is invalid"
+        return
+    end if
+    if focused.Count() < 2 then
+        ? "[UserRow] focusedItem.Count="; focused.Count()
+        return
+    end if
+    col = focused[0]
+    row = focused[1]
+    idx = row * grid.numColumns + col
+    ? "[UserRow] focusedItem=["; col; ","; row; "] idx="; idx
+    child = content.getChild(idx)
+    if child = invalid then
+        ? "[UserRow] getChild("; idx; ") returned invalid"
+        return
+    end if
+    ? "[UserRow] selected user: '"; child.title; "'"
+    m.top.userSelected = child
+end function
+
+function onFocusedItem() as Void
+    ? "[UserRow] focusedItem fired"
 end function

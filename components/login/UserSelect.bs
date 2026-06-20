@@ -8,21 +8,37 @@ sub Init()
     m.btnChangeServer = m.top.findNode("btnChangeServer")
     m.btnManualSignIn = m.top.findNode("btnManualSignIn")
 
-    m.top.observeField("users", m.port)
-    m.top.observeField("quickConnectEnabled", m.port)
-    m.userRow.observeField("userSelected", m.port)
-    m.btnQuickConnect.observeField("buttonSelected", m.port)
-    m.btnChangeServer.observeField("buttonSelected", m.port)
-    m.btnManualSignIn.observeField("buttonSelected", m.port)
+    m.buttons = [m.btnChangeServer, m.btnManualSignIn]
+    m.focusIndex = 0
+    m.focusedUserIndex = 0
+
+    m.top.observeField("users", "onUsersChange")
+    m.top.observeField("quickConnectEnabled", "onQuickConnectEnabledChange")
+    m.userRow.observeField("userSelected", "onUserSelected")
+    m.btnQuickConnect.observeField("buttonSelected", "onButtonSelected")
+    m.btnChangeServer.observeField("buttonSelected", "onButtonSelected")
+    m.btnManualSignIn.observeField("buttonSelected", "onButtonSelected")
 
     m.serverNameLabel.text = session.server.GetName()
 end sub
 
 function onUsersChange() as Void
+    ? "[UserSelect] onUsersChange firing"
     users = m.top.users
     if users = invalid then return
+    ? "[UserSelect] Setting userRow.users, count="; users.Count()
     m.userRow.users = users
+    m.focusedUserIndex = 0
+    highlightGridIndex(0)
 end function
+
+sub highlightGridIndex(idx as Integer)
+    users = m.top.users
+    if users = invalid or idx >= users.Count() then return
+    grid = m.userRow.findNode("userGrid")
+    if grid = invalid then return
+    ? "[UserSelect] highlightGridIndex idx="; idx
+end sub
 
 function onQuickConnectEnabledChange() as Void
     if m.top.quickConnectEnabled then
@@ -31,10 +47,25 @@ function onQuickConnectEnabledChange() as Void
 end function
 
 function onUserSelected() as Void
-    selectedUser = m.userRow.selectedUser
-    if selectedUser = invalid then return
+    ? "[UserSelect.onUserSelected] fired"
+    selected = m.userRow.userSelected
+    if selected = invalid then return
+    ? "[UserSelect] selected child: '"; selected.title; "' id="; selected.id
+    scene = m.top.getScene()
+    if scene = invalid then return
+    scene.setField("pendingUserName", selected.title)
+    scene.setField("pendingUserId", selected.id)
+    scene.setField("pendingServerAction", "login")
+    ? "[UserSelect] pending fields set via onUserSelected"
+end function
 
-    ProcessUserSelection(selectedUser)
+function onPendingShowSignIn() as Void
+    scene = m.top.getScene()
+    if scene = invalid then return
+    username = scene.pendingShowSignIn
+    if username = "" then return
+    ? "[UserSelect] showing sign-in for"; username
+    ShowSignInScreen(username)
 end function
 
 function onButtonSelected() as Void
@@ -44,7 +75,7 @@ function onButtonSelected() as Void
     if btn.id = "btnQuickConnect" then
         startQuickConnect()
     else if btn.id = "btnChangeServer" then
-        m.global.sceneManager.callFunc("clearScenes")
+        ClearAllScenes()
         CreateServerGroup()
     else if btn.id = "btnManualSignIn" then
         ShowSignInScreen("")
@@ -65,17 +96,150 @@ function startQuickConnect() as Void
         dialog.message = translateText("Enter the following code on your Jellyfin server:") + Chr(10) + Chr(10) + code
         dialog.optionsDialog = true
         dialog.buttons = [translateText("OK"), translateText("Cancel")]
-        dialog.observeField("buttonSelected", m.port)
+        dialog.observeField("buttonSelected", "onQuickConnectResult")
         dialog.id = "QuickConnectDialog"
         m.scene.dialog = dialog
     end if
 end function
 
+sub onQuickConnectResult()
+    dialog = m.top.getScene().dialog
+    if dialog = invalid then return
+    m.top.getScene().dialog = invalid
+end sub
+
 function initQuickConnect() as Object
     return api.quickConnect.Initiate()
 end function
 
+function onKeyEvent(key as String, press as Boolean) as Boolean
+    ? "[UserSelect.onKeyEvent] key="; key; " press="; press
+    if not m.top.visible then return false
+    if not press then return true
+
+    if key = "back" then
+        scene = m.top.getScene()
+        if scene <> invalid then
+            sidebar = scene.findNode("sidebar")
+            if sidebar <> invalid and sidebar.visible then
+                return false
+            end if
+        end if
+        return onBackPressed()
+    end if
+
+    if key = "left" then
+        if m.focusIndex = 0 then
+            users = m.top.users
+            if users <> invalid and users.Count() > 0 then
+                m.focusedUserIndex = (m.focusedUserIndex - 1 + users.Count()) mod users.Count()
+                highlightGridIndex(m.focusedUserIndex)
+                ? "[UserSelect] left -> idx="; m.focusedUserIndex
+            end if
+        end if
+        return true
+    end if
+
+    if key = "right" then
+        if m.focusIndex = 0 then
+            users = m.top.users
+            if users <> invalid and users.Count() > 0 then
+                m.focusedUserIndex = (m.focusedUserIndex + 1) mod users.Count()
+                highlightGridIndex(m.focusedUserIndex)
+                ? "[UserSelect] right -> idx="; m.focusedUserIndex
+            end if
+        end if
+        return true
+    end if
+
+    if key = "down" then
+        if m.focusIndex = 0 then
+            m.focusIndex = 1
+        else
+            m.focusIndex = m.focusIndex + 1
+            if m.focusIndex > m.buttons.Count() then m.focusIndex = 0
+        end if
+        updateFocus()
+        return true
+    end if
+
+    if key = "up" then
+        if m.focusIndex = 0 then
+            m.focusIndex = m.buttons.Count()
+        else
+            m.focusIndex = m.focusIndex - 1
+        end if
+        updateFocus()
+        return true
+    end if
+
+    if key = "OK" then
+        if m.focusIndex = 0 then
+            selectUserByTrackedIndex()
+        else
+            btn = m.buttons[m.focusIndex - 1]
+            if btn <> invalid then handleButtonAction(btn)
+        end if
+        return true
+    end if
+
+    return false
+end function
+
+sub selectUserByTrackedIndex()
+    ? "[UserSelect] selectUserByTrackedIndex ENTERED"
+    users = m.top.users
+    if users = invalid or m.focusedUserIndex >= users.Count() then
+        ? "[UserSelect] selectUserByTrackedIndex - invalid users or index"
+        return
+    end if
+    user = users[m.focusedUserIndex]
+    if user = invalid then
+        ? "[UserSelect] selectUserByTrackedIndex - user is invalid"
+        return
+    end if
+    scene = m.top.getScene()
+    if scene = invalid then
+        ? "[UserSelect] selectUserByTrackedIndex - scene is invalid"
+        if m.serverNameLabel <> invalid then m.serverNameLabel.text = "ERROR: no scene"
+        return
+    end if
+    username = chainLookupReturn(user, ["Name"], "")
+    userId = chainLookupReturn(user, ["Id"], "")
+    ? "[UserSelect] OK on user='"; username; "' id='"; userId; "'"
+    ' Bypass token-check flow — go directly to sign-in screen
+    ' (pendingServerAction=login was getting lost or hanging on AboutMe)
+    scene.setField("pendingShowSignIn", username)
+    scene.setField("pendingUserName", username)
+    scene.setField("pendingUserId", userId)
+
+    ' Diagnostics: show status on screen
+    if m.serverNameLabel <> invalid then m.serverNameLabel.text = "Signing in..."
+
+    ? "[UserSelect] pendingShowSignIn set to '"; username; "'"
+end sub
+
+sub handleButtonAction(btn as Object)
+    if btn.id = "btnChangeServer" then
+        ClearAllScenes()
+        CreateServerGroup()
+    else if btn.id = "btnManualSignIn" then
+        ShowSignInScreen("")
+    end if
+end sub
+
+sub updateFocus()
+    if m.focusIndex = 0 then
+        grid = m.userRow.findNode("userGrid")
+        if grid <> invalid then grid.setFocus(true)
+        highlightGridIndex(m.focusedUserIndex)
+    else
+        btn = m.buttons[m.focusIndex - 1]
+        if btn <> invalid then btn.setFocus(true)
+    end if
+end sub
+
 function onBackPressed() as Boolean
-    m.global.sceneManager.callFunc("popScene")
+    PopCurrentScene()
     return true
 end function

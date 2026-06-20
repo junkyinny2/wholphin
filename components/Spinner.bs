@@ -13,17 +13,17 @@ sub Init()
         m.rotationAnimation.repeat = true
         m.rotationAnimation.easeFunction = "linear"
         
-        rotateField = CreateObject("roSGNode", "Vector2DFieldInterpolator")
+        rotateField = CreateObject("roSGNode", "FloatFieldInterpolator")
         rotateField.key = [0.0, 1.0]
-        rotateField.keyValue = [[0, 0], [360, 0]]
-        rotateField.fieldToInterp = "rotation"
+        rotateField.keyValue = [0.0, 360.0]
+        rotateField.fieldToInterp = "spinnerImage.rotation"
         
         m.rotationAnimation.appendChild(rotateField)
         m.top.appendChild(m.rotationAnimation)
     end if
     
     ' Observe visibility to control animation
-    m.top.observeField("visible", m.port)
+    m.top.observeField("visible", "onVisibleChange")
 end sub
 
 ' Handle visibility changes

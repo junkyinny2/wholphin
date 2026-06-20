@@ -4,7 +4,7 @@ sub Init()
     m.itemMediumPoster = m.top.findNode("itemMediumPoster")
     m.itemMediumLabel = m.top.findNode("itemMediumLabel")
 
-    m.top.observeField("itemContent", m.port)
+    m.top.observeField("itemContent", "onItemContentChange")
 end sub
 
 function onItemContentChange() as Void

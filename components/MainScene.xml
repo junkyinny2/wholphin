@@ -15,7 +15,7 @@
       width="1920"
       height="1080"
       loadDisplayMode="scaleToFit"
-      uri="pkg:/images/background.jpg" />
+       uri="pkg:/images/roku_logo.png" />
     <Rectangle
       id="backgroundOverlay"
       translation="[0, 0]"

@@ -36,8 +36,11 @@ end sub
 sub onWatchedCheckmarkChange()
     if not isValid(m.libraryID) then return
 
-    set_user_setting(`${m.libraryID}-showWatchedCheckmark`, m.watchedCheckmark.checkedState[0].toStr())
-    set_user_setting(`${m.libraryID}-useLandscapeImages`, m.watchedCheckmark.checkedState[1].toStr())
+    userId = session.user.GetId()
+    if userId <> "" then
+        set_user_setting(userId, m.libraryID + "-showWatchedCheckmark", m.watchedCheckmark.checkedState[0].toStr())
+        set_user_setting(userId, m.libraryID + "-useLandscapeImages", m.watchedCheckmark.checkedState[1].toStr())
+    end if
     m.group.callFunc("redrawItems")
 end sub
 

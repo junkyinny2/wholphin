@@ -1,10 +1,20 @@
 sub Init()
     m.buttonBg = m.top.findNode("buttonBg")
+    m.focusBorder = m.top.findNode("focusBorder")
     m.buttonLabel = m.top.findNode("buttonLabel")
-    m.top.observeField("buttonText", m.port)
-    m.top.observeField("width", m.port)
+    m.top.observeField("buttonText", "onButtonTextChange")
+    m.top.observeField("width", "onWidthChange")
+    m.top.observeField("buttonFocused", "onFocusedChange")
     updateDisplay()
 end sub
+
+function onKeyEvent(key as String, press as Boolean) as Boolean
+    if press and key = "OK" then
+        m.top.buttonSelected = true
+        return true
+    end if
+    return false
+end function
 
 sub onButtonTextChange()
     updateDisplay()
@@ -14,12 +24,24 @@ sub onWidthChange()
     updateDisplay()
 end sub
 
+sub onFocusedChange()
+    ? "[JFButton.onFocusedChange] buttonFocused="; m.top.buttonFocused; " id="; m.top.id
+    if m.top.buttonFocused then
+        m.focusBorder.opacity = 1
+        m.buttonLabel.color = "0x000000FF"
+    else
+        m.focusBorder.opacity = 0
+        m.buttonLabel.color = "0xFFFFFFFF"
+    end if
+end sub
+
 sub updateDisplay()
     if m.top.buttonText <> "" then
         m.buttonLabel.text = m.top.buttonText
     end if
     if m.top.width > 0 then
         m.buttonBg.width = m.top.width
+        m.focusBorder.width = m.top.width
         m.buttonLabel.width = m.top.width
     end if
 end sub

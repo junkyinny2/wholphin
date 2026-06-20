@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<component name="JFButton" extends="Group">
+<component name="JFButton" extends="Group" focusable="true">
   <interface>
     <field id="buttonText" type="string" value="" />
     <field id="width" type="int" value="200" />
+    <field id="buttonSelected" type="boolean" value="false" alwaysNotify="true" />
+    <field id="buttonFocused" type="boolean" value="false" alwaysNotify="true" />
   </interface>
   <children>
     <Rectangle
@@ -10,6 +12,12 @@
       width="200"
       height="50"
       color="0x00A4DCFF" />
+    <Rectangle
+      id="focusBorder"
+      width="200"
+      height="50"
+      color="0x00FF00FF"
+      opacity="0" />
     <Label
       id="buttonLabel"
       translation="[0, 0]"

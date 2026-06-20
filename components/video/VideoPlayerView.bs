@@ -17,23 +17,22 @@ sub Init()
     m.bufferingOverlay = m.top.findNode("bufferingOverlay")
     m.bufferingLabel = m.top.findNode("bufferingLabel")
 
-    m.top.observeField("videoItem", m.port)
-    m.video.observeField("state", m.port)
-    m.video.observeField("position", m.port)
-    m.video.observeField("duration", m.port)
-    m.video.observeField("bufferingStatus", m.port)
-    m.video.observeField("streamUrl", m.port)
-    m.video.observeField("loadStatus", m.port)
+    m.top.observeField("videoItem", "startPlayback")
+    m.video.observeField("state", "onVideoStateChange")
+    m.video.observeField("position", "onVideoPositionChange")
+    m.video.observeField("duration", "onVideoPositionChange")
+    m.video.observeField("bufferingStatus", "onBufferingStatusChange")
+    m.video.observeField("loadStatus", "onLoadVideoContent")
 
     m.playbackTimer = CreateObject("roSGNode", "Timer")
     m.playbackTimer.repeat = true
     m.playbackTimer.duration = 30
-    m.playbackTimer.observeField("fire", m.port)
+    m.playbackTimer.observeField("fire", "onPlaybackTimer")
 
     m.bufferCheckTimer = CreateObject("roSGNode", "Timer")
     m.bufferCheckTimer.repeat = true
     m.bufferCheckTimer.duration = 2
-    m.bufferCheckTimer.observeField("fire", m.port)
+    m.bufferCheckTimer.observeField("fire", "onBufferCheckTimer")
 
     m.bufferRetryCount = 0
     m.bufferRetryMax = 3
@@ -57,8 +56,8 @@ function startPlayback() as Void
     task.audioStreamIndex = m.top.audioStreamIndex
     task.subtitleStreamIndex = m.top.subtitleStreamIndex
     task.startTimeTicks = startTimeTicks
-    task.observeField("content", m.port)
-    task.observeField("loadStatus", m.port)
+    task.observeField("content", "onLoadVideoContent")
+    task.observeField("loadStatus", "onLoadVideoContent")
     task.control = "RUN"
 end function
 
@@ -245,11 +244,22 @@ function showNextUp() as Void
     timer = CreateObject("roSGNode", "Timer")
     timer.duration = 1
     timer.repeat = true
-    timer.observeField("fire", m.port)
+    timer.observeField("fire", "onNextUpCountdown")
     m.nextUpTimer.userData = { countdown: countdown, timer: timer }
     timer.control = "start"
 
     m.nextUpBox.visible = true
+end function
+
+function onNextUpCountdown() as Void
+    if m.nextUpTimer.userData = invalid then return
+    m.nextUpTimer.userData.countdown = m.nextUpTimer.userData.countdown - 1
+    c = m.nextUpTimer.userData.countdown
+    if c <= 0 then
+        playNextUp()
+    else
+        m.nextUpTimer.text = translateText("Next episode in ") + c.ToStr()
+    end if
 end function
 
 function hideNextUp() as Void
@@ -329,6 +339,17 @@ function onBackPressed() as Boolean
     end if
 
     reportPlaybackStopped()
-    m.global.sceneManager.callFunc("popScene")
+    PopCurrentScene()
     return true
+end function
+
+function onPlaybackTimer() as Void
+    ' Optional: add any periodic logic here, currently reporting is driven by position change
+end function
+
+function onBufferCheckTimer() as Void
+    status = m.video.bufferingStatus
+    if status <> invalid and status.status = "buffering" then
+        handlePlaybackError()
+    end if
 end function

@@ -78,16 +78,29 @@ function inferServerUrl(input as String) as String
     input = input.Trim()
     if input = "" then return ""
     
-    ' If it already has a scheme, return as-is
+    ' If it already has a scheme, return as-is (already fully qualified)
     if input.Left(7) = "http://" or input.Left(8) = "https://" then
         return input
     end if
     
-    ' Try HTTPS on default port first, then HTTP
-    serverUrl = "https://" + input + ":8920"
-    
-    ' Return the HTTPS version (the connection test will determine if it works)
-    return serverUrl
+    ' Parse out host and port
+    colonPos = input.Instr(":")
+    if colonPos > 0 then
+        portStr = input.Mid(colonPos + 1)
+        portNum = Val(portStr)
+        
+        ' Determine scheme from well-known port numbers
+        if portNum = 443 or portNum = 8920 then
+            return "https://" + input
+        else
+            ' 8096, 8097, custom HTTP ports — use HTTP
+            return "http://" + input
+        end if
+    else
+        ' No port specified — default to Jellyfin HTTP LAN default
+        ' (most common for self-hosted: http on 8096)
+        return "http://" + input + ":8096"
+    end if
 end function
 
 ' Build a URL with query parameters

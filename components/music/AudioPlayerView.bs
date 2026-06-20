@@ -16,22 +16,25 @@ sub Init()
     m.btnRepeat = m.top.findNode("btnRepeat")
     m.trackListGrid = m.top.findNode("trackListGrid")
 
-    m.top.observeField("albumData", m.port)
-    m.top.observeField("currentTrackIndex", m.port)
-    m.trackListGrid.observeField("itemSelected", m.port)
+    m.top.observeField("albumData", "onAlbumDataChange")
+    m.top.observeField("currentTrackIndex", "onCurrentTrackIndexChange")
+    m.trackListGrid.observeField("itemSelected", "onTrackListItemSelected")
 
     m.audioPlayer = m.global.audioPlayer
     if m.audioPlayer <> invalid then
-        m.audioPlayer.observeField("state", m.port)
-        m.audioPlayer.observeField("position", m.port)
+        m.audioPlayer.observeField("state", "onAudioPlayerStateChange")
+        m.audioPlayer.observeField("position", "onAudioPlayerPositionChange")
     end if
 
     m.progressTimer = CreateObject("roSGNode", "Timer")
     m.progressTimer.repeat = true
     m.progressTimer.duration = 1
-    m.progressTimer.observeField("fire", m.port)
+    m.progressTimer.observeField("fire", "onProgressTimer")
 
     ? "[AudioPlayerView] Init complete"
+end sub
+
+sub onAudioPlayerPositionChange()
 end sub
 
 function onAlbumDataChange() as Void

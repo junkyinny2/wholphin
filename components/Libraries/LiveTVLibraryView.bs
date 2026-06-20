@@ -8,11 +8,11 @@ sub Init()
     m.btnGuide = m.top.findNode("btnGuide")
     m.btnRecordings = m.top.findNode("btnRecordings")
 
-    m.top.observeField("libraryData", m.port)
-    m.channelGrid.observeField("itemSelected", m.port)
-    m.btnChannels.observeField("buttonSelected", m.port)
-    m.btnGuide.observeField("buttonSelected", m.port)
-    m.btnRecordings.observeField("buttonSelected", m.port)
+    m.top.observeField("libraryData", "onLibraryDataChange")
+    m.channelGrid.observeField("itemSelected", "onItemSelected")
+    m.btnChannels.observeField("buttonSelected", "onButtonSelected")
+    m.btnGuide.observeField("buttonSelected", "onButtonSelected")
+    m.btnRecordings.observeField("buttonSelected", "onButtonSelected")
 end sub
 
 function onLibraryDataChange() as Void

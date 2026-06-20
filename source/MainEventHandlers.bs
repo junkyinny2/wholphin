@@ -34,8 +34,11 @@ function HandleDeepLink(inputData as Object) as Void
     end if
 end function
 
-' Handle dialog button selection
-function HandleDialogCallback(nodeId as String, selectedButton as Integer) as Void
+' Handle dialog button selection (non-keyboard dialogs only; keyboard is handled in Main.bs event loop)
+function HandleDialogCallback(nodeId as String, selectedButton as Dynamic) as Void
+    if selectedButton = invalid then return
+    ? "[HandleDialogCallback] nodeId='"; nodeId; "' buttonIndex="; selectedButton
+    
     if nodeId = "" then return
     
     ' Dispatch based on dialog type

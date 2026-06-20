@@ -53,9 +53,14 @@ function show_dialog(title as String, message as String) as Void
     dialog.message = message
     dialog.optionsDialog = true
     dialog.buttons = ["OK"]
-    dialog.observeField("buttonSelected", m.port)
+    gaa = getGlobalAA()
+    if gaa.mainPort <> invalid then
+        dialog.observeField("buttonSelected", gaa.mainPort)
+    end if
     dialog.dialogResult = 0
-    m.scene.dialog = dialog
+    if gaa.scene <> invalid then
+        gaa.scene.dialog = dialog
+    end if
 end function
 
 ' Show a message dialog (JFMessageDialog variant)
@@ -65,8 +70,13 @@ function message_dialog(title as String, message as String, buttons = [] as Obje
     dialog.message = message
     if buttons.Count() = 0 then buttons = ["OK"]
     dialog.buttons = buttons
-    dialog.observeField("buttonSelected", m.port)
-    m.scene.dialog = dialog
+    gaa = getGlobalAA()
+    if gaa.mainPort <> invalid then
+        dialog.observeField("buttonSelected", gaa.mainPort)
+    end if
+    if gaa.scene <> invalid then
+        gaa.scene.dialog = dialog
+    end if
 end function
 
 ' Start the loading spinner overlay
@@ -171,4 +181,39 @@ function loadTranslations(localeCode as String) as Object
     end for
     
     return translations
+end function
+
+' ============================================================
+' Missing utility functions (auto-fixed from audit)
+' ============================================================
+
+' Case-insensitive string equality
+function isStringEqual(a as String, b as String) as Boolean
+    return LCase(a) = LCase(b)
+end function
+
+' Find node by subtype (recursive search)
+function findNodeBySubtype(root as Object, subtype as String) as Object
+    if root = invalid then return invalid
+    if root.subtype <> invalid and root.subtype = subtype then return root
+    for each child in root.GetChildren()
+        result = findNodeBySubtype(child, subtype)
+        if result <> invalid then return result
+    end for
+    return invalid
+end function
+
+' Check if value exists in array
+function inArray(arr as Object, value as Dynamic) as Boolean
+    if arr = invalid then return false
+    if GetInterface(arr, "ifArray") = invalid then return false
+    for each item in arr
+        if item = value then return true
+    end for
+    return false
+end function
+
+' Alias for translateText (for backward compatibility with legacy code)
+function tr(text as String) as String
+    return translateText(text)
 end function

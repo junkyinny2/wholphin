@@ -10,6 +10,16 @@
   </interface>
   
   <children>
+    <!-- Focus indicator (visible when item has focus) -->
+    <Rectangle
+      id="focusIndicator"
+      translation="[-4, -4]"
+      width="204"
+      height="302"
+      color="0x00A4DC00"
+      blendColor="0x00A4DCFF"
+      visible="false" />
+    
     <!-- Item poster -->
     <Poster
       id="itemPoster"

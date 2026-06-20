@@ -27,11 +27,25 @@ function buildURL(path as String, params = {} as Object) as String
     return url
 end function
 
-' URL-encode a string
+' URL-encode a string (safe for all threads, no roUrlTransfer needed)
 function HttpEncode(str as String) as String
-    ' Roku provides a simple way via transfer encoding
-    transfer = CreateObject("roUrlTransfer")
-    return transfer.Escape(str)
+    safe = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.-~"
+    hex = "0123456789ABCDEF"
+    encoded = ""
+    for i = 0 to str.Len() - 1
+        c = str.Mid(i, 1)
+        if safe.Instr(c) > -1 then
+            encoded = encoded + c
+        else if c = " " then
+            encoded = encoded + "%20"
+        else
+            code = Asc(c)
+            hi = int(code / 16)
+            lo = code - hi * 16
+            encoded = encoded + "%" + hex.Mid(hi, 1) + hex.Mid(lo, 1)
+        end if
+    end for
+    return encoded
 end function
 
 ' Build the authorization header for Jellyfin API requests
@@ -57,38 +71,46 @@ function buildAuthHeader() as String
     return header
 end function
 
-' Create an authenticated API request object
+' Build an authenticated request spec (safe for any thread - no roUrlTransfer created)
 function APIRequest(url as String, params = {} as Object) as Object
     fullUrl = buildURL(url, params)
     if fullUrl = "" then return invalid
     
+    spec = {
+        url:      fullUrl
+        headers:  {
+            "Authorization": buildAuthHeader()
+            "Content-Type":  "application/json"
+            "Accept":        "application/json"
+        }
+        https:    (Left(fullUrl, 8) = "https://")
+    }
+    return spec
+end function
+
+' Create roUrlTransfer from request spec (only call from main/task threads, NOT render)
+function _createTransfer(spec as Object) as Object
+    if spec = invalid then return invalid
     req = CreateObject("roUrlTransfer")
-    req.SetUrl(fullUrl)
+    req.SetUrl(spec.url)
     req.SetRequest("GET")
-    
-    ' Set headers
-    req.SetHeaders({
-        "Authorization": buildAuthHeader()
-        "Content-Type":  "application/json"
-        "Accept":        "application/json"
-    })
-    
-    ' Set certificate handling for HTTPS
-    if Left(fullUrl, 8) = "https://" then
-        req.SetCertificatesFile("common:/certs/ca-bundle.crt")
-        req.InitClientCertificates()
-        req.SetMinimumVersionTLS(1.2)
+    req.SetHeaders(spec.headers)
+    if spec.https then
+        if req.HasMethod("SetCertificatesFile") then
+            req.SetCertificatesFile("common:/certs/ca-bundle.crt")
+        end if
+        if req.HasMethod("InitClientCertificates") then
+            req.InitClientCertificates()
+        end if
     end if
-    
-    ' Set timeout
-    req.SetTimeout(30000)
-    req.RetainBodyOnErrors(true)
-    
     return req
 end function
 
 ' Perform a GET request and parse JSON response
-function getJson(req as Object) as Object
+function getJson(spec as Object) as Object
+    if spec = invalid then return invalid
+    
+    req = _createTransfer(spec)
     if req = invalid then return invalid
     
     port = CreateObject("roMessagePort")
@@ -104,8 +126,7 @@ function getJson(req as Object) as Object
                     return ParseJson(body)
                 end if
             else
-                ' Log error
-                print "[Wholphin] HTTP Error: " + responseCode.ToStr() + " for " + req.GetUrl()
+                print "[Wholphin] HTTP Error: " + responseCode.ToStr() + " for " + spec.url
                 errorBody = msg.GetFailureReason()
                 if errorBody <> "" then print errorBody
             end if
@@ -118,7 +139,10 @@ function getJson(req as Object) as Object
 end function
 
 ' Perform a POST request with JSON body and parse response
-function postJson(req as Object, data as Object) as Object
+function postJson(spec as Object, data as Object) as Object
+    if spec = invalid then return invalid
+    
+    req = _createTransfer(spec)
     if req = invalid then return invalid
     
     port = CreateObject("roMessagePort")
@@ -148,7 +172,10 @@ function postJson(req as Object, data as Object) as Object
 end function
 
 ' Perform a POST request with JSON body (no response expected)
-function postVoid(req as Object, data as Object) as Boolean
+function postVoid(spec as Object, data as Object) as Boolean
+    if spec = invalid then return false
+    
+    req = _createTransfer(spec)
     if req = invalid then return false
     
     port = CreateObject("roMessagePort")
@@ -169,7 +196,10 @@ function postVoid(req as Object, data as Object) as Boolean
 end function
 
 ' Perform a DELETE request
-function deleteVoid(req as Object) as Boolean
+function deleteVoid(spec as Object) as Boolean
+    if spec = invalid then return false
+    
+    req = _createTransfer(spec)
     if req = invalid then return false
     
     port = CreateObject("roMessagePort")
@@ -188,7 +218,10 @@ function deleteVoid(req as Object) as Boolean
 end function
 
 ' Get raw response string (for non-JSON responses like subtitle files)
-function getString(req as Object) as String
+function getString(spec as Object) as String
+    if spec = invalid then return ""
+    
+    req = _createTransfer(spec)
     if req = invalid then return ""
     
     port = CreateObject("roMessagePort")
@@ -209,57 +242,40 @@ end function
 
 ' Make an unauthenticated request (for server discovery)
 function getJsonPublic(url as String) as Object
-    req = CreateObject("roUrlTransfer")
-    req.SetUrl(url)
-    req.SetRequest("GET")
-    req.SetHeaders({
-        "Content-Type": "application/json"
-        "Accept":       "application/json"
-    })
-    
-    if Left(url, 8) = "https://" then
-        req.SetCertificatesFile("common:/certs/ca-bundle.crt")
-        req.InitClientCertificates()
-    end if
-    
-    req.SetTimeout(10000)
-    
-    port = CreateObject("roMessagePort")
-    req.SetPort(port)
-    
-    if req.AsyncGetToString() then
-        msg = wait(10000, port)
-        if type(msg) = "roUrlEvent" then
-            responseCode = msg.GetResponseCode()
-            if responseCode >= 200 and responseCode < 300 then
-                body = msg.GetString()
-                if body <> "" then return ParseJson(body)
-            end if
-        end if
-    end if
-    
-    return invalid
+    spec = {
+        url:     url
+        headers: {
+            "Content-Type": "application/json"
+            "Accept":       "application/json"
+        }
+        https:   (Left(url, 8) = "https://")
+    }
+    return getJson(spec)
 end function
 
 ' PostForm for quick connect
 function postForm(url as String, formData as Object) as Object
-    req = CreateObject("roUrlTransfer")
-    req.SetUrl(url)
-    req.SetRequest("POST")
-    req.SetHeaders({
-        "Content-Type": "application/x-www-form-urlencoded"
-        "Accept":       "application/json"
-    })
-    
-    ' Build form body
     parts = []
     for each key in formData
         parts.Push(key + "=" + HttpEncode(formData[key].ToStr()))
     end for
     body = parts.Join("&")
     
+    spec = {
+        url:     url
+        headers: {
+            "Content-Type": "application/x-www-form-urlencoded"
+            "Accept":       "application/json"
+        }
+        https:   (Left(url, 8) = "https://")
+    }
+    
+    req = _createTransfer(spec)
+    if req = invalid then return invalid
+    
     port = CreateObject("roMessagePort")
     req.SetPort(port)
+    req.SetRequest("POST")
     
     if req.AsyncPostFromString(body) then
         msg = wait(15000, port)

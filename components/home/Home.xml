@@ -8,6 +8,14 @@
   </interface>
   
   <children>
+    <!-- Background fill (visible when no backdrop is loaded) -->
+    <Rectangle
+      id="bgFill"
+      translation="[0, 0]"
+      width="1920"
+      height="1080"
+      color="0x1A1A2EFF" />
+    
     <!-- Backdrop image -->
     <Poster
       id="backdrop"
@@ -15,7 +23,8 @@
       width="1920"
       height="1080"
       loadDisplayMode="scaleToFit"
-      visible="true" />
+      visible="true"
+      uri="pkg:/images/roku_logo.png" />
     
     <!-- Transition backdrop for cross-fade -->
     <Poster
@@ -33,12 +42,23 @@
       translation="[0, 60]"
       visible="true" />
     
+    <!-- Loading indicator -->
+    <Label
+      id="loadingLabel"
+      translation="[860, 250]"
+      width="200"
+      height="40"
+      font="font:MediumSystemFont"
+      color="0xFFFFFFFF"
+      text="Loading..."
+      horizAlign="center"
+      vertAlign="center"
+      visible="true" />
+
     <!-- Home screen content rows -->
     <HomeRows
       id="homeRows"
-      translation="[100, 500]"
-      width="1720"
-      height="500"
+      translation="[100, 460]"
       visible="true" />
     
     <!-- Options slider (side panel) -->

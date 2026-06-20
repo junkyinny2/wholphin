@@ -144,5 +144,12 @@ function preloadImage(url as String) as Void
     ' Add to scene briefly to trigger load
     m.scene.appendChild(loader)
     ' We'll remove it later when the image is loaded
-    loader.observeField("loadStatus", m.port)
+    loader.observeField("loadStatus", "onImageLoadStatus")
 end function
+
+sub onImageLoadStatus()
+    loader = m.top.lastEventNode
+    if loader <> invalid and m.scene <> invalid then
+        m.scene.removeChild(loader)
+    end if
+end sub

@@ -6,7 +6,7 @@ sub Init()
     m.favoriteIcon = m.top.findNode("favoriteIcon")
     m.itemLabel = m.top.findNode("itemLabel")
 
-    m.top.observeField("itemContent", m.port)
+    m.top.observeField("itemContent", "onItemContentChange")
 end sub
 
 function onItemContentChange() as Void

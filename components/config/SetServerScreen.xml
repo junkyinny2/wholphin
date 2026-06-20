@@ -12,6 +12,15 @@
       height="1080"
       color="0x1A1A2EFF" />
 
+    <!-- Wholphin logo centred top -->
+    <Poster
+      id="logoImage"
+      translation="[760, 60]"
+      width="400"
+      height="150"
+      loadDisplayMode="scaleToFit"
+      uri="pkg:/images/roku_logo.png" />
+
     <Label
       id="serverTitle"
       translation="[560, 200]"
@@ -41,6 +50,12 @@
         width="800"
         height="50"
         color="0x16213EFF" />
+      <Rectangle
+        id="serverInputFocus"
+        width="800"
+        height="50"
+        color="0x0A3D62FF"
+        visible="false" />
       <Label
         id="serverInputText"
         translation="[15, 10]"
@@ -53,7 +68,7 @@
     </Group>
 
     <!-- Buttons -->
-    <Group id="serverButtons" translation="[560, 410]">
+    <Group id="serverButtons" translation="[560, 410]" focusable="true">
       <JFButton id="btnConnect" translation="[0, 0]" buttonText="Connect" width="200" />
       <JFButton id="btnDiscover" translation="[220, 0]" buttonText="Auto Discover" width="300" />
       <JFButton id="btnManualEntry" translation="[540, 0]" buttonText="Manual Entry" width="260" />
@@ -75,13 +90,10 @@
     <LabelList
       id="serverList"
       translation="[560, 530]"
-      width="800"
-      height="300"
       itemSize="[800, 50]"
       font="font:SmallSystemFont"
       color="0xB0B0B0FF"
       focusedColor="0x00A4DCFF"
-      showFocusFootprint="false"
       visible="false" />
 
     <!-- Auto-discovered servers -->
@@ -97,17 +109,23 @@
       vertAlign="center"
       visible="false" />
 
+    <Rectangle
+      id="listSelectionBar"
+      width="800"
+      height="50"
+      color="0x0F3460FF"
+      translation="[560, 530]"
+      visible="false" />
+
     <LabelList
       id="discoveredServerList"
       translation="[560, 530]"
-      width="800"
-      height="300"
       itemSize="[800, 50]"
       font="font:SmallSystemFont"
       color="0xB0B0B0FF"
       focusedColor="0x00A4DCFF"
-      showFocusFootprint="false"
-      visible="false" />
+      visible="false"
+      focusable="true" />
   </children>
 
   <script type="text/brightscript" uri="pkg:/components/config/SetServerScreen.bs" />

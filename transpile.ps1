@@ -58,23 +58,25 @@ foreach ($file in $files) {
         # 4. Remove enum/end enum blocks
         $content = $content -replace '(?ms)^\s*enum\s+\w+.*?^\s*end\s+enum\r?\n?', ''
 
-        # 5. Remove default parameter values in function/sub definitions
-        # Handles: function f(x = "default") -> function f(x)
-        # Only targets lines that start with function/sub declaration
+        # 5. Fix default parameter values in function/sub definitions
+        # BrightScript supports default values but NOT 'as Type' on params with defaults.
+        # Convert: param = value as Type  ->  param = value
+        # Keep the default value itself intact.
         for ($r = 0; $r -lt 5; $r++) {
-            $content = $content -replace '(?m)^(\s*(?:function|sub)\s+\w+\s*\([^)]*?)\b(\w+)\s*=\s*[^,)]+([^)]*\)[^(]*$)', '${1}${2}${3}'
+            $content = $content -replace '(?m)^(\s*(?:function|sub)\s+\w+\s*\([^)]*?\b\w+\s*=\s*[^,)]+?)\s+as\s+\w+([,\)])', '${1}${2}'
         }
 
         # 6. Convert function X() as Void -> sub X()
         $content = $content -replace '(?<=^|\s)function\s+(\w+)\s*\(([^)]*)\)\s+as\s+Void', 'sub $1($2)'
 
-        # 6. Remove type annotations from params: (param as Type) -> (param)
-        for ($i = 0; $i -lt 3; $i++) {
-            $content = $content -replace '(\w+)\s+as\s+(String|Integer|Boolean|Float|Double|Object|Dynamic|Void|AssocArray|Array|Node|ro[a-zA-Z]+)(?=[,\)])', '$1'
-        }
+        # 6. Keep parameter type annotations (valid BrightScript).
+        #    Only strip 'as Void' from params (Void is a BrighterScript-only concept for params)
+        $content = $content -replace '(\w+)\s+as\s+Void(?=[,\)])', '$1'
 
-        # 7. Remove return type annotations on non-Void functions (named and anonymous)
-        $content = $content -replace '(?<=\bfunction\s*(?:\w+\s*)?\([^)]*\))\s+as\s+\w+(\.\w+)*', ''
+        # 7. Keep standard BrightScript return types (Boolean, String, etc. are all valid on Roku).
+        #    Only strip non-standard return types that BrighterScript adds.
+        $bsReturnTypes = '(Boolean|String|Integer|Float|Double|Object|Array|Function|Dynamic|Node|ro[a-zA-Z]*)'
+        $content = $content -replace "(?<=\bfunction\s*(?:\w+\s*)?\([^)]*\))\s+as\s+(?!$bsReturnTypes\b)[A-Za-z_]\w*", ''
 
         # 8. Line-by-line processing: track namespaces, prefix functions, fix closings
         $lines = $content -split "`r`n|`n"
@@ -184,8 +186,35 @@ if (Test-Path $mainSceneXml) {
 $commonScripts = @(
     'pkg:/source/utils/misc.brs'
     'pkg:/source/utils/session.brs'
+    'pkg:/source/api/baserequest.brs'
+    'pkg:/source/api/Image.brs'
 )
 $libInjections = @{
+    'BaseScene.xml' = @(
+        'pkg:/source/utils/globals.brs'
+        'pkg:/source/utils/config.brs'
+        'pkg:/source/ShowScenes.brs'
+        'pkg:/source/MainEventHandlers.brs'
+        'pkg:/source/api/sdk.brs'
+        'pkg:/source/api/baserequest.brs'
+        'pkg:/source/api/userauth.brs'
+        'pkg:/source/api/Image.brs'
+        'pkg:/source/api/Items.brs'
+    )
+    'Home.xml' = @(
+        'pkg:/source/api/sdk.brs'
+        'pkg:/source/api/baserequest.brs'
+        'pkg:/source/api/Image.brs'
+        'pkg:/source/api/Items.brs'
+        'pkg:/source/api/userauth.brs'
+    )
+    'LoadItemsTask.xml' = @(
+        'pkg:/source/api/sdk.brs'
+        'pkg:/source/api/baserequest.brs'
+        'pkg:/source/api/Image.brs'
+        'pkg:/source/api/Items.brs'
+        'pkg:/source/api/userauth.brs'
+    )
     'AudioPlayerView.xml' = @(
         'pkg:/source/api/sdk.brs'
         'pkg:/source/api/baserequest.brs'
@@ -197,6 +226,30 @@ $libInjections = @{
         'pkg:/source/api/baserequest.brs'
         'pkg:/source/api/Image.brs'
         'pkg:/source/api/Items.brs'
+    )
+    'SetServerScreen.xml' = @(
+        'pkg:/source/ShowScenes.brs'
+        'pkg:/source/MainEventHandlers.brs'
+        'pkg:/source/api/sdk.brs'
+        'pkg:/source/api/baserequest.brs'
+        'pkg:/source/api/userauth.brs'
+        'pkg:/source/api/Image.brs'
+        'pkg:/source/api/Items.brs'
+    )
+    'UserSelect.xml' = @(
+        'pkg:/source/ShowScenes.brs'
+        'pkg:/source/MainEventHandlers.brs'
+        'pkg:/source/api/sdk.brs'
+    )
+    'UserRow.xml' = @(
+        'pkg:/source/api/Image.brs'
+        'pkg:/source/api/baserequest.brs'
+    )
+    'SigninScene.xml' = @(
+        'pkg:/source/ShowScenes.brs'
+        'pkg:/source/MainEventHandlers.brs'
+        'pkg:/source/api/userauth.brs'
+        'pkg:/source/api/sdk.brs'
     )
     'WholphinSidebar.xml' = @(
         'pkg:/source/ShowScenes.brs'

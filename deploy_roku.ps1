@@ -1,10 +1,14 @@
 # Roku Deployment PowerShell Script
 # Builds and deploys Wholphin to your Roku device.
 #
-# !!! WARNING: The Living Room Roku IP is 192.168.1.196. DO NOT CHANGE IT !!!
+# Set ROKU_IP environment variable or pass IP as first argument
 
-$RokuPass = "whit"
-$RokuUser = "rokudev"
+$RokuPass = $env:ROKU_PASSWORD
+if (-not $RokuPass) {
+    $RokuPass = Read-Host "Enter Roku password" -AsSecureString | ConvertFrom-SecureString -AsPlainText
+}
+$RokuUser = $env:ROKU_USERNAME
+if (-not $RokuUser) { $RokuUser = "rokudev" }
 $ConfigFile = Join-Path $PSScriptRoot "bsconfig.deploy.json"
 $Config = $null
 
@@ -22,8 +26,8 @@ if (Test-Path $ConfigFile) {
 Write-Host ""
 Write-Host "=== Wholphin Deployment ===" -ForegroundColor Yellow
 
-# !!! DO NOT CHANGE: Living Room Roku = 192.168.1.196 !!!
-$defaultIP = "192.168.1.196"
+$defaultIP = $env:ROKU_IP
+if (-not $defaultIP) { $defaultIP = "192.168.1.100" }
 $RokuIP = if ($args.Length -gt 0) { $args[0] } else { $defaultIP }
 
 Write-Host ""

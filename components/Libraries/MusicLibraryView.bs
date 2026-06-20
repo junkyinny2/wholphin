@@ -9,12 +9,12 @@ sub Init()
     m.btnPlaylists = m.top.findNode("btnPlaylists")
     m.btnMusicSearch = m.top.findNode("btnMusicSearch")
 
-    m.top.observeField("libraryData", m.port)
-    m.musicGrid.observeField("itemSelected", m.port)
-    m.btnArtists.observeField("buttonSelected", m.port)
-    m.btnAlbums.observeField("buttonSelected", m.port)
-    m.btnPlaylists.observeField("buttonSelected", m.port)
-    m.btnMusicSearch.observeField("buttonSelected", m.port)
+    m.top.observeField("libraryData", "onLibraryDataChange")
+    m.musicGrid.observeField("itemSelected", "onItemSelected")
+    m.btnArtists.observeField("buttonSelected", "onButtonSelected")
+    m.btnAlbums.observeField("buttonSelected", "onButtonSelected")
+    m.btnPlaylists.observeField("buttonSelected", "onButtonSelected")
+    m.btnMusicSearch.observeField("buttonSelected", "onButtonSelected")
 end sub
 
 function onLibraryDataChange() as Void

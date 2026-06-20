@@ -4,9 +4,9 @@ sub Init()
     m.filterTitle = m.top.findNode("filterTitle")
     m.filterOptions = m.top.findNode("filterOptions")
 
-    m.top.observeField("options", m.port)
-    m.top.observeField("title", m.port)
-    m.filterOptions.observeField("itemSelected", m.port)
+    m.top.observeField("options", "onOptionsChange")
+    m.top.observeField("title", "onTitleChange")
+    m.filterOptions.observeField("itemSelected", "onOptionSelected")
 end sub
 
 function onOptionsChange() as Void

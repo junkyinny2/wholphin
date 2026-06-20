@@ -13,65 +13,66 @@ sub Init()
         m.global.sceneManager = m.top.sceneManager
     end if
     
-    ' Handle back key for navigation
-    m.top.observeField("keyEvent", m.port)
+    m.statusLabel = m.top.findNode("statusLabel")
+    m.top.observeField("statusMessage", "onStatusMessageChange")
     
-    ' Handle sidebar toggle
-    m.top.observeField("sidebarVisible", m.port)
+    ' Find sidebar lists
+    m.sidebarDests = invalid
+    m.sidebarLibs = invalid
+    if m.sidebar <> invalid then
+        m.sidebarDests = m.sidebar.findNode("sidebarDestinations")
+        m.sidebarLibs = m.sidebar.findNode("sidebarLibraryList")
+    end if
 end sub
+
+sub onStatusMessageChange()
+    msg = m.top.statusMessage
+    if m.statusLabel <> invalid then
+        m.statusLabel.text = msg
+        m.statusLabel.visible = (msg <> "")
+    end if
+end sub
+
+function showSidebar() as Void
+    if m.sidebar = invalid then return
+    m.sidebar.visible = true
+end function
+
+function hideSidebarAndRestoreFocus() as Void
+    if m.sidebar <> invalid then
+        m.sidebar.visible = false
+    end if
+    home = m.content.getChild(m.content.getChildCount() - 1)
+    if home <> invalid then
+        homeRows = home.findNode("homeRows")
+        if homeRows <> invalid then
+            homeRows.setFocus(true)
+            return
+        end if
+        home.setFocus(true)
+    else
+        m.content.setFocus(true)
+    end if
+end function
 
 function onKeyEvent(key as String, press as Boolean) as Boolean
     if not press then return false
-    
-    ' Handle back key
     if key = "back" then
-        sidebar = m.sidebar
-        if sidebar <> invalid and sidebar.visible then
-            ' Hide sidebar
-            sidebar.visible = false
+        if m.sidebar <> invalid and m.sidebar.visible then
+            hideSidebarAndRestoreFocus()
             return true
         end if
-        
-        ' Pop current scene
-        sceneManager = m.global.sceneManager
-        if sceneManager <> invalid then
-            activeScene = sceneManager.callFunc("getActiveScene")
-            if activeScene <> invalid then
-                ' Allow the scene to handle back first
-                if activeScene.callFunc("onBackPressed") = false then
-                    sceneManager.callFunc("popScene")
-                end if
-                return true
-            end if
-        end if
+        return false
     end if
-    
-    ' Handle left key to show sidebar (when on root/home)
-    if key = "left" then
-        sceneManager = m.global.sceneManager
-        if sceneManager <> invalid then
-            if sceneManager.callFunc("getSceneCount") <= 1 then
-                ' Toggle sidebar
-                sidebar = m.sidebar
-                if sidebar <> invalid then
-                    sidebar.visible = not sidebar.visible
-                    return true
-                end if
-            end if
-        end if
-    end if
-    
     return false
 end function
 
-' Set the background poster image
 function setBackground(url as String) as Void
     if m.imageBackground <> invalid and url <> "" then
         m.imageBackground.uri = url
     end if
 end function
 
-' Update the overhang title
 function setOverhangTitle(title as String) as Void
     if m.overhang <> invalid then
         m.overhang.title = title

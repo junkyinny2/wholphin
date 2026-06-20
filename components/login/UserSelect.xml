@@ -4,6 +4,7 @@
     <field id="users" type="array" value="" alwaysNotify="true" />
     <field id="quickConnectEnabled" type="boolean" value="false" />
     <field id="selectedUser" type="node" />
+    <field id="onKeyEvent" type="boolean" value="false" />
   </interface>
 
   <children>
@@ -11,6 +12,15 @@
       width="1920"
       height="1080"
       color="0x1A1A2EFF" />
+
+    <!-- Wholphin logo centred top -->
+    <Poster
+      id="logoImage"
+      translation="[760, 60]"
+      width="400"
+      height="150"
+      loadDisplayMode="scaleToFit"
+      uri="pkg:/images/roku_logo.png" />
 
     <Label
       id="userSelectTitle"
@@ -35,17 +45,15 @@
 
     <UserRow
       id="userRow"
-      translation="[0, 340]"
-      width="1920"
-      height="300" />
+      translation="[0, 340]" />
 
     <Group id="quickConnectGroup" translation="[760, 700]" visible="false">
-      <JFButton id="btnQuickConnect" translation="[0, 0]" buttonText="Quick Connect" width="400" />
+      <JFButton id="btnQuickConnect" translation="[0, 0]" buttonText="Quick Connect" />
     </Group>
 
     <Group id="serverButtonsGroup" translation="[660, 780]">
-      <JFButton id="btnChangeServer" translation="[0, 0]" buttonText="Change Server" width="300" />
-      <JFButton id="btnManualSignIn" translation="[320, 0]" buttonText="Manual Sign In" width="300" />
+      <JFButton id="btnChangeServer" translation="[0, 0]" buttonText="Change Server" />
+      <JFButton id="btnManualSignIn" translation="[320, 0]" buttonText="Manual Sign In" />
     </Group>
   </children>
 

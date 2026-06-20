@@ -4,12 +4,12 @@ sub Init()
     m.audioNode = CreateObject("roSGNode", "Audio")
     m.top.appendChild(m.audioNode)
     
-    m.audioNode.observeField("state", m.port)
-    m.audioNode.observeField("position", m.port)
-    m.audioNode.observeField("duration", m.port)
+    m.audioNode.observeField("state", "onAudioState")
+    m.audioNode.observeField("position", "onAudioPosition")
+    m.audioNode.observeField("duration", "onAudioDuration")
     
-    m.top.observeField("control", m.port)
-    m.top.observeField("content", m.port)
+    m.top.observeField("control", "onControlChange")
+    m.top.observeField("content", "onContentChange")
     
     m.top.state = "idle"
 end sub
@@ -47,6 +47,12 @@ function onContentChange() as Void
 end function
 
 ' Handle audio node state changes
+sub onAudioPosition()
+end sub
+
+sub onAudioDuration()
+end sub
+
 function onAudioState() as Void
     state = m.audioNode.state
     if state = "finished" then

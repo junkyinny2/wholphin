@@ -4,10 +4,10 @@ sub Init()
     m.versionTitleLabel = m.top.findNode("versionTitleLabel")
     m.versionItemList = m.top.findNode("versionItemList")
 
-    m.top.observeField("versions", m.port)
-    m.top.observeField("dialogTitle", m.port)
-    m.versionItemList.observeField("itemSelected", m.port)
-    m.versionItemList.observeField("focusedItem", m.port)
+    m.top.observeField("versions", "onVersionsChange")
+    m.top.observeField("dialogTitle", "onDialogTitleChange")
+    m.versionItemList.observeField("itemSelected", "onVersionSelected")
+    m.versionItemList.observeField("focusedItem", "onVersionFocused")
 end sub
 
 function onVersionsChange() as Void
@@ -36,6 +36,9 @@ function onDialogTitleChange() as Void
         m.versionTitleLabel.text = m.top.dialogTitle
     end if
 end function
+
+sub onVersionFocused()
+end sub
 
 function onVersionSelected() as Void
     focused = m.versionItemList.focusedItem

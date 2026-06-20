@@ -9,11 +9,16 @@ sub Init()
     ? "[SceneManager] Init() complete"
 end sub
 
+' Get the scene this manager belongs to
+function getScene() as Object
+    return m.top.getScene()
+end function
+
 ' Push a new scene onto the stack
-function pushScene(scene as Object) as Void
+function pushScene(scene as Object) as Boolean
     if scene = invalid then
         ? "[SceneManager] pushScene: scene is invalid!"
-        return
+        return false
     end if
     
     ? "[SceneManager] pushScene: "; scene.Subtype()
@@ -21,6 +26,7 @@ function pushScene(scene as Object) as Void
     if m.sceneStack.Count() > 0 then
         currentScene = m.sceneStack.Peek()
         if currentScene <> invalid then
+            currentScene.visible = false
             if currentScene.Subtype() = "JFScreen" or currentScene.HasField("screenHidden") then
                 currentScene.screenHidden = true
                 currentScene.screenShown = false
@@ -28,12 +34,18 @@ function pushScene(scene as Object) as Void
         end if
     end if
     
-    contentGroup = m.top.getScene().findNode("content")
-    if contentGroup <> invalid then
-        ? "[SceneManager] content group found, appending"
-        contentGroup.appendChild(scene)
+    ' Only append if not already in the scene tree
+    if scene.parent = invalid then
+        contentGroup = m.top.getScene().findNode("content")
+        if contentGroup <> invalid then
+            ? "[SceneManager] content group found, appending"
+            contentGroup.appendChild(scene)
+        else
+            ? "[SceneManager] ERROR: content group NOT found!"
+            return false
+        end if
     else
-        ? "[SceneManager] ERROR: content group NOT found!"
+        ? "[SceneManager] scene already has parent, skipping appendChild"
     end if
     
     m.sceneStack.Push(scene)
@@ -46,12 +58,11 @@ function pushScene(scene as Object) as Void
         scene.screenHidden = false
     end if
     
-    if scene.HasField("OnScreenShown") then
-        scene.callFunc("OnScreenShown")
-    end if
+    scene.callFunc("OnScreenShown")
     
     scene.setFocus(true)
     ? "[SceneManager] pushScene complete, stack="; m.sceneStack.Count()
+    return true
 end function
 
 ' Pop the top scene from the stack
@@ -61,10 +72,7 @@ function popScene() as Void
     ' Get the scene to remove
     sceneToRemove = m.sceneStack.Pop()
     
-    ' Call OnScreenHidden if available
-    if sceneToRemove.HasField("OnScreenHidden") then
-        sceneToRemove.callFunc("OnScreenHidden")
-    end if
+    sceneToRemove.callFunc("OnScreenHidden")
     
     ' Remove from scene graph
     contentGroup = m.top.getScene().findNode("content")
@@ -82,21 +90,19 @@ function popScene() as Void
             previousScene.screenHidden = false
         end if
         
-        ' Call OnScreenShown if available
-        if previousScene.HasField("OnScreenShown") then
-            previousScene.callFunc("OnScreenShown")
-        end if
-        
-        ' Update overhang
-        if previousScene.HasField("overhangTitle") then
-            sceneManager = m.top.getScene()
-            if sceneManager <> invalid then
-                sceneManager.setOverhangTitle(previousScene.overhangTitle)
-            end if
-        end if
-        
-        ' Set focus to previous scene
-        previousScene.setFocus(true)
+         previousScene.callFunc("OnScreenShown")
+         previousScene.visible = true
+
+         ' Update overhang
+         if previousScene.HasField("overhangTitle") then
+             sceneManager = m.top.getScene()
+             if sceneManager <> invalid then
+                 sceneManager.setOverhangTitle(previousScene.overhangTitle)
+             end if
+         end if
+
+         ' Set focus to previous scene
+         previousScene.setFocus(true)
     else
         m.top.activeScene = invalid
     end if

@@ -5,7 +5,7 @@ sub Init()
     m.lastFocusNode = invalid
     
     ' Observe focus for automatic tracking
-    m.top.observeField("focusedChild", m.port)
+    m.top.observeField("focusedChild", "onFocusedChild")
 end sub
 
 ' Handle focused child changes

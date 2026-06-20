@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="HeroBanner" extends="Group">
+  <interface>
+    <field id="heroItem" type="assocarray" alwaysNotify="true" />
+    <field id="clock" type="string" value="" alwaysNotify="true" />
+  </interface>
+
+  <children>
+    <!-- Full-bleed backdrop image -->
+    <Poster
+      id="heroBackdrop"
+      translation="[0, 0]"
+      width="1920"
+      height="1080"
+      loadDisplayMode="scaleToFill" />
+    
+    <!-- Bottom semi-transparent overlay for text readability -->
+    <Rectangle
+      id="gradientOverlay"
+      translation="[0, 350]"
+      width="1920"
+      height="730"
+      color="0x0F1014CC" />
+    
+    <!-- Content container (left-aligned) -->
+    <Group
+      id="contentGroup"
+      translation="[140, 480]">
+      
+      <Label
+        id="heroTitle"
+        translation="[0, 0]"
+        width="1200"
+        height="80"
+        font="font:LargeBoldSystemFont"
+        color="0xFFFFFFFF"
+        text=""
+        wrap="true"
+        maxLines="2"
+        vertAlign="bottom" />
+      
+      <Label
+        id="heroSubtitle"
+        translation="[0, 90]"
+        width="1200"
+        height="50"
+        font="font:MediumSystemFont"
+        color="0xCCCCCCFF"
+        text=""
+        wrap="true"
+        maxLines="1"
+        vertAlign="top" />
+      
+      <Label
+        id="heroMetadata"
+        translation="[0, 150]"
+        width="1200"
+        height="40"
+        font="font:SmallSystemFont"
+        color="0xAAAAAAFF"
+        text=""
+        wrap="true"
+        maxLines="1"
+        vertAlign="top" />
+      
+      <Label
+        id="heroDescription"
+        translation="[0, 210]"
+        width="1200"
+        height="120"
+        font="font:SmallSystemFont"
+        color="0xDDDDDDFF"
+        text=""
+        wrap="true"
+        maxLines="3"
+        vertAlign="top" />
+    </Group>
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/HeroBanner.brs" />
+</component>

@@ -14,8 +14,8 @@ end sub
 sub loadFromRegistry(id as string)
     m.top.id = id
 
-    m.top.username = get_user_setting("username")
-    m.top.token = get_user_setting("token")
+    m.top.username = get_user_setting(id, "username", "")
+    m.top.token = get_user_setting(id, "token", "")
 end sub
 
 sub saveToRegistry()
@@ -47,11 +47,11 @@ sub removeFromRegistry()
 end sub
 
 function getPreference(key as string)
-    return get_user_setting("pref-" + key)
+    return get_user_setting(m.top.id, "pref-" + key, "")
 end function
 
 function setPreference(key as string, value as string)
-    return set_user_setting("pref-" + key, value)
+    return set_user_setting(m.top.id, "pref-" + key, value)
 end function
 
 sub setServer(hostname as string)

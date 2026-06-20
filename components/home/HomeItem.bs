@@ -4,31 +4,40 @@ sub Init()
     m.poster = m.top.findNode("itemPoster")
     m.checkmark = m.top.findNode("playedCheckmark")
     m.label = m.top.findNode("itemLabel")
+    m.focusIndicator = m.top.findNode("focusIndicator")
     
-    m.top.observeField("itemContent", m.port)
+    m.top.observeField("itemContent", "onItemContentChange")
+    m.top.observeField("focusedChild", "onFocusChange")
 end sub
 
-' Update display when item content changes
-function onItemContentChange() as Void
+sub onFocusChange()
+    hasFocus = m.top.hasFocus()
+    if m.focusIndicator <> invalid then
+        m.focusIndicator.visible = hasFocus
+    end if
+end sub
+
+sub onItemContentChange()
     content = m.top.itemContent
     if content = invalid then return
     
-    ' Set poster URL
+    title = content.title
+    if title = invalid then title = ""
+    
     url = content.HDPosterUrl
-    if url <> "" then
+    if url <> invalid and url <> "" then
         m.poster.uri = url
     end if
     
-    ' Set title
-    m.top.itemTitle = content.title
-    m.label.text = content.title
+    m.top.itemTitle = title
+    m.label.text = title
     
-    ' Set item type
-    m.top.itemType = content.type
+    itemType = content.type
+    if itemType = invalid then itemType = ""
+    m.top.itemType = itemType
     
-    ' Check watched status
     userData = chainLookupReturn(content, ["json", "UserData"], {})
     played = chainLookupReturn(userData, ["Played"], false)
     m.top.watched = played
     m.checkmark.visible = played
-end function
+end sub

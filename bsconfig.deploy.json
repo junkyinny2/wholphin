@@ -1,8 +1,8 @@
 {
   "extends": "bsconfig.json",
-  "host": "192.168.1.196",
-  "username": "rokudev",
-  "password": "whit",
+  "host": "",
+  "username": "",
+  "password": "",
   "outFile": "out/Wholphin.zip",
   "plugins": [],
   "diagnosticFilters": [
@@ -20,6 +20,11 @@
     "BSLINT1008": "hint",
     "BSLINT1009": "hint",
     "BSLINT1010": "hint",
+    "BS1001": "hint",
+    "BS1079": "hint",
+    "BS1104": "hint",
+    "BS1105": "hint",
+    "BS1128": "hint",
     "BS1140": "hint",
     "BS1141": "hint"
   }

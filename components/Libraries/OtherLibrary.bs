@@ -5,8 +5,8 @@ sub Init()
     m.otherItemGrid = m.top.findNode("otherItemGrid")
     m.otherLoadingLabel = m.top.findNode("otherLoadingLabel")
 
-    m.top.observeField("libraryData", m.port)
-    m.otherItemGrid.observeField("itemSelected", m.port)
+    m.top.observeField("libraryData", "onLibraryDataChange")
+    m.otherItemGrid.observeField("itemSelected", "onItemSelected")
 end sub
 
 function onLibraryDataChange() as Void

@@ -34,6 +34,9 @@ sub press()
     if m.top.global_setting
         set_setting(m.top.config_key, m.top.value)
     else
-        set_user_setting(m.top.config_key, m.top.value)
+        userId = session.user.GetId()
+        if userId <> "" then
+            set_user_setting(userId, m.top.config_key, m.top.value)
+        end if
     end if
 end sub

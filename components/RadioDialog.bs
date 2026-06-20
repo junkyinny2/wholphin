@@ -36,7 +36,7 @@ sub onButtonSelected()
         return
     end if
 
-    if isStringEqual(m.top.buttons[m.top.buttonSelected], tr("Adjust Subtitle Timing"))
+    if isStringEqual(m.top.buttons[m.top.buttonSelected], translateText("Adjust Subtitle Timing"))
         activeScene = m.global.sceneManager.callFunc("getActiveScene")
         if not isValid(activeScene) then return
 

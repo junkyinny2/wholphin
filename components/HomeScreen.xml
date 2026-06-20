@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="HomeScreen" extends="Group" focusable="true">
+  <interface>
+    <field id="screenShown" type="boolean" alwaysNotify="true" />
+    <field id="screenHidden" type="boolean" alwaysNotify="true" />
+    <field id="heroItems" type="array" />
+  </interface>
+
+  <children>
+    <Rectangle
+      id="bgFill"
+      translation="[0, 0]"
+      width="1920"
+      height="1080"
+      color="0x0F1014FF" />
+    <Rectangle
+      id="navBg"
+      translation="[0, 0]"
+      width="140"
+      height="1080"
+      color="0x1A1A2EFF" />
+    <Group
+      id="navItemsGroup"
+      translation="[0, 120]" />
+    <Rectangle
+      id="activeIndicator"
+      translation="[136, 120]"
+      width="4"
+      height="72"
+      color="0x00A4DCFF"
+      opacity="0" />
+    <Group
+      id="contentArea"
+      translation="[140, 0]">
+      <Label
+        id="loadingLabel"
+        translation="[50, 400]"
+        width="800"
+        height="40"
+        font="font:MediumSystemFont"
+        color="0x999999FF"
+        text="Loading..."
+        visible="true" />
+      <HomeRows
+        id="homeRows"
+        translation="[0, 60]"
+        visible="false" />
+    </Group>
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/HomeScreen.brs" />
+</component>

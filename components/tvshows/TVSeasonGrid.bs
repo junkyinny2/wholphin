@@ -3,9 +3,12 @@
 sub Init()
     m.seasonMarkupGrid = m.top.findNode("seasonMarkupGrid")
 
-    m.top.observeField("seasons", m.port)
-    m.seasonMarkupGrid.observeField("itemSelected", m.port)
-    m.seasonMarkupGrid.observeField("focusedItem", m.port)
+    m.top.observeField("seasons", "onSeasonsChange")
+    m.seasonMarkupGrid.observeField("itemSelected", "onItemSelected")
+    m.seasonMarkupGrid.observeField("focusedItem", "onItemFocused")
+end sub
+
+sub onItemFocused()
 end sub
 
 function onSeasonsChange() as Void

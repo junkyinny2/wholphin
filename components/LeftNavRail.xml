@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="LeftNavRail" extends="Group" focusable="true">
+  <interface>
+    <field id="selectedIndex" type="int" value="0" alwaysNotify="true" />
+    <field id="focusedChildIndex" type="int" value="-1" />
+    <field id="navItems" type="array" />
+  </interface>
+
+  <children>
+    <!-- Nav rail background -->
+    <Rectangle
+      id="navBg"
+      width="96"
+      height="1080"
+      color="0x1A1A2ECC" />
+
+    <!-- Nav items container -->
+    <Group
+      id="navItemsGroup"
+      translation="[0, 120]" />
+
+    <!-- Active indicator (highlight bar) -->
+    <Rectangle
+      id="activeIndicator"
+      width="4"
+      height="72"
+      color="0x00A4DCFF"
+      translation="[92, 120]"
+      opacity="0" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/LeftNavRail.brs" />
+</component>

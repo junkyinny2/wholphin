@@ -5,7 +5,7 @@ sub Init()
     m.userNameLabel = m.top.findNode("userNameLabel")
     m.lockIcon = m.top.findNode("lockIcon")
 
-    m.top.observeField("itemContent", m.port)
+    m.top.observeField("itemContent", "onItemContentChange")
 end sub
 
 function onItemContentChange() as Void

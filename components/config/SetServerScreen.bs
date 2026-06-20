@@ -1,131 +1,299 @@
-' Wholphin Roku - Server entry screen logic
-
 sub Init()
     m.serverInputText = m.top.findNode("serverInputText")
     m.serverList = m.top.findNode("serverList")
     m.savedServersLabel = m.top.findNode("savedServersLabel")
     m.discoveredServerList = m.top.findNode("discoveredServerList")
     m.discoveredLabel = m.top.findNode("discoveredLabel")
+    m.listSelectionBar = m.top.findNode("listSelectionBar")
     m.btnConnect = m.top.findNode("btnConnect")
     m.btnDiscover = m.top.findNode("btnDiscover")
     m.btnManualEntry = m.top.findNode("btnManualEntry")
-
-    m.top.observeField("savedServers", m.port)
-    m.btnConnect.observeField("buttonSelected", m.port)
-    m.btnDiscover.observeField("buttonSelected", m.port)
-    m.btnManualEntry.observeField("buttonSelected", m.port)
-    m.serverList.observeField("itemSelected", m.port)
-    m.discoveredServerList.observeField("itemSelected", m.port)
+    m.serverButtons = m.top.findNode("serverButtons")
+    
+    m.keyboardDialog = invalid
+    m.focusedButtonIndex = 0
+    m.listIndex = 0
+    m.isDiscovering = false
+    
+    m.btnConnect.buttonText = "Connect"
+    m.btnDiscover.buttonText = "Auto Discover"
+    m.btnManualEntry.buttonText = "Manual Entry"
+    
+    m.btnConnect.observeField("buttonSelected", "onConnectPressed")
+    m.btnDiscover.observeField("buttonSelected", "onDiscoverPressed")
+    m.btnManualEntry.observeField("buttonSelected", "onManualEntryPressed")
+    
+    updateHighlights()
 end sub
 
-function onSavedServersChange() as Void
-    servers = m.top.savedServers
-    if servers = invalid or servers.Count() = 0 then return
+sub onConnectPressed()
+    ConnectToServer()
+end sub
 
-    m.savedServersLabel.visible = true
-    m.serverList.visible = true
+sub onDiscoverPressed()
+    StartDiscovery()
+end sub
 
-    content = CreateObject("roSGNode", "ContentNode")
-    for each server in servers
-        child = content.CreateChild("ContentNode")
-        child.title = chainLookupReturn(server, ["name"], "")
-        child.url = chainLookupReturn(server, ["url"], "")
-    end for
-    m.serverList.content = content
-end function
+sub onManualEntryPressed()
+    ShowKeyboard()
+end sub
 
-function onButtonSelected() as Void
-    btn = m.top.lastEventNode
-    if btn = invalid then return
-
-    if btn.id = "btnConnect" then
-        url = m.top.serverUrl
-        if url = "" then url = m.serverInputText.text
-        if url <> "" then
-            ProcessServerUrl(url)
+function onKeyEvent(key as String, press as Boolean) as Boolean
+    ? "[onKeyEvent] key="; key; " press="; press; " focusedIndex="; m.focusedButtonIndex
+    if not press then return false
+    
+    ' Always consume BACK to prevent AppExit via backExitsScene
+    if key = "back" then
+        if m.focusedButtonIndex = 3 and m.discoveredServerList.visible then
+            m.focusedButtonIndex = 0
+            scene = m.top.getScene()
+            if scene <> invalid then
+                scene.setField("pendingServerAction", "")
+                scene.setField("pendingServerUrl", "")
+            end if
+            updateHighlights()
+        else
+            m.focusedButtonIndex = 0
+            updateHighlights()
         end if
-    else if btn.id = "btnDiscover" then
-        startDiscovery()
-    else if btn.id = "btnManualEntry" then
-        showKeyboard()
+        return true
     end if
+    
+    ' List mode (focus is on discovered servers list, managed manually)
+    if m.focusedButtonIndex = 3 and m.discoveredServerList.visible then
+        content = m.discoveredServerList.content
+        count = 0
+        if content <> invalid then count = content.getChildCount()
+        
+        if key = "up" then
+            if m.listIndex > 0 then
+                m.listIndex = m.listIndex - 1
+                m.discoveredServerList.itemFocused = m.listIndex
+                updateListSelection()
+            else
+                m.focusedButtonIndex = 0
+                updateHighlights()
+                m.listSelectionBar.visible = false
+            end if
+            return true
+        else if key = "down" then
+            if m.listIndex < count - 1 then
+                m.listIndex = m.listIndex + 1
+                m.discoveredServerList.itemFocused = m.listIndex
+                updateListSelection()
+            end if
+            return true
+        else if key = "OK" then
+            ? "[onKeyEvent] CALLING selectListItem listIndex="; m.listIndex
+            selectListItem(m.listIndex)
+            ? "[onKeyEvent] selectListItem returned"
+            return true
+        else if key = "left" then
+            m.focusedButtonIndex = 0
+            scene = m.top.getScene()
+            if scene <> invalid then
+                scene.setField("pendingServerAction", "")
+                scene.setField("pendingServerUrl", "")
+            end if
+            updateHighlights()
+            return true
+		end if
+		' Consume all keys to prevent focus shift to BaseScene
+		return true
+	end if
+    
+    ' Button mode (indices 0-2)
+    if key = "left" then
+        m.focusedButtonIndex = (m.focusedButtonIndex - 1 + 3) MOD 3
+        updateHighlights()
+        return true
+    else if key = "right" then
+        m.focusedButtonIndex = (m.focusedButtonIndex + 1) MOD 3
+        updateHighlights()
+        return true
+    else if key = "up" then
+        if m.focusedButtonIndex < 3 then
+            m.focusedButtonIndex = (m.focusedButtonIndex - 1 + 3) MOD 3
+            updateHighlights()
+            return true
+        end if
+    else if key = "down" then
+        if m.focusedButtonIndex < 3 then
+            if m.discoveredServerList.visible then
+                m.focusedButtonIndex = 3
+                m.listIndex = 0
+                m.discoveredServerList.itemFocused = 0
+                updateHighlights()
+                return true
+            end if
+            return true
+        end if
+    else if key = "OK" then
+        if m.focusedButtonIndex = 0 then ConnectToServer()
+        if m.focusedButtonIndex = 1 then StartDiscovery()
+        if m.focusedButtonIndex = 2 then ShowKeyboard()
+        return true
+    end if
+    
+    ' Consume all keys to prevent focus shift to BaseScene
+    return true
 end function
 
-function startDiscovery() as Void
-    m.top.isDiscovering = true
+sub updateHighlights()
+    ? "[updateHighlights] index="; m.focusedButtonIndex
+    m.btnConnect.buttonFocused = (m.focusedButtonIndex = 0)
+    m.btnDiscover.buttonFocused = (m.focusedButtonIndex = 1)
+    m.btnManualEntry.buttonFocused = (m.focusedButtonIndex = 2)
+    if m.focusedButtonIndex = 3 then
+        m.discoveredServerList.itemFocused = m.listIndex
+    end if
+end sub
 
-    task = CreateObject("roSGNode", "ServerDiscoveryTask")
-    task.observeField("discoveredServers", m.port)
-    task.observeField("loadStatus", m.port)
-    task.control = "RUN"
+sub updateListSelection()
+    if m.discoveredServerList.visible then
+        y = 530 + (m.listIndex * 50)
+        m.listSelectionBar.translation = [560, y]
+    end if
+end sub
 
-    m.btnDiscover.buttonText = translateText("Searching...")
-end function
-
-function onDiscoveryComplete() as Void
-    task = m.top.lastEventNode
-    if task = invalid then return
-
-    servers = task.discoveredServers
-    m.top.isDiscovering = false
-    m.btnDiscover.buttonText = translateText("Auto Discover")
-
-    if servers = invalid or servers.Count() = 0 then
-        show_dialog(translateText("No Servers Found"), translateText("No Jellyfin servers were found on your network. You can enter the server URL manually."))
+sub ConnectToServer()
+    url = m.serverInputText.text
+    if url = "" then
+        url = m.top.serverUrl
+    end if
+    if url = "" then
+        ShowKeyboard()
         return
     end if
+    scene = m.top.getScene()
+    if scene <> invalid then
+        scene.setField("pendingServerAction", "connect")
+        scene.setField("pendingServerUrl", url)
+    end if
+end sub
 
+sub StartDiscovery()
+    if m.isDiscovering then return
+    m.isDiscovering = true
+    m.top.isDiscovering = true
+    m.discoveryTask = CreateObject("roSGNode", "ServerDiscoveryTask")
+    m.discoveryTask.observeField("discoveredServers", "onDiscoveryComplete")
+    m.discoveryTask.observeField("loadStatus", "onDiscoveryStatus")
+    m.discoveryTask.control = "RUN"
+    m.btnDiscover.buttonText = translateText("Searching...")
+    ? "[StartDiscovery] discovery task started"
+end sub
+
+sub onDiscoveryStatus()
+    status = m.discoveryTask.loadStatus
+    ? "[onDiscoveryStatus] status="; status
+    if status = "done" then
+        m.btnDiscover.buttonText = translateText("Auto Discover")
+    end if
+end sub
+
+sub onDiscoveryComplete()
+    m.isDiscovering = false
+    servers = m.discoveryTask.discoveredServers
+    if servers = invalid or servers.Count() = 0 then
+        show_dialog(translateText("No Servers Found"), translateText("No Jellyfin servers discovered on the network."))
+        m.btnDiscover.buttonText = translateText("Auto Discover")
+        return
+    end if
     m.discoveredLabel.visible = true
     m.discoveredServerList.visible = true
-    m.savedServersLabel.visible = false
-    m.serverList.visible = false
+    m.listSelectionBar.visible = true
+    m.discoveredServerList.content = createDiscoveryContent(servers)
+    m.discoveredServerList.itemFocused = 0
+    m.listIndex = 0
+    m.focusedButtonIndex = 3
+    updateHighlights()
+    updateListSelection()
+end sub
 
+function createDiscoveryContent(servers as Object) as Object
     content = CreateObject("roSGNode", "ContentNode")
     for each server in servers
         child = content.CreateChild("ContentNode")
-        child.title = chainLookupReturn(server, ["Name"], "") + " (" + chainLookupReturn(server, ["Address"], "") + ")"
+        child.title = chainLookupReturn(server, ["Name"], "")
         child.url = chainLookupReturn(server, ["Url"], "")
+        child.id = chainLookupReturn(server, ["Id"], "")
     end for
-    m.discoveredServerList.content = content
-    m.discoveredServerList.setFocus(true)
+    return content
 end function
 
-function showKeyboard() as Void
+sub selectListItem(index as Integer)
+    ? "[selectListItem] ENTERED index="; index
+    if m.discoveredServerList = invalid then
+        ? "[selectListItem] discoveredServerList is invalid"
+        return
+    end if
+    content = m.discoveredServerList.content
+    ? "[selectListItem] content="; content
+    if content = invalid then
+        ? "[selectListItem] content is invalid"
+        return
+    end if
+    item = content.getChild(index)
+    ? "[selectListItem] item="; item
+    if item = invalid then
+        ? "[selectListItem] item at index "; index; " is invalid"
+        return
+    end if
+    url = item.url
+    ? "[selectListItem] url="; url
+    if url <> "" then
+        scene = m.top.getScene()
+        if scene <> invalid then
+            scene.setField("pendingServerAction", "connect")
+            scene.setField("pendingServerUrl", url)
+            ? "[selectListItem] queued pendingServerAction=connect url="; url
+        end if
+    end if
+end sub
+
+sub ShowKeyboard()
+    ? "[ShowKeyboard] Creating KeyboardDialog"
     keyboard = CreateObject("roSGNode", "KeyboardDialog")
+    ? "[ShowKeyboard] type="; Type(keyboard)
     keyboard.title = translateText("Enter Server URL")
     keyboard.text = m.serverInputText.text
+    ? "[ShowKeyboard] text="; m.serverInputText.text
     keyboard.buttons = [translateText("OK"), translateText("Cancel")]
-    keyboard.observeField("text", m.port)
-    m.scene.dialog = keyboard
-end function
+    ? "[ShowKeyboard] buttons="; keyboard.buttons
+    
+    m.keyboardDialog = keyboard
+    
+    ' Observe buttonSelected via callback (m.port invalid on render thread)
+    keyboard.observeField("buttonSelected", "onKeyboardButton")
+    keyboard.id = "KeyboardDialog"
+    ? "[ShowKeyboard] observeField buttonSelected via callback"
+    
+    scene = m.top.getScene()
+    if scene <> invalid and scene.HasField("dialog") then
+        scene.dialog = keyboard
+        ? "[ShowKeyboard] dialog shown"
+    else
+        ? "[ShowKeyboard] ERROR: no scene dialog"
+    end if
+end sub
 
-function onKeyboardText() as Void
-    dialog = m.top.lastEventNode
+sub onKeyboardButton()
+    ? "[SetServerScreen] onKeyboardButton fired"
+    scene = m.top.getScene()
+    if scene = invalid then return
+    dialog = scene.dialog
     if dialog = invalid then return
-
-    m.top.serverUrl = dialog.text
-    m.serverInputText.text = dialog.text
-end function
-
-function onServerListItemSelected() as Void
-    focused = m.serverList.focusedItem
-    if focused = invalid then return
-    url = focused.url
-    if url <> "" then
-        ProcessServerUrl(url)
+    btnIndex = dialog.buttonSelected
+    url = dialog.text
+    scene.dialog = invalid
+    if btnIndex = 0 and url <> "" then
+        ? "[SetServerScreen] setting pendingServerAction=connect url="; url
+        scene.setField("pendingServerUrl", url)
+        scene.setField("pendingServerAction", "connect")
     end if
-end function
-
-function onDiscoveredServerSelected() as Void
-    focused = m.discoveredServerList.focusedItem
-    if focused = invalid then return
-    url = focused.url
-    if url <> "" then
-        ProcessServerUrl(url)
-    end if
-end function
+end sub
 
 function onBackPressed() as Boolean
-    m.global.sceneManager.callFunc("popScene")
-    return true
+    return false
 end function

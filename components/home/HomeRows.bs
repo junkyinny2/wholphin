@@ -1,95 +1,11 @@
 ' Wholphin Roku - Home screen rows component
 
 sub Init()
-    m.top.itemSize = [1720, 320]
+    m.top.itemSize = [1720, 400]
     m.top.itemComponentName = "HomeRow"
     m.top.numRows = 0
-    
-    ' Observe item selection
-    m.top.observeField("rowItemSelected", m.port)
-    m.top.observeField("rowItemFocused", m.port)
+    m.top.rowHeights = [400]
+    m.top.rowSpacings = [30]
+    m.top.rowFocusAnimationStyle = "floatingFocus"
 end sub
 
-' Add a row to the home screen
-function addRow(rowTitle as String, items as Object, rowType as String) as Void
-    if items = invalid or items.Count() = 0 then return
-    
-    ' Create the row content
-    rowContent = CreateObject("roSGNode", "ContentNode")
-    rowContent.title = rowTitle
-    rowContent.rowType = rowType
-    
-    for each item in items
-        child = rowContent.CreateChild("ContentNode")
-        child.id = chainLookupReturn(item, ["Id"], "")
-        child.title = chainLookupReturn(item, ["Name"], "")
-        child.type = chainLookupReturn(item, ["Type"], "")
-        child.json = item
-        
-        ' Set image URL
-        img = PosterImage(child.id)
-        if img <> invalid then
-            child.HDPosterUrl = img.url
-            child.SDPosterUrl = img.url
-        end if
-    end for
-    
-    ' Add to the content
-    content = m.top.content
-    if content = invalid then
-        content = CreateObject("roSGNode", "ContentNode")
-    end if
-    
-    rowNode = content.CreateChild("ContentNode")
-    rowNode.title = rowTitle
-    rowNode.rowType = rowType
-    rowNode.AppendChild(rowContent)
-    
-    m.top.content = content
-    m.top.numRows = content.GetChildCount()
-end function
-
-' Handle row item selection
-function onRowItemSelected() as Void
-    rowIndex = m.top.rowItemSelected[0]
-    colIndex = m.top.rowItemSelected[1]
-    
-    content = m.top.content
-    if content = invalid then return
-    
-    row = content.GetChild(rowIndex)
-    if row = invalid then return
-    
-    items = row.GetChild(0)
-    if items = invalid then return
-    
-    item = items.GetChild(colIndex)
-    if item = invalid then return
-    
-    ' Dispatch item selection
-    HandleItemSelection(m.top.id, item)
-end function
-
-' Handle row item focus for backdrop updates
-function onRowItemFocused() as Void
-    rowIndex = m.top.rowItemFocused[0]
-    colIndex = m.top.rowItemFocused[1]
-    
-    content = m.top.content
-    if content = invalid then return
-    
-    row = content.GetChild(rowIndex)
-    if row = invalid then return
-    
-    items = row.GetChild(0)
-    if items = invalid then return
-    
-    item = items.GetChild(colIndex)
-    if item = invalid then return
-    
-    ' Update backdrop on home screen
-    home = m.top.getParent()
-    if home <> invalid and home.hasField("updateBackdrop") then
-        home.updateBackdrop(item)
-    end if
-end function

@@ -3,9 +3,12 @@
 sub Init()
     m.episodeGrid = m.top.findNode("episodeGrid")
 
-    m.top.observeField("episodes", m.port)
-    m.episodeGrid.observeField("itemSelected", m.port)
-    m.episodeGrid.observeField("focusedItem", m.port)
+    m.top.observeField("episodes", "onEpisodesChange")
+    m.episodeGrid.observeField("itemSelected", "onItemSelected")
+    m.episodeGrid.observeField("focusedItem", "onItemFocused")
+end sub
+
+sub onItemFocused()
 end sub
 
 function onEpisodesChange() as Void

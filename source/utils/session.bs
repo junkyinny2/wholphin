@@ -4,8 +4,7 @@ namespace session
 
     ' Initialize session globals
     function Init() as Void
-        gaa = getGlobalAA()
-        gaa.session = {
+        m.global.session = {
             isLoggedIn:      false
             server:          {}
             user:            {}
@@ -20,38 +19,37 @@ namespace session
      
         ' Populate server info
         function Populate(serverInfo as Object) as Void
-            gaa = getGlobalAA()
-            gaa.session.server = {
+            s = m.global.session
+            s.server = {
                 id:             chainLookupReturn(serverInfo, ["Id"], "")
                 name:           chainLookupReturn(serverInfo, ["ServerName"], "")
                 url:            chainLookupReturn(serverInfo, ["Url"], "")
                 version:        chainLookupReturn(serverInfo, ["Version"], "")
                 operatingSystem: chainLookupReturn(serverInfo, ["OperatingSystem"], "")
             }
+            m.global.session = s
         end function
         
         ' Clear server info
         function Clear() as Void
-            gaa = getGlobalAA()
-            gaa.session.server = {}
+            s = m.global.session
+            s.server = {}
+            m.global.session = s
         end function
          
         ' Get the current server URL
         function GetUrl() as String
-            gaa = getGlobalAA()
-            return chainLookupReturn(gaa.session.server, ["url"], "")
+            return chainLookupReturn(m.global.session.server, ["url"], "")
         end function
          
         ' Get the server name
         function GetName() as String
-            gaa = getGlobalAA()
-            return chainLookupReturn(gaa.session.server, ["name"], translateText("Unknown Server"))
+            return chainLookupReturn(m.global.session.server, ["name"], translateText("Unknown Server"))
         end function
          
         ' Get the server version
         function GetVersion() as String
-            gaa = getGlobalAA()
-            return chainLookupReturn(gaa.session.server, ["version"], "0.0.0.0")
+            return chainLookupReturn(m.global.session.server, ["version"], "0.0.0.0")
         end function
     
     end namespace
@@ -63,8 +61,8 @@ namespace session
         function Populate(userData as Object) as Void
             userJson = chainLookupReturn(userData, ["User"], {})
             
-            gaa = getGlobalAA()
-            gaa.session.user = {
+            s = m.global.session
+            s.user = {
                 id:             chainLookupReturn(userJson, ["Id"], "")
                 name:           chainLookupReturn(userJson, ["Name"], "")
                 accessToken:    chainLookupReturn(userData, ["AccessToken"], "")
@@ -76,43 +74,48 @@ namespace session
                 abilities:      {}
             }
             
+            m.global.session = s
+            
             ' Load user settings from registry
             session.user.loadUserSettings()
             
             ' Load user abilities
             abilities = chainLookupReturn(userJson, ["Policy"], {})
-            gaa.session.user.abilities = abilities
+            s = m.global.session
+            s.user.abilities = abilities
+            m.global.session = s
         end function
         
         ' Update user after AboutMe response
         function UpdateFromAboutMe(userJson as Object) as Void
-            gaa = getGlobalAA()
-            if not isValid(gaa.session.user) then return
+            s = m.global.session
+            if not isValid(s.user) then return
             
-            gaa.session.user.name = chainLookupReturn(userJson, ["Name"], gaa.session.user.name)
-            gaa.session.user.id = chainLookupReturn(userJson, ["Id"], gaa.session.user.id)
+            s.user.name = chainLookupReturn(userJson, ["Name"], s.user.name)
+            s.user.id = chainLookupReturn(userJson, ["Id"], s.user.id)
             
             ' Build user image URL
-            userId = gaa.session.user.id
+            userId = s.user.id
             if userId <> "" then
                 serverUrl = session.server.GetUrl()
                 if serverUrl <> "" then
-                    gaa.session.user.imageUrl = serverUrl + "/Users/" + userId + "/Images/Primary?quality=90"
+                    s.user.imageUrl = serverUrl + "/Users/" + userId + "/Images/Primary?quality=90"
                 end if
             end if
+            m.global.session = s
         end function
         
         ' Clear user session (logout)
         function Clear() as Void
-            gaa = getGlobalAA()
-            gaa.session.user = {}
-            gaa.session.isLoggedIn = false
+            s = m.global.session
+            s.user = {}
+            s.isLoggedIn = false
+            m.global.session = s
         end function
         
         ' Load user settings from registry
         function loadUserSettings() as Void
-            gaa = getGlobalAA()
-            userId = gaa.session.user.id
+            userId = m.global.session.user.id
             if userId = "" then return
             
             ' Load settings tree defaults first
@@ -134,27 +137,30 @@ namespace session
                 end if
             end for
             
-            gaa.session.user.settings = settings
+            s = m.global.session
+            s.user.settings = settings
+            m.global.session = s
         end function
         
         ' Save a user setting
         function SaveSetting(key as String, value as String) as Void
-            gaa = getGlobalAA()
-            userId = gaa.session.user.id
+            userId = m.global.session.user.id
             if userId = "" then return
             set_user_setting(userId, key, value)
             
             ' Update in-memory settings
-            if gaa.session.user.settings = invalid then
-                gaa.session.user.settings = {}
+            s = m.global.session
+            if s.user.settings = invalid then
+                s.user.settings = {}
             end if
-            gaa.session.user.settings.AddReplace(key, value)
+            s.user.settings.AddReplace(key, value)
+            m.global.session = s
         end function
         
         ' Get a user setting
         function GetSetting(key as String, defaultValue = "" as Dynamic) as Dynamic
-            gaa = getGlobalAA()
-            settings = gaa.session.user.settings
+            s = m.global.session
+            settings = s.user.settings
             if settings = invalid then return defaultValue
             value = settings.Lookup(key)
             if value = invalid then return defaultValue
@@ -163,27 +169,30 @@ namespace session
         
         ' Get the user ID
         function GetId() as String
-            gaa = getGlobalAA()
-            return chainLookupReturn(gaa.session.user, ["id"], "")
+            s = m.global.session
+            if s = invalid or s.user = invalid then return ""
+            return chainLookupReturn(s.user, ["id"], "")
         end function
         
         ' Get the display name
         function GetDisplayName() as String
-            gaa = getGlobalAA()
-            return chainLookupReturn(gaa.session.user, ["name"], translateText("User"))
+            s = m.global.session
+            if s = invalid or s.user = invalid then return translateText("User")
+            return chainLookupReturn(s.user, ["name"], translateText("User"))
         end function
         
         ' Check if logged in
         function IsLoggedIn() as Boolean
-            gaa = getGlobalAA()
-            return gaa.session.isLoggedIn = true and session.user.GetId() <> ""
+            s = m.global.session
+            if s = invalid or s.user = invalid or s.isLoggedIn = invalid then return false
+            return s.isLoggedIn = true and s.user.id <> ""
         end function
         
         ' Check if user has a specific ability
         function HasAbility(ability as String) as Boolean
-            gaa = getGlobalAA()
-            abilities = gaa.session.user.abilities
-            if abilities = invalid then return false
+            s = m.global.session
+            if s = invalid or s.user = invalid or s.user.abilities = invalid then return false
+            abilities = s.user.abilities
             
             ' Boolean abilities in Policy (e.g., IsAdministrator, EnableLiveTvAccess)
             value = abilities.Lookup(ability)
@@ -194,13 +203,16 @@ namespace session
         
         ' Build user image URL
         function GetImageUrl() as String
-            gaa = getGlobalAA()
-            url = gaa.session.user.imageUrl
-            if url = "" and session.user.GetId() <> "" then
+            s = m.global.session
+            if s = invalid or s.user = invalid then return ""
+            url = chainLookupReturn(s.user, ["imageUrl"], "")
+            userId = chainLookupReturn(s.user, ["id"], "")
+            if url = "" and userId <> "" then
                 serverUrl = session.server.GetUrl()
                 if serverUrl <> "" then
-                    url = serverUrl + "/Users/" + session.user.GetId() + "/Images/Primary?quality=90"
-                    gaa.session.user.imageUrl = url
+                    url = serverUrl + "/Users/" + userId + "/Images/Primary?quality=90"
+                    s.user.imageUrl = url
+                    m.global.session = s
                 end if
             end if
             return url

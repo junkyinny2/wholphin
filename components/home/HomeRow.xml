@@ -3,6 +3,7 @@
   <interface>
     <field id="rowTitle" type="string" value="" />
     <field id="rowType" type="string" value="" />
+    <field id="content" type="node" alwaysNotify="true" />
   </interface>
   
   <children>
@@ -20,12 +21,10 @@
     <!-- Row item grid (MarkupGrid) -->
     <MarkupGrid
       id="rowGrid"
-      translation="[0, 35]"
-      width="1720"
-      height="280"
+      translation="[0, 40]"
       itemComponentName="HomeItem"
       itemSize="[196, 340]"
-      itemSpacing="[10, 0]"
+      itemSpacing="[15, 0]"
       numColumns="8"
       numRows="1" />
   </children>

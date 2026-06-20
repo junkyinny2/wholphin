@@ -5,6 +5,14 @@
     <field id="queueManager" type="node" alwaysNotify="true" />
     <field id="audioPlayer" type="node" alwaysNotify="true" />
     <field id="spinner" type="node" alwaysNotify="true" />
+    <field id="pendingServerAction" type="string" value="" alwaysNotify="true" />
+    <field id="pendingServerUrl" type="string" value="" alwaysNotify="true" />
+    <field id="pendingUserName" type="string" value="" alwaysNotify="true" />
+    <field id="pendingUserId" type="string" value="" alwaysNotify="true" />
+    <field id="pendingShowSignIn" type="string" value="" alwaysNotify="true" />
+    <field id="pendingUserPassword" type="string" value="" alwaysNotify="true" />
+    <field id="statusMessage" type="string" value="" alwaysNotify="true" />
+    <function name="showSidebar" />
   </interface>
   
   <children>
@@ -16,13 +24,31 @@
       height="1080"
       loadDisplayMode="scaleToFit"
       visible="true"
-      uri="" />
+      uri="pkg:/images/roku_logo.png" />
     
     <!-- Main content area where scenes are displayed -->
     <Group
       id="content"
       translation="[0, 0]">
     </Group>
+    
+    <!-- SetServerScreen: pre-included due to appendChild bug on this firmware -->
+    <SetServerScreen
+      id="serverScreen"
+      translation="[0, 0]"
+      visible="true" />
+    
+    <!-- UserSelect: pre-included for static navigation -->
+    <UserSelect
+      id="userSelect"
+      translation="[0, 0]"
+      visible="false" />
+
+    <!-- SigninScene: pre-included due to appendChild bug -->
+    <SigninScene
+      id="signinScene"
+      translation="[0, 0]"
+      visible="false" />
     
     <!-- Navigation sidebar -->
     <WholphinSidebar
@@ -53,6 +79,20 @@
       id="spinner"
       translation="[860, 490]"
       visible="false" />
+    
+    <!-- Diagnostic status message (visible during auth) -->
+    <Label
+      id="statusLabel"
+      translation="[20, 1020]"
+      width="1880"
+      height="40"
+      font="font:SmallestSystemFont"
+      color="0xFFCC00FF"
+      text=""
+      horizAlign="left"
+      vertAlign="center"
+      visible="false" />
+    
   </children>
   
   <script type="text/brightscript" uri="pkg:/components/BaseScene.bs" />

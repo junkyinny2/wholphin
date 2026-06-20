@@ -3,8 +3,8 @@
 sub Init()
     m.alphaList = m.top.findNode("alphaList")
 
-    m.alphaList.observeField("itemSelected", m.port)
-    m.top.observeField("visible", m.port)
+    m.alphaList.observeField("itemSelected", "onAlphaSelected")
+    m.top.observeField("visible", "onVisibleChange")
 
     letters = "#ABCDEFGHIJKLMNOPQRSTUVWXYZ"
 
@@ -16,6 +16,9 @@ sub Init()
     end for
 
     m.alphaList.content = content
+end sub
+
+sub onAlphaSelected()
 end sub
 
 function onVisibleChange() as Void

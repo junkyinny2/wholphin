@@ -4,8 +4,9 @@ sub Init()
     m.rowLabel = m.top.findNode("rowLabel")
     m.rowGrid = m.top.findNode("rowGrid")
 
-    m.top.observeField("rowTitle", m.port)
-    m.top.observeField("visible", m.port)
+    m.top.observeField("rowTitle", "onRowTitleChange")
+    m.top.observeField("content", "onRowContentChange")
+    m.top.observeField("focusedChild", "onFocusedChildChange")
 end sub
 
 function onRowTitleChange() as Void
@@ -14,31 +15,48 @@ function onRowTitleChange() as Void
     end if
 end function
 
-function setContent(items as Object) as Void
-    if items = invalid or items.Count() = 0 then
+sub onRowContentChange()
+    content = m.top.content
+    ? "[HomeRow.onRowContentChange] content="; Type(content); " children="; content.getChildCount()
+    if content = invalid then return
+    items = content.getChildCount()
+    if items = 0 then
         m.top.visible = false
         return
     end if
-
-    content = CreateObject("roSGNode", "ContentNode")
-    for each item in items
-        child = content.CreateChild("ContentNode")
-        child.id = chainLookupReturn(item, ["Id"], "")
-        child.title = chainLookupReturn(item, ["Name"], "")
-        child.type = chainLookupReturn(item, ["Type"], "")
-        child.json = item
-
-        img = PosterImage(child.id)
-        if img <> invalid then
-            child.HDPosterUrl = img.url
-            child.SDPosterUrl = img.url
+    
+    m.top.rowTitle = content.title
+    
+    gridContent = CreateObject("roSGNode", "ContentNode")
+    for i = 0 to items - 1
+        child = content.getChild(i)
+        if child <> invalid then
+            node = gridContent.CreateChild("ContentNode")
+            node.id = child.id
+            node.title = child.title
+            node.AddFields({ type: "", json: invalid })
+            if child.hasField("type") then node.type = child.type
+            if child.hasField("json") then node.json = child.json
+            if child.HDPosterUrl <> invalid and child.HDPosterUrl <> "" then
+                node.HDPosterUrl = child.HDPosterUrl
+                node.SDPosterUrl = child.SDPosterUrl
+            else if child.id <> "" then
+                img = PosterImage(child.id)
+                if img <> invalid then
+                    node.HDPosterUrl = img.url
+                    node.SDPosterUrl = img.url
+                end if
+            end if
         end if
     end for
-
-    m.rowGrid.content = content
+    ? "[HomeRow.onRowContentChange] setting m.rowGrid.content, items="; gridContent.getChildCount()
+    m.rowGrid.content = gridContent
     m.top.visible = true
-end function
+    ? "[HomeRow.onRowContentChange] grid set, visible=true"
+end sub
 
-function focusGrid() as Void
-    m.rowGrid.setFocus(true)
-end function
+sub onFocusedChildChange()
+    if m.top.isInFocusChain() and m.rowGrid <> invalid then
+        m.rowGrid.setFocus(true)
+    end if
+end sub

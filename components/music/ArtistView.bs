@@ -9,10 +9,10 @@ sub Init()
     m.btnArtistShuffle = m.top.findNode("btnArtistShuffle")
     m.btnArtistFavorite = m.top.findNode("btnArtistFavorite")
 
-    m.top.observeField("artist", m.port)
-    m.btnArtistShuffle.observeField("buttonSelected", m.port)
-    m.btnArtistFavorite.observeField("buttonSelected", m.port)
-    m.albumsGrid.observeField("itemSelected", m.port)
+    m.top.observeField("artist", "onArtistChange")
+    m.btnArtistShuffle.observeField("buttonSelected", "onButtonSelected")
+    m.btnArtistFavorite.observeField("buttonSelected", "onButtonSelected")
+    m.albumsGrid.observeField("itemSelected", "onAlbumSelected")
 end sub
 
 function onArtistChange() as Void
