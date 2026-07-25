@@ -134,7 +134,7 @@ end function
 Write-Host "Hard‑coding the server URL…" -ForegroundColor Cyan
 $clearLine = '    set_setting("server", "")'
 $serverUrl = $env:JELLYFIN_SERVER_URL
-if (-not $serverUrl) { $serverUrl = Read-Host "Enter Jellyfin server URL (e.g. http://192.168.1.100:8096)" }
+if (-not $serverUrl) { $serverUrl = Read-Host "Enter Jellyfin server URL (e.g. http://192.168.1.196:8096)" }
 $hardLine  = "    set_setting(""server"",""$serverUrl"")"
 
 (Get-Content $srcMain) |
@@ -170,7 +170,7 @@ Write-Host "Creating the channel zip (node build.js)…" -ForegroundColor Cyan
 node build.js
 
 $rokuIP   = $env:ROKU_IP
-if (-not $rokuIP)   { $rokuIP   = Read-Host "Enter Roku IP (e.g. 192.168.1.100)" }
+if (-not $rokuIP)   { $rokuIP   = Read-Host "Enter Roku IP (e.g. 192.168.1.196)" }
 $rokuUser = $env:ROKU_USERNAME
 if (-not $rokuUser) { $rokuUser = Read-Host "Enter Roku username" }
 $rokuPass = $env:ROKU_PASSWORD

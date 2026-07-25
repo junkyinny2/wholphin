@@ -1,52 +1,24 @@
-<?xml version="1.0" encoding="utf-8"?>
-<component name="HomeScreen" extends="Group" focusable="true">
-  <interface>
-    <field id="screenShown" type="boolean" alwaysNotify="true" />
-    <field id="screenHidden" type="boolean" alwaysNotify="true" />
-    <field id="heroItems" type="array" />
-  </interface>
-
-  <children>
-    <Rectangle
-      id="bgFill"
-      translation="[0, 0]"
-      width="1920"
-      height="1080"
-      color="0x0F1014FF" />
-    <Rectangle
-      id="navBg"
-      translation="[0, 0]"
-      width="140"
-      height="1080"
-      color="0x1A1A2EFF" />
-    <Group
-      id="navItemsGroup"
-      translation="[0, 120]" />
-    <Rectangle
-      id="activeIndicator"
-      translation="[136, 120]"
-      width="4"
-      height="72"
-      color="0x00A4DCFF"
-      opacity="0" />
-    <Group
-      id="contentArea"
-      translation="[140, 0]">
-      <Label
-        id="loadingLabel"
-        translation="[50, 400]"
-        width="800"
-        height="40"
-        font="font:MediumSystemFont"
-        color="0x999999FF"
-        text="Loading..."
-        visible="true" />
-      <HomeRows
-        id="homeRows"
-        translation="[0, 60]"
-        visible="false" />
-    </Group>
-  </children>
-
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="HomeScreen" extends="JFGroup">
   <script type="text/brightscript" uri="pkg:/components/HomeScreen.brs" />
+  <children>
+    <Rectangle id="bgFill" width="1920" height="1080" color="0x0A0E14FF" />
+    <Poster id="heroBackdrop" width="1920" height="1080" translation="[0,0]" loadDisplayMode="scaleToFill" />
+    <Poster id="heroGradient" width="1920" height="1080" translation="[0,0]" uri="pkg:/images/hero_gradient.png" />
+    <Label id="heroTitle" translation="[140, 160]" width="900" font="font:LargeBoldSystemFont" color="0xFFFFFFFF" />
+    <Label id="heroSubtitle" translation="[140, 230]" width="900" font="font:MediumSystemFont" color="0xE0E0E0FF" />
+    <Label id="heroMeta" translation="[140, 270]" width="900" font="font:SmallSystemFont" color="0xB0B0B0FF" />
+    <Label id="heroDescription" translation="[140, 310]" width="800" height="90" wrap="true" numLines="3" ellipsisText="..." font="font:SmallSystemFont" color="0xCCCCCCFF" />
+    <Group id="heroButtons" translation="[140, 410]">
+      <JFButton id="playButton" buttonText="Play" width="140" />
+      <JFButton id="infoButton" buttonText="More Info" translation="[156,0]" width="180" />
+    </Group>
+    <Label id="clockLabel" translation="[1780, 40]" font="font:MediumSystemFont" color="0xFFFFFFFF" horizAlign="right" />
+    <NavRail id="navRail" translation="[0,0]" />
+    <Label id="loadingLabel" translation="[860, 250]" width="200" height="40" font="font:MediumSystemFont" color="0xFFFFFFFF" text="Loading..." horizAlign="center" vertAlign="center" visible="false" />
+    <Group id="errorGroup" visible="false">
+      <Button id="retryButton" translation="[860, 300]" minWidth="200" height="50" text="Retry" />
+    </Group>
+    <HomeRows id="homeRows" translation="[140, 560]" />
+  </children>
 </component>

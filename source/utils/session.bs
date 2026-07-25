@@ -18,14 +18,14 @@ namespace session
     namespace server
      
         ' Populate server info
-        function Populate(serverInfo as Object) as Void
+        function Populate(info as Object) as Void
             s = m.global.session
             s.server = {
-                id:             chainLookupReturn(serverInfo, ["Id"], "")
-                name:           chainLookupReturn(serverInfo, ["ServerName"], "")
-                url:            chainLookupReturn(serverInfo, ["Url"], "")
-                version:        chainLookupReturn(serverInfo, ["Version"], "")
-                operatingSystem: chainLookupReturn(serverInfo, ["OperatingSystem"], "")
+                id:             chainLookupReturn(info, ["Id"], "")
+                name:           chainLookupReturn(info, ["ServerName"], "")
+                url:            chainLookupReturn(info, ["Url"], "")
+                version:        chainLookupReturn(info, ["Version"], "")
+                operatingSystem: chainLookupReturn(info, ["OperatingSystem"], "")
             }
             m.global.session = s
         end function

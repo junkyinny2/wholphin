@@ -8,15 +8,10 @@
     "settings/*.*"
   ],
   "plugins": [],
-  "diagnosticFilters": ["node_modules/**/*", "**/roku_modules/**/*"],
+  "diagnosticFilters": ["node_modules/**/*", "**/roku_modules/**/*", "components/**/*.bs", "components/**/*.brs"],
   "sourceMap": true,
   "autoImportComponentScript": true,
   "stagingFolderPath": "build/staging",
   "retainStagingFolder": false,
-  "outFile": "out/Wholphin.zip",
-  "diagnosticSeverityOverrides": {
-    "BS1128": "hint",
-    "BS1104": "hint",
-    "BS1079": "hint"
-  }
+  "outFile": "out/Wholphin.zip"
 }

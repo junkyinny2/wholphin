@@ -1,58 +1,51 @@
 sub Init()
     m.navBg = m.top.findNode("navBg")
     m.navItemsGroup = m.top.findNode("navItemsGroup")
-    
-    m.navData = [
-        { label: "Home",     id: "home" }
-        { label: "Search",   id: "search" }
-        { label: "Favorites",id: "favorites" }
-        { label: "Movies",   id: "movies" }
-        { label: "Shows",    id: "tvshows" }
-        { label: "Continue", id: "continue" }
-        { label: "Playlists",id: "playlists" }
-        { label: "Settings", id: "settings" }
-    ]
-    
-    buildNavItems()
-    
-    m.top.selectedIndex = 0
-    updateSelection()
-    
-    m.top.observeField("selectedIndex", "onSelectedIndexChange")
-end sub
+    m.activeIndicator = m.top.findNode("activeIndicator")
 
-sub buildNavItems()
+    m.navData = [
+        { label: "Home",     icon: "pkg:/images/icons/nav_home.png",     id: "home" }
+        { label: "Search",   icon: "pkg:/images/icons/nav_search.png",   id: "search" }
+        { label: "Library",  icon: "pkg:/images/icons/nav_library.png",  id: "library" }
+        { label: "Favorites",icon: "pkg:/images/icons/nav_favorites.png",id: "favorites" }
+        { label: "TV",       icon: "pkg:/images/icons/nav_tv.png",       id: "tv" }
+        { label: "Movies",   icon: "pkg:/images/icons/nav_movies.png",  id: "movies" }
+        { label: "Collection",icon: "pkg:/images/icons/nav_collection.png",id: "collection" }
+        { label: "Playlist", icon: "pkg:/images/icons/nav_playlist.png", id: "playlist" }
+        { label: "Cast",     icon: "pkg:/images/icons/nav_cast.png",     id: "cast" }
+        { label: "Settings", icon: "pkg:/images/icons/nav_settings.png", id: "settings" }
+    ]
+
     m.navButtons = []
+    iconSize = 36
+    itemHeight = 56
+    yOffset = 0
+
     for i = 0 to m.navData.Count() - 1
         itemData = m.navData[i]
-        
-        btnGroup = m.navItemsGroup.appendChild(CreateObject("roSGNode", "Group"))
-        btnGroup.translation = [0, i * 72]
+
+        btnGroup = CreateObject("roSGNode", "Group")
+        btnGroup.translation = [22, yOffset]
         btnGroup.id = "navBtn_" + i.ToStr()
-        
-        label = btnGroup.appendChild(CreateObject("roSGNode", "Label"))
-        label.id = "label"
-        label.text = itemData.label
-        label.font = "font:SmallSystemFont"
-        label.color = "0x999999FF"
-        label.width = 96
-        label.height = 72
-        label.translation = [0, 0]
-        label.horizAlign = "center"
-        label.vertAlign = "center"
-        
-        focusRing = btnGroup.appendChild(CreateObject("roSGNode", "Rectangle"))
-        focusRing.id = "focusRing"
-        focusRing.width = 80
-        focusRing.height = 56
-        focusRing.translation = [8, 8]
-        focusRing.color = "0x00A4DC40"
-        focusRing.visible = false
-        
-        btnGroup.navIndex = i
-        btnGroup.navId = itemData.id
+
+        iconPoster = CreateObject("roSGNode", "Poster")
+        iconPoster.id = "iconPoster"
+        iconPoster.uri = itemData.icon
+        iconPoster.width = iconSize
+        iconPoster.height = iconSize
+        iconPoster.translation = [0, 0]
+        iconPoster.loadDisplayMode = "scaleToFit"
+
+        btnGroup.appendChild(iconPoster)
+
+        m.navItemsGroup.appendChild(btnGroup)
         m.navButtons.Push(btnGroup)
+        yOffset = yOffset + itemHeight
     end for
+
+    m.top.selectedIndex = 0
+    updateSelection()
+    m.top.observeField("selectedIndex", "onSelectedIndexChange")
 end sub
 
 sub onSelectedIndexChange()
@@ -62,49 +55,42 @@ end sub
 sub updateSelection()
     idx = m.top.selectedIndex
     if idx < 0 or idx >= m.navButtons.Count() then return
-    
-    activeBg = m.top.findNode("activeIndicator")
-    targetY = 120 + idx * 72
-    if activeBg <> invalid then
-        activeBg.translation = [92, targetY]
-        activeBg.opacity = 1.0
-    end if
-    
+
+    targetY = 80 + idx * 56 + 10
+    m.activeIndicator.translation = [77, targetY]
+    m.activeIndicator.opacity = 1
+
     for i = 0 to m.navButtons.Count() - 1
         btn = m.navButtons[i]
-        label = btn.findNode("label")
-        focusRing = btn.findNode("focusRing")
-        
+        iconPoster = btn.findNode("iconPoster")
         if i = idx then
-            label.color = "0xFFFFFFFF"
-            if focusRing <> invalid then focusRing.visible = true
+            iconPoster.blendColor = "0x22D3EEFF"
         else
-            label.color = "0x999999FF"
-            if focusRing <> invalid then focusRing.visible = false
+            iconPoster.blendColor = "0xB0B8C4AA"
         end if
     end for
 end sub
 
 function onKeyEvent(key as String, press as Boolean) as Boolean
     if not press then return false
-    
     idx = m.top.selectedIndex
-    
+
     if key = "up" then
         if idx > 0 then
             m.top.selectedIndex = idx - 1
-            return true
         end if
+        return true
     else if key = "down" then
         if idx < m.navButtons.Count() - 1 then
             m.top.selectedIndex = idx + 1
-            return true
         end if
+        return true
     else if key = "right" then
         return false
     else if key = "OK" then
+        itemData = m.navData[idx]
+        m.top.onItemSelected = itemData.id
         return true
     end if
-    
     return false
 end function

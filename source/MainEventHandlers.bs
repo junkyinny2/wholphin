@@ -224,7 +224,6 @@ function HandlePlaybackError() as Void
         if currentItem <> invalid then
             ' Force transcode and retry
             queueManager.callFunc("setForceTranscode", true)
-            queueManager.callFunc("playCurrentItem")
         end if
     end if
 end function

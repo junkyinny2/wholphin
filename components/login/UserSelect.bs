@@ -22,6 +22,21 @@ sub Init()
     m.serverNameLabel.text = session.server.GetName()
 end sub
 
+function getFocusedUser() as Object
+    grid = m.userRow.findNode("userGrid")
+    if grid = invalid then return invalid
+    focused = grid.focusedItem
+    if focused = invalid or focused.Count() < 2 then return invalid
+    col = focused[0]
+    row = focused[1]
+    numCols = grid.numColumns
+    if numCols <= 0 then numCols = 1
+    idx = row * numCols + col
+    content = grid.content
+    if content = invalid then return invalid
+    return content.getChild(idx)
+end function
+
 function onUsersChange() as Void
     ? "[UserSelect] onUsersChange firing"
     users = m.top.users
@@ -37,6 +52,7 @@ sub highlightGridIndex(idx as Integer)
     if users = invalid or idx >= users.Count() then return
     grid = m.userRow.findNode("userGrid")
     if grid = invalid then return
+    grid.itemFocused = idx
     ? "[UserSelect] highlightGridIndex idx="; idx
 end sub
 
@@ -51,12 +67,7 @@ function onUserSelected() as Void
     selected = m.userRow.userSelected
     if selected = invalid then return
     ? "[UserSelect] selected child: '"; selected.title; "' id="; selected.id
-    scene = m.top.getScene()
-    if scene = invalid then return
-    scene.setField("pendingUserName", selected.title)
-    scene.setField("pendingUserId", selected.id)
-    scene.setField("pendingServerAction", "login")
-    ? "[UserSelect] pending fields set via onUserSelected"
+    selectUser(selected)
 end function
 
 function onPendingShowSignIn() as Void
@@ -175,7 +186,8 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
 
     if key = "OK" then
         if m.focusIndex = 0 then
-            selectUserByTrackedIndex()
+            user = getFocusedUser()
+            if user <> invalid then selectUser(user)
         else
             btn = m.buttons[m.focusIndex - 1]
             if btn <> invalid then handleButtonAction(btn)
@@ -187,35 +199,25 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
 end function
 
 sub selectUserByTrackedIndex()
-    ? "[UserSelect] selectUserByTrackedIndex ENTERED"
-    users = m.top.users
-    if users = invalid or m.focusedUserIndex >= users.Count() then
-        ? "[UserSelect] selectUserByTrackedIndex - invalid users or index"
-        return
-    end if
-    user = users[m.focusedUserIndex]
-    if user = invalid then
-        ? "[UserSelect] selectUserByTrackedIndex - user is invalid"
-        return
-    end if
+    user = getFocusedUser()
+    if user <> invalid then selectUser(user)
+end sub
+
+sub selectUser(user as Object)
+    if user = invalid then return
     scene = m.top.getScene()
     if scene = invalid then
-        ? "[UserSelect] selectUserByTrackedIndex - scene is invalid"
         if m.serverNameLabel <> invalid then m.serverNameLabel.text = "ERROR: no scene"
         return
     end if
-    username = chainLookupReturn(user, ["Name"], "")
+    username = chainLookupReturn(user, ["title"], "")
+    if username = "" then username = chainLookupReturn(user, ["Name"], "")
     userId = chainLookupReturn(user, ["Id"], "")
     ? "[UserSelect] OK on user='"; username; "' id='"; userId; "'"
-    ' Bypass token-check flow — go directly to sign-in screen
-    ' (pendingServerAction=login was getting lost or hanging on AboutMe)
     scene.setField("pendingShowSignIn", username)
     scene.setField("pendingUserName", username)
     scene.setField("pendingUserId", userId)
-
-    ' Diagnostics: show status on screen
     if m.serverNameLabel <> invalid then m.serverNameLabel.text = "Signing in..."
-
     ? "[UserSelect] pendingShowSignIn set to '"; username; "'"
 end sub
 

@@ -24,7 +24,7 @@ A Jellyfin media client for Roku TV, built in BrighterScript.
 npm install
 
 # Set your Roku credentials
-$env:ROKU_IP = "192.168.1.100"
+$env:ROKU_IP = "192.168.1.196"
 $env:ROKU_PASSWORD = "your_password"
 
 # Build and deploy

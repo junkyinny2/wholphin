@@ -1,0 +1,107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component name="HomeScene" extends="Scene">
+  <!-- Background -->
+  <Poster
+    id="background"
+    translation="[0, 0]"
+    width="1920"
+    height="1080"
+    uri="file://images/background.jpg"
+  />
+
+  <!-- Hero Section -->
+<Group id="heroSection">
+
+  <!-- Sidebar Navigation -->
+  <LayoutGroup id="SidebarNav" translation="[0,0]" width="120" height="-a" color="#00000060">
+    <!-- Add Nav items here -->
+  </LayoutGroup>
+
+    <Poster
+      id="heroBackdrop"
+      translation="[0, 0]"
+      width="1920"
+      height="450"
+      uri="file://images/hero_backdrop.jpg"
+    />
+    <Rectangle
+      id="gradientOverlay"
+      translation="[0, 0]"
+      width="1920"
+      height="450"
+      blendColor="0xAA000000"
+    />
+    <Label
+      id="heroTitle"
+      translation="[80, 60]"
+      text=""
+      font="font:LargeBoldSystemFont"
+    />
+    <Label
+      id="heroSubtitle"
+      translation="[80, 140]"
+      text=""
+      font="font:MediumSystemFont"
+    />
+    <Label
+      id="heroMeta"
+      translation="[80, 180]"
+      text=""
+      font="font:SmallSystemFont"
+    />
+    <Label
+      id="descriptionLabel"
+      translation="[80, 230]"
+      text=""
+      font="font:SmallSystemFont"
+    />
+
+    <!-- Action Buttons -->
+    <ButtonGroup id="heroButtons" translation="[80, 300]">
+      <Button
+        id="playButton"
+        text="Play"
+        width="160"
+        height="50"
+      />
+      <Button
+        id="moreInfoButton"
+        translation="[180, 0]"
+        text="More Info"
+        width="160"
+        height="50"
+      />
+    </ButtonGroup>
+  </Group>
+
+  <!-- Clock -->
+  <Label
+    id="clockLabel"
+    translation="[1750, 40]"
+    text=""
+    font="font:MediumSystemFont"
+  />
+
+  <!-- Sidebar Navigation -->
+  <SidebarNav id="navRail" />
+
+  <!-- Content Rows Container -->
+  <Group id="rowsContainer" translation="[140, 500]">
+    <!-- Row 1: Next Up (Horizontal Scroll) -->
+    <RowList
+      id="nextUpRow"
+      width="1780"
+      height="300"
+      itemComponentName="RowListItem"
+    />
+
+    <!-- Row 2: Anime Movies (Horizontal Scroll) -->
+    <RowList
+      id="animeRow"
+      translation="[0, 350]"
+      width="1780"
+      height="400"
+      itemComponentName="RowListItem"
+    />
+  </Group>
+</component>

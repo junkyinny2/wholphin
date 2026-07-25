@@ -1,5 +1,69 @@
 # Wholphin Roku - Change History
 
+## 2026-07-25 — Fixed HomeScreen interaction bugs (row selection, hero focus, button handlers)
+
+- **What:** Fixed 4 critical bugs preventing HomeScreen from being interactive:
+  1. **Missing observers** — `onRowItemSelected` and `onRowItemFocused` existed in `HomeScreen.brs` but were never observed on `m.homeRows`. Added `observeField("rowItemSelected", "onRowItemSelected")` and `observeField("rowItemFocused", "onRowItemFocused")` in `Init()`.
+  2. **ContentNode vs chainLookupReturn** — `onRowItemFocused` and `onRowItemSelected` used `chainLookupReturn()` to access ContentNode fields, but `chainLookup` checks `ifAssociativeArray` which ContentNode doesn't implement. Replaced with direct `hasField()` + field access.
+  3. **Play/More Info buttons non-functional** — Buttons were static visual elements with no focus handling or OK key handlers. Made button backgrounds `focusable="true"`, added `setHeroButtonFocus()`/`clearHeroButtonFocus()` for visual focus, added UP/DOWN/LEFT/RIGHT/OK navigation in `onKeyEvent`.
+  4. **LoadItemsTask debug crash** — Line 115 referenced undefined variable `taskType` (should be `itemsToLoad`). Fixed.
+- **Files touched:**
+  - `components/HomeScreen.brs` — Added row observers, button focus management, OK key handlers, `getCurrentHeroItem()` helper, fixed ContentNode field access, added `seriesId` to item AA conversion
+  - `components/HomeScreen.xml` — Added `focusable="true"` to `playBtnBg` and `infoBtnBg`
+  - `components/home/LoadItemsTask.bs` — Fixed undefined `taskType` → `itemsToLoad`
+- **Timestamp:** 2026-07-25T09:28:00Z
+- **Automatic:** no (user-directed)
+
+## 2026-07-25 — Fixed `hasField` on roAssociativeArray + transpiler library injection + auto-login hack
+
+- **What:** Fixed 3 additional critical bugs found during deployment testing:
+  1. **`hasField` on roAssociativeArray** — `onRowItemFocused` used `itemJson.hasField("Overview")` but `roAssociativeArray` doesn't have `hasField()` — it uses `DoesExist()`. This caused runtime error `&hf4` ("Member function not found"). Replaced all `itemJson.hasField()` → `itemJson.DoesExist()`.
+  2. **Transpiler missing `HomeScreen.xml` in `$libInjections`** — `HomeScreen.brs` calls `HandleItemSelection` (from `MainEventHandlers.brs`) and `CreateMovieDetailsGroup`/`CreateSeriesDetailsGroup` (from `ShowScenes.brs`), but `transpile.ps1` didn't inject these library scripts into `HomeScreen.xml`. Added `HomeScreen.xml` entry to `$libInjections` hashtable with 9 required script URIs.
+  3. **Auto-login disabled with `if false and` hack** — `Main.bs:114` had `if false and m.autoLoginData <> invalid` which disabled auto-login, causing the app to always show SetServerScreen. Reverted to `if m.autoLoginData <> invalid` per history log (was supposed to be reverted on 2026-07-16).
+- **Files touched:**
+  - `components/HomeScreen.brs` — `hasField`→`DoesExist` for all `itemJson` accesses
+  - `transpile.ps1` — Added `HomeScreen.xml` to `$libInjections` with 9 library script URIs
+  - `source/Main.bs` — Reverted `if false and` → `if` for auto-login bypass
+  - `components/HomeScreen.xml` — Fixed Button warnings: `width`→`minWidth`, `buttonText`→`text`
+- **Verification:** Deployed to 192.168.1.196. Auto-login works (straight to HomeScreen). LoadItemsTask fires for all 5 sections (hero/resume/nextup/latestmedia/favorites). No runtime errors.
+- **Timestamp:** 2026-07-25T10:40:00Z
+- **Automatic:** no (user-directed)
+
+## 2026-07-25 — Deployed v0.1.18 to 192.168.1.196
+
+- **What:** Deployed HomeScreen interaction fixes to Roku device
+- **Build:** transpile.ps1 (161 BS files) + build.js → 421.2 KB package
+- **Sideload:** curl digest auth to http://192.168.1.196/plugin_install — SUCCESS
+- **Credentials:** ROKU_IP=192.168.1.196, ROKU_USERNAME=rokudev (env vars)
+- **Files touched:** `history/history.md` (this entry)
+- **Timestamp:** 2026-07-25T09:30:00Z
+- **Automatic:** no (user-directed)
+
+## 2026-06-22 — Executed 5 new plans (011-015) from deep audit
+
+- **Plan 011** ✅ — Restored `source/Main.bs` from `git checkout HEAD` (was 50-line stub, restored 340-line committed version)
+- **Plan 012** ✅ — Added `m.homeRows.numRows = content.GetChildCount()` in `finishLoading()` so RowList renders all content rows
+- **Plan 013** ✅ — Changed 5 QueueManager functions (`push`, `set`, `clear`, `setPosition`, `setPlaybackOptions`, `setForceTranscode`) and 2 SceneManager functions (`popScene`, `clearScenes`) from `as Void` to `as Boolean` returning `true` — fixes `callFunc` hang on this Roku firmware. Also removed dead `queueManager.callFunc("playCurrentItem")` call from `MainEventHandlers.bs:227`.
+- **Plan 014** ✅ — Added `registry_delete` for `wh_autologin_server`, `wh_autologin_token`, `wh_autologin_userid` in `userauth.bs:SignOut()` so users can actually sign out
+- **Plan 015** ✅ — Implemented LEFT/RIGHT focus switching between nav rail and content rows in `HomeScreen.onKeyEvent`, plus UP/DOWN nav rail scrolling with `activeIndicator` highlight
+- **Files touched:**
+  - `source/Main.bs` — Restored from git
+  - `components/HomeScreen.brs` — numRows fix + nav rail focus
+  - `components/manager/QueueManager.bs` — Void→Boolean conversion
+  - `components/manager/SceneManager.bs` — Void→Boolean conversion  
+  - `source/MainEventHandlers.bs` — Removed dead `playCurrentItem` call
+  - `source/api/userauth.bs` — Registry cleanup on sign-out
+  - `advisor-plans/README.md` — Index for new plans
+  - `advisor-plans/011-restore-mainbs.md` — Plan file
+  - `advisor-plans/012-fix-numrows.md` — Plan file
+  - `advisor-plans/013-fix-void-callfunc.md` — Plan file
+  - `advisor-plans/014-fix-signout-registry.md` — Plan file
+  - `advisor-plans/015-fix-navrail-focus.md` — Plan file
+- **Timestamp:** 2026-06-22T09:20:00Z
+- **Automatic:** no (user-directed)
+
+---
+
 ## 2026-06-15 — Completed audit plans 002-008, 010; deployed v0.1.11
 
 - **What:** Assessed and completed remaining implementation plans from the 2026-06-15 audit:
@@ -308,4 +372,127 @@
   - `source/ShowScenes.bs` — LoginFlow returns `false` from login-screen path; doesn't call CreateHomeGroup internally
   - `source/Main.bs` — Restored `set_setting("server", "")`; restored wh_autologin check+bpass+save code; fixed `loginResult` handling (no double CreateHomeGroup)
 - **Timestamp:** 2026-06-19T19:00:00Z
+- **Automatic:** no (user-directed)
+
+## 2026-07-05 — Fixed build failure (961 false-positive scope errors)
+
+- **Problem**: `npx bsc --project bsconfig.deploy.json` failed with 961 errors (BS1001 + BS1140) — all false-positive "Not defined in scope" in component scripts
+- **Root cause**: `bsconfig.deploy.json` overrode `diagnosticFilters`, dropping the parent `bsconfig.json`'s component filters (`"components/**/*.bs"`, `"components/**/*.brs"`)
+- **Fix**: Removed `diagnosticFilters` from `bsconfig.deploy.json` so it inherits from `bsconfig.json` (which uses the working string-format filters); reverted broken object-format filter attempt and unused `--ignore-error-codes` CLI flag
+- **Files touched**: `bsconfig.deploy.json`, `deploy_roku.ps1`
+- **Verification**: Build produces `out/Wholphin.zip` (662KB) with only BS1107 warnings (benign)
+- **Timestamp:** 2026-07-05T20:25:00Z
+- **Automatic:** no (user-directed)
+
+## 2026-07-16 � Home Screen ? Android TV Parity (Phases 0-4)
+
+- **Goal**: Full visual + functional parity with Wholphin Android TV app; keep BOTH LeftNavRail icon rail AND WholphinSidebar slide-out drawer as navigation; match Android TV layout.
+- **Decisions (user)**: Cast rail item -> Settings; icon-only rail (no text labels); Favorites row uses existing LoadItemsTask "favorites" query.
+
+### Phase 0 � Navigation wiring (functional parity)
+- `components/HomeScreen.brs`: Implemented empty `onNavItemSelected()` (was at line 175) to map rail ids (home/search/library/favorites/movies/tv/collection/music/playlist/cast/settings) to existing scene creators in `source/ShowScenes.bs` via new `openVisualLibrary()` helper. Cast -> CreateSettingsScreen.
+- `components/HomeScreen.brs`: LEFT key when rail focused now calls `scene.showSidebar()` (opens drawer, matching Android TV). RIGHT returns focus to rows.
+- `components/Libraries/VisualLibraryScene.bs`: Added `filters` field support in `LoadData()` (reads `libData.filters` -> `params.Filters`) so Favorites rail/drawer work.
+- `components/WholphinSidebar.bs`: Wired previously-empty "favorites" destination to `CreateVisualLibraryScene(node, "")` with `filters="IsFavorite"`.
+
+### Phase 1 � Hero banner parity
+- `components/HeroBanner.xml`: Added `heroItems` interface field; added `btnPlay`/`btnMoreInfo` JFButtons in `heroButtons` group.
+- `components/HeroBanner.brs`: Added 8s auto-rotate Timer through `heroItems`; Play -> HandleItemSelection; More Info -> CreateMovieDetailsGroup / CreateSeriesDetailsGroup by type.
+
+### Phase 2 � Home rows parity
+- `components/HomeScreen.brs`: Added `favorites` to `startLoading()` (pendingSections=5) + `launchOneTask("favorites",...)` + `addRow("Favorites",...)` branch; set `m.heroBanner.heroItems` for rotation.
+- `components/home/HomeItem.xml`: Added `progressTrack`/`progressFill` Rectangles (bottom) + `favoriteBadge` Poster (heart) + replaced missing `checked.png` with green Rectangle `playedCheckmark`.
+- `components/home/HomeItem.bs`: Populate progress bar from `UserData.PlaybackPositionTicks/RunTimeTicks`; show favorite badge from `UserData.IsFavorite`.
+
+### Phase 3 � Rail visual parity (icon-only)
+- `components/LeftNavRail.brs`: Removed text-label drawing under icons (now icon-only). Fixed Movies icon (was reusing nav_library.png) -> new `images/icons/nav_movies.png` (generated film-strip).
+- Removed dead `iconLabel` references in `updateSelection()`.
+
+### Phase 4 � Drawer visual parity
+- `components/WholphinSidebar.xml`: Added `sidebarScrim` Rectangle (350,0 1570x1080, black 0xAA) behind drawer for darkened overlay.
+
+### Build & verify
+- `.\deploy_roku.ps1` -> transpile + build + sideload to 192.168.1.196: SUCCESS (401 KB, no errors). Fixed JFButton `minWidth`->`width` warning in HeroBanner.xml.
+- Runtime: HomeScreen loads; all 5 LoadItemsTask branches fire (hero/resume/latestmedia/nextup/favorites); no crashes. favorites=0/nextup=0 for test account (no data yet) � rows correctly hidden when empty.
+- **Files touched**: HomeScreen.brs, HeroBanner.xml, HeroBanner.brs, HomeItem.xml, HomeItem.bs, LeftNavRail.brs, WholphinSidebar.xml, WholphinSidebar.bs, VisualLibraryScene.bs, images/icons/nav_movies.png
+- **Timestamp:** 2026-07-16T20:57:00Z
+- **Automatic:** no (user-directed: build mode)
+
+## 2026-07-16 — Login screen fixes: password retry + UserSelect navigation + temp hack revert
+
+- **What:** Fixed three login flow issues preventing successful password entry and recovery from wrong password:
+  1. **UserSelect grid navigation** — `highlightGridIndex()` was a no-op (didn't set `grid.itemFocused`), `UserRow.onItemSelected` crashed on invalid `focusedItem`, `selectUser()` read ContentNode `.Name` instead of `.title` (empty username). Fixed all three.
+  2. **SigninScene retry after wrong password** — Input groups now `focusable="true"` in XML so OK events route through `onKeyEvent` → `showKeyboard` instead of being intercepted by `btnSignIn`. `onAuthErrorChange` moves focus to password field, clears password text, and calls `updateItemFocus()`. `onSignInPressed`/`onCancelPressed` guard against stale `buttonSelected` callbacks. `hideSignIn` re-orders visibility before `PopCurrentScene()` for correct focus return to UserSelect.
+  3. **Temp hack revert** — `Main.bs` `if false and autoLoginData` → `if autoLoginData`, `ShowScenes.bs` `if true or savedServer=""` → `if savedServer=""`.
+- **Files touched:**
+  - `components/config/SigninScene.xml` — `focusable="true"` on usernameInputGroup, passwordInputGroup
+  - `components/config/SigninScene.bs` — `m.focusIndex = 1` (default to password), `item.node.setFocus(true)` for fields (not `m.top`), stale `buttonSelected` guards, `onAuthErrorChange` resets focus+password, `hideSignIn` ordering
+  - `source/Main.bs` — Removed `if false and` hack
+  - `source/ShowScenes.bs` — Removed `if true or` hack
+- **Verification:** Deployed to 192.168.1.196. Auto-login works (straight to HomeScreen), no crashes. Login screen fixes await manual testing via "Change Server" flow.
+- **Timestamp:** 2026-07-16T21:30:00Z
+- **Automatic:** no (user-directed)
+
+## 2026-07-17 — UI redesign: NavRail, RowListItem, RowList-native layout
+
+- **Created** `components/NavRail.brs` and `components/RowListItem.brs` (from `ai code/`)
+- **Copied** `ai code/NavRail.xml` → `components/NavRail.xml` and `ai code/RowListItem.xml` → `components/RowListItem.xml`
+- **Modified** `HomeScreen.xml`: replaced `<LeftNavRail>` with `<NavRail>`, adjusted `HomeRows` translation x to 130
+- **Modified** `HomeScreen.brs`: changed field observation from `onItemSelected` → `itemSelected`; added `m.currentFocusZone` state; rewrote `onKeyEvent` for focus‑zone switching (LEFT at column 0 → nav, RIGHT → rows); added `profile` and `playlists` handler cases
+- **Modified** `HomeRows.xml`: exposed `rowItemFocused` and `rowItemSelected` with `alwaysNotify`
+- **Modified** `HomeRows.bs`: set `itemComponentName = "RowListItem"`, configured per‑row `rowHeights`/`rowItemSizes`/`showRowLabel`/`rowLabelOffset`
+- Deployed to `192.168.1.196` — build OK, sideload successful
+- **Timestamp:** 2026-07-17T09:00:00Z
+- **Automatic:** no (user-directed)
+
+## 2026-07-17 — Fixed blank home screen: HomeScreen.brs was a stub
+
+- **Root cause:** `components/HomeScreen.brs` was a 13-line stub (empty Init/onKeyEvent) — `CreateHomeGroup()` created a HomeScreen that did nothing. No data loaded, no children rendered → BaseScene logo peeked through, Bext status showed "Appending HomeScreen to content"
+- **Fix:** Rewrote `HomeScreen.brs` with full 284-line implementation integrating NavRail, HeroBanner, RowList/RowListItem content rows, data loading (5 LoadItemsTask sections), focus zone management
+- Deployed to `192.168.1.196` — build OK, sideload successful
+- **Timestamp:** 2026-07-17T10:30:00Z
+- **Automatic:** no (user-directed)
+
+## 2026-07-16 — Fix JFButton buttonSelected stuck + guard regression
+
+- **What:** Removed focus-guard from `onSignInPressed`/`onCancelPressed` (caused `m.focusItems[m.focusIndex].id` mismatch vs actual button that fired). Added explicit `buttonSelected = false` reset in both handlers — JFButton never resets this field, and with `alwaysNotify="true"` the observer must fire cleanly on each subsequent press.
+- **Root cause:** `JFButton.bs` sets `m.top.buttonSelected = true` on OK but never resets it to `false`. Combined with `alwaysNotify="true"` in XML, after the first press `buttonSelected` stays `true`. The guard could also fire before `m.focusItems` was initialized (observer registered at Init() line 14, array set at line 17).
+- **Files touched:** `components/config/SigninScene.bs` — removed guards, added buttonSelected reset
+- **Timestamp:** 2026-07-16T21:35:00Z
+- **Automatic:** no (user-directed)
+
+## 2026-07-16 — Focus proxy fix: can't select buttons / OK opens wrong handler
+
+- **What:** Replaced `m.top.setFocus(true)` for field focus with a dedicated invisible focus proxy Rectangle (`fieldFocusProxy`, `focusable="true"`, sibling to buttons). Root cause: Roku keeps focus on the deepest child in the focus chain — calling `m.top.setFocus(true)` on a parent of `btnSignIn` never actually transfers focus away, so btnSignIn intercepted OK events intended for fields. Removed broken guards from earlier attempt.
+- **Changes:**
+  - Removed `focusable="true"` from input groups (was breaking button navigation)
+  - Reverted `item.node.setFocus(true)` → `m.fieldFocusProxy.setFocus(true)` for field types
+  - Added `<Rectangle id="fieldFocusProxy" ... focusable="true" />` as a sibling of `signinButtons`
+  - Kept `buttonSelected = false` reset in handlers (JFButton never resets it)
+- **Files touched:** `components/config/SigninScene.xml`, `components/config/SigninScene.bs`
+- **Timestamp:** 2026-07-16T21:47:00Z
+- **Automatic:** no (user-directed)
+
+## 2026-07-16 — Complete SigninScene rewrite: state-driven focus, no button observers
+
+- **What:** Replaced the entire button/field focus architecture. Root cause: `JFButton` has `focusable="true"` + its own `onKeyEvent`, and `buttonSelected` has `alwaysNotify="true"` but JFButton never resets it. Combined with Roku keeping focus on the deepest child, calls to `m.top.setFocus(true)` never transferred focus away from `btnSignIn`, so OK events bypassed `SigninScene.onKeyEvent` and went to `btnSignIn.onKeyEvent → buttonSelected` instead.
+- **Solution:** State-driven approach — a hidden `focusable="true"` Rectangle (`fieldFocusProxy`) is the ONLY node that ever gets Roku focus. `updateItemFocus()` updates visual indicators (bg colors, `buttonFocused`) purely for display, always calls `proxy.setFocus(true)`. All key events bubble to `SigninScene.onKeyEvent` which inspects `m.focusIndex` state to decide action (showKeyboard / performSignIn / hideSignIn). Removed all `buttonSelected` observers — they are unreliable.
+- **Benefits:** No Roku focus chain issues (proxy is sibling of buttons, not ancestor). No `alwaysNotify` / `buttonSelected` race conditions. Keyboard opens reliably from fields. Buttons execute reliably from their visual focus position.
+- **Files touched:** `components/config/SigninScene.bs` — full rewrite of focus management
+- **Timestamp:** 2026-07-16T21:52:00Z
+- **Automatic:** no (user-directed)
+
+## 2026-07-16 — Login screen fixes: password retry + UserSelect navigation + temp hack revert
+
+- **What:** Fixed three login flow issues preventing successful password entry and recovery from wrong password:
+  1. **UserSelect grid navigation** — `highlightGridIndex()` was a no-op (didn't set `grid.itemFocused`), `UserRow.onItemSelected` crashed on invalid `focusedItem`, `selectUser()` read ContentNode `.Name` instead of `.title` (empty username). Fixed all three.
+  2. **SigninScene retry after wrong password** — Input groups now `focusable="true"` in XML so OK events route through `onKeyEvent` → `showKeyboard` instead of being intercepted by `btnSignIn`. `onAuthErrorChange` moves focus to password field, clears password text, and calls `updateItemFocus()`. `onSignInPressed`/`onCancelPressed` guard against stale `buttonSelected` callbacks. `hideSignIn` re-orders visibility before `PopCurrentScene()` for correct focus return to UserSelect.
+  3. **Temp hack revert** — `Main.bs` `if false and autoLoginData` → `if autoLoginData`, `ShowScenes.bs` `if true or savedServer=""` → `if savedServer=""`.
+- **Files touched:**
+  - `components/config/SigninScene.xml` — `focusable="true"` on usernameInputGroup, passwordInputGroup
+  - `components/config/SigninScene.bs` — `m.focusIndex = 1` (default to password), `item.node.setFocus(true)` for fields (not `m.top`), stale `buttonSelected` guards, `onAuthErrorChange` resets focus+password, `hideSignIn` ordering
+  - `source/Main.bs` — Removed `if false and` hack
+  - `source/ShowScenes.bs` — Removed `if true or` hack
+- **Verification:** Deployed to 192.168.1.196. Auto-login works (straight to HomeScreen), no crashes. Login screen fixes await manual testing via "Change Server" flow.
+- **Timestamp:** 2026-07-16T21:30:00Z
 - **Automatic:** no (user-directed)

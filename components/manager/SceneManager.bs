@@ -66,8 +66,8 @@ function pushScene(scene as Object) as Boolean
 end function
 
 ' Pop the top scene from the stack
-function popScene() as Void
-    if m.sceneStack.Count() = 0 then return
+function popScene() as Boolean
+    if m.sceneStack.Count() = 0 then return true
     
     ' Get the scene to remove
     sceneToRemove = m.sceneStack.Pop()
@@ -109,10 +109,11 @@ function popScene() as Void
     
     m.top.sceneStack = m.sceneStack
     m.top.sceneCount = m.sceneStack.Count()
+    return true
 end function
 
 ' Clear all scenes from the stack
-function clearScenes() as Void
+function clearScenes() as Boolean
     contentGroup = m.top.getScene().findNode("content")
     if contentGroup <> invalid then
         for each scene in m.sceneStack
@@ -126,6 +127,7 @@ function clearScenes() as Void
     m.top.sceneStack = m.sceneStack
     m.top.activeScene = invalid
     m.top.sceneCount = 0
+    return true
 end function
 
 ' Get the active (top) scene

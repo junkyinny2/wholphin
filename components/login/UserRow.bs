@@ -47,19 +47,21 @@ function onItemSelected() as Void
         ? "[UserRow] content is invalid"
         return
     end if
-    focused = grid.focusedItem
-    if focused = invalid then
-        ? "[UserRow] focusedItem is invalid"
+    idx = grid.itemFocused
+    if idx = invalid or idx < 0 then
+        focused = grid.focusedItem
+        if focused <> invalid and focused.Count() >= 2 then
+            col = focused[0]
+            row = focused[1]
+            numCols = grid.numColumns
+            if numCols <= 0 then numCols = 1
+            idx = row * numCols + col
+        end if
+    end if
+    if idx = invalid or idx < 0 then
+        ? "[UserRow] could not resolve selected index"
         return
     end if
-    if focused.Count() < 2 then
-        ? "[UserRow] focusedItem.Count="; focused.Count()
-        return
-    end if
-    col = focused[0]
-    row = focused[1]
-    idx = row * grid.numColumns + col
-    ? "[UserRow] focusedItem=["; col; ","; row; "] idx="; idx
     child = content.getChild(idx)
     if child = invalid then
         ? "[UserRow] getChild("; idx; ") returned invalid"

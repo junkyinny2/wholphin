@@ -213,7 +213,7 @@ function inArray(arr as Object, value as Dynamic) as Boolean
     return false
 end function
 
-' Alias for translateText (for backward compatibility with legacy code)
-function tr(text as String) as String
+' Alias for translateText (for backward compatibility)
+function translateOrFallback(text as String) as String
     return translateText(text)
 end function

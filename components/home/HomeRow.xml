@@ -5,9 +5,8 @@
     <field id="rowType" type="string" value="" />
     <field id="content" type="node" alwaysNotify="true" />
   </interface>
-  
+
   <children>
-    <!-- Row title -->
     <Label
       id="rowLabel"
       translation="[0, 0]"
@@ -17,17 +16,16 @@
       color="0xFFFFFFFF"
       text=""
       vertAlign="center" />
-    
-    <!-- Row item grid (MarkupGrid) -->
+
     <MarkupGrid
       id="rowGrid"
       translation="[0, 40]"
       itemComponentName="HomeItem"
-      itemSize="[196, 340]"
+      itemSize="[196, 294]"
       itemSpacing="[15, 0]"
       numColumns="8"
       numRows="1" />
   </children>
-  
+
   <script type="text/brightscript" uri="pkg:/components/home/HomeRow.bs" />
 </component>

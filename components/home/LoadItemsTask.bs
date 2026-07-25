@@ -1,5 +1,11 @@
 ' Wholphin Roku - Async task for loading home screen items
 
+' Library imports required for Task thread access to API functions
+Library "pkg:/source/api/baserequest.bs"
+Library "pkg:/source/api/sdk.bs"
+Library "pkg:/source/api/Items.bs"
+Library "pkg:/source/utils/misc.bs"
+
 sub Init()
     m.top.functionName = "loadItems"
 end sub
@@ -106,6 +112,7 @@ sub loadItems()
         ? "[LoadItemsTask] "; itemsToLoad; " success, count="; result.Count()
         m.top.loadedItems = result
         m.top.loadStatus = "loaded"
+        ? "[LoadItemsTask] loadStatus set to '" + m.top.loadStatus + "' for task=" + itemsToLoad
     else
         ? "[LoadItemsTask] "; itemsToLoad; " FAILED - setting error"
         m.top.loadedItems = []

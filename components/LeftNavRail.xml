@@ -2,30 +2,25 @@
 <component name="LeftNavRail" extends="Group" focusable="true">
   <interface>
     <field id="selectedIndex" type="int" value="0" alwaysNotify="true" />
-    <field id="focusedChildIndex" type="int" value="-1" />
     <field id="navItems" type="array" />
+    <field id="onItemSelected" type="string" value="" alwaysNotify="true" />
   </interface>
 
   <children>
-    <!-- Nav rail background -->
     <Rectangle
       id="navBg"
-      width="96"
+      width="80"
       height="1080"
-      color="0x1A1A2ECC" />
+      color="0x0A0E14BB" />
 
-    <!-- Nav items container -->
-    <Group
-      id="navItemsGroup"
-      translation="[0, 120]" />
+    <Group id="navItemsGroup" translation="[0, 80]" />
 
-    <!-- Active indicator (highlight bar) -->
     <Rectangle
       id="activeIndicator"
-      width="4"
-      height="72"
-      color="0x00A4DCFF"
-      translation="[92, 120]"
+      width="3"
+      height="36"
+      color="0x22D3EEFF"
+      translation="[77, 90]"
       opacity="0" />
   </children>
 

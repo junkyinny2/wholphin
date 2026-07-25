@@ -68,11 +68,11 @@
     </Group>
 
     <!-- Buttons -->
-    <Group id="serverButtons" translation="[560, 410]" focusable="true">
-      <JFButton id="btnConnect" translation="[0, 0]" buttonText="Connect" width="200" />
-      <JFButton id="btnDiscover" translation="[220, 0]" buttonText="Auto Discover" width="300" />
-      <JFButton id="btnManualEntry" translation="[540, 0]" buttonText="Manual Entry" width="260" />
-    </Group>
+    <LayoutGroup id="serverButtons" translation="[560, 410]" layoutDirection="horiz" itemSpacings="[20, 20]">
+      <JFButton id="btnConnect" buttonText="Connect" width="200" />
+      <JFButton id="btnDiscover" buttonText="Auto Discover" width="300" />
+      <JFButton id="btnManualEntry" buttonText="Manual Entry" width="260" />
+    </LayoutGroup>
 
     <!-- Saved servers list -->
     <Label

@@ -28,7 +28,7 @@ if (Test-Path $ConfigFile) {
 Write-Host ""
 Write-Host "=== Wholphin Deployment ===" -ForegroundColor Yellow
 
-if (-not $TargetIP) { $defaultIP = "192.168.1.100"; $input = Read-Host "Enter Roku IP (default: $defaultIP)"; $TargetIP = if ($input) { $input } else { $defaultIP } }
+if (-not $TargetIP) { $defaultIP = "192.168.1.196"; $input = Read-Host "Enter Roku IP (default: $defaultIP)"; $TargetIP = if ($input) { $input } else { $defaultIP } }
 $RokuIP = $TargetIP
 
 # --------------------------------------------------------------------

@@ -5,7 +5,7 @@
     <field id="password" type="string" value="" />
     <field id="isAuthenticating" type="boolean" value="false" />
     <field id="errorMessage" type="string" value="" />
-    <field id="authErrorMessage" type="string" value="" />
+    <field id="authErrorMessage" type="string" value="" alwaysNotify="true" />
     <field id="onKeyEvent" type="boolean" value="false" />
   </interface>
 
@@ -74,6 +74,9 @@
       text="Password"
       horizAlign="center" />
 
+    <!-- Focus proxy (sibling to buttons, not parent) so fields can steal focus from btnSignIn -->
+    <Rectangle id="fieldFocusProxy" width="1" height="1" opacity="0" focusable="true" />
+
     <Group id="passwordInputGroup" translation="[660, 500]">
       <Rectangle
         id="passwordInputBg"
@@ -105,10 +108,10 @@
       visible="false" />
 
     <!-- Buttons -->
-    <Group id="signinButtons" translation="[760, 620]">
-      <JFButton id="btnSignIn" translation="[0, 0]" buttonText="Sign In" width="200" />
-      <JFButton id="btnCancel" translation="[220, 0]" buttonText="Cancel" width="200" />
-    </Group>
+    <LayoutGroup id="signinButtons" translation="[760, 620]" layoutDirection="horiz" itemSpacings="[20]">
+      <JFButton id="btnSignIn" buttonText="Sign In" width="200" />
+      <JFButton id="btnCancel" buttonText="Cancel" width="200" />
+    </LayoutGroup>
   </children>
 
   <script type="text/brightscript" uri="pkg:/components/config/SigninScene.bs" />

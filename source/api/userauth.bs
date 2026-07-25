@@ -37,6 +37,11 @@ function SignOut() as Object
     session.user.Clear()
     session.server.Clear()
     
+    ' Clear auto-login credentials
+    registry_delete("wh_autologin_server")
+    registry_delete("wh_autologin_token")
+    registry_delete("wh_autologin_userid")
+    
     return result
 end function
 

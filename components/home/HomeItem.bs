@@ -5,6 +5,9 @@ sub Init()
     m.checkmark = m.top.findNode("playedCheckmark")
     m.label = m.top.findNode("itemLabel")
     m.focusIndicator = m.top.findNode("focusIndicator")
+    m.progressTrack = m.top.findNode("progressTrack")
+    m.progressFill = m.top.findNode("progressFill")
+    m.favoriteBadge = m.top.findNode("favoriteBadge")
     
     m.top.observeField("itemContent", "onItemContentChange")
     m.top.observeField("focusedChild", "onFocusChange")
@@ -40,4 +43,26 @@ sub onItemContentChange()
     played = chainLookupReturn(userData, ["Played"], false)
     m.top.watched = played
     m.checkmark.visible = played
+
+    isFavorite = chainLookupReturn(userData, ["IsFavorite"], false)
+    m.top.favorite = isFavorite
+    if m.favoriteBadge <> invalid then m.favoriteBadge.visible = isFavorite
+
+    positionTicks = chainLookupReturn(userData, ["PlaybackPositionTicks"], 0)
+    runTimeTicks = chainLookupReturn(userData, ["RunTimeTicks"], 0)
+    progress = 0
+    if runTimeTicks > 0 and positionTicks > 0 then
+        progress = positionTicks / runTimeTicks
+        if progress > 1 then progress = 1
+    end if
+    if m.progressTrack <> invalid and m.progressFill <> invalid then
+        if progress > 0 then
+            m.progressTrack.visible = true
+            m.progressFill.visible = true
+            m.progressFill.width = 196 * progress
+        else
+            m.progressTrack.visible = false
+            m.progressFill.visible = false
+        end if
+    end if
 end sub

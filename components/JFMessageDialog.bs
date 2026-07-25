@@ -58,7 +58,7 @@ sub redraw()
 
     options.translation = [border * 2, textHeight + itemSpacing]
     options.itemSize = [boxWidth - (border * 4), optionHeight]
-    options.itemSpacing = "[0,20]"
+    options.itemSpacing = [0, 20]
 
     options.numRows = m.top.options.count()
     if options.numRows > maxRows

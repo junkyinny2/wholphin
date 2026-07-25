@@ -184,7 +184,11 @@ function onDestinationSelectedByContent(focused as Object) as Void
         end if
         CreateHomeGroup()
     else if destinationId = "favorites" then
-        ' Navigate to favorites
+        favNode = CreateObject("roSGNode", "ContentNode")
+        favNode.id = ""
+        favNode.title = translateText("Favorites")
+        favNode.AddFields({ filters: "IsFavorite" })
+        CreateVisualLibraryScene(favNode, "")
     else if destinationId = "discover" then
         CreateDiscoverPage()
     else if destinationId = "settings" then

@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<component name="NavRail" extends="Group">
+    <script type="text/brightscript" uri="pkg:/components/NavRail.brs" />
+
+    <interface>
+        <!-- fires with the string id of the item chosen, e.g. "home", "search" -->
+        <field id="itemSelected" type="string" alwaysNotify="true" />
+    </interface>
+
+    <children>
+        <Rectangle
+            id="railBackground"
+            width="120"
+            height="1080"
+            color="0x0A0A0FCC"
+        />
+
+        <!-- Vertical stack of icons. Each is a Group so we can draw
+             a focus-highlight Rectangle behind the icon on demand. -->
+        <LayoutGroup
+            id="iconStack"
+            translation="[0, 40]"
+            layoutDirection="vertical"
+            itemSpacings="[36,36,36,36,36,36,36,36]"
+            horizAlignment="center"
+        >
+            <Group id="nav_profile">
+                <Rectangle id="nav_profile_hl" width="72" height="52" translation="[-36,-14]" color="0x14B4E822" visible="false" />
+                <Poster id="nav_profile_icon" uri="pkg:/images/icon_profile.png" width="28" height="28" />
+            </Group>
+            <Group id="nav_search">
+                <Rectangle id="nav_search_hl" width="72" height="52" translation="[-36,-14]" color="0x14B4E822" visible="false" />
+                <Poster id="nav_search_icon" uri="pkg:/images/icon_search.png" width="28" height="28" />
+            </Group>
+            <Group id="nav_home">
+                <Rectangle id="nav_home_hl" width="72" height="52" translation="[-36,-14]" color="0x14B4E822" visible="false" />
+                <Poster id="nav_home_icon" uri="pkg:/images/icon_home.png" width="28" height="28" />
+            </Group>
+            <Group id="nav_favorites">
+                <Rectangle id="nav_favorites_hl" width="72" height="52" translation="[-36,-14]" color="0x14B4E822" visible="false" />
+                <Poster id="nav_favorites_icon" uri="pkg:/images/icon_heart.png" width="28" height="28" />
+            </Group>
+            <Group id="nav_movies">
+                <Rectangle id="nav_movies_hl" width="72" height="52" translation="[-36,-14]" color="0x14B4E822" visible="false" />
+                <Poster id="nav_movies_icon" uri="pkg:/images/icon_movies.png" width="28" height="28" />
+            </Group>
+            <Group id="nav_tv">
+                <Rectangle id="nav_tv_hl" width="72" height="52" translation="[-36,-14]" color="0x14B4E822" visible="false" />
+                <Poster id="nav_tv_icon" uri="pkg:/images/icon_tv.png" width="28" height="28" />
+            </Group>
+            <Group id="nav_playlists">
+                <Rectangle id="nav_playlists_hl" width="72" height="52" translation="[-36,-14]" color="0x14B4E822" visible="false" />
+                <Poster id="nav_playlists_icon" uri="pkg:/images/icon_list.png" width="28" height="28" />
+            </Group>
+            <Group id="nav_settings">
+                <Rectangle id="nav_settings_hl" width="72" height="52" translation="[-36,-14]" color="0x14B4E822" visible="false" />
+                <Poster id="nav_settings_icon" uri="pkg:/images/icon_settings.png" width="28" height="28" />
+            </Group>
+        </LayoutGroup>
+    </children>
+</component>

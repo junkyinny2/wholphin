@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<component name="LandscapePosterItem" extends="Group">
+  <interface>
+    <field id="itemContent" type="node" alwaysNotify="true" />
+    <field id="posterUrl" type="string" value="" />
+    <field id="itemTitle" type="string" value="" />
+    <field id="episodeIndex" type="int" value="0" />
+  </interface>
+
+  <children>
+    <Rectangle
+      id="focusBorder"
+      translation="[-3, -3]"
+      width="326"
+      height="186"
+      color="0x22D3EEFF"
+      visible="false" />
+
+    <Poster
+      id="itemPoster"
+      translation="[0, 0]"
+      width="320"
+      height="180"
+      loadDisplayMode="scaleToFill" />
+
+    <Rectangle
+      id="episodeBadge"
+      translation="[272, 8]"
+      width="40"
+      height="22"
+      color="0x000000BB" />
+
+    <Label
+      id="episodeLabel"
+      translation="[272, 8]"
+      width="40"
+      height="22"
+      font="font:SmallestSystemFont"
+      color="0xFFFFFFFF"
+      text=""
+      horizAlign="center"
+      vertAlign="center" />
+  </children>
+
+  <script type="text/brightscript" uri="pkg:/components/LandscapePosterItem.brs" />
+</component>

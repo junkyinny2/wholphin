@@ -126,11 +126,13 @@ function getJson(spec as Object) as Object
                     return ParseJson(body)
                 end if
             else
+                m.global.lastNetworkError = "HTTP_" + responseCode.ToStr()
                 print "[Wholphin] HTTP Error: " + responseCode.ToStr() + " for " + spec.url
                 errorBody = msg.GetFailureReason()
                 if errorBody <> "" then print errorBody
             end if
         else if msg = invalid then
+            m.global.lastNetworkError = "timeout"
             print "[Wholphin] Request timed out"
         end if
     end if
@@ -161,9 +163,11 @@ function postJson(spec as Object, data as Object) as Object
                     return ParseJson(body)
                 end if
             else
+                m.global.lastNetworkError = "HTTP_POST_" + responseCode.ToStr()
                 print "[Wholphin] HTTP POST Error: " + responseCode.ToStr()
             end if
         else if msg = invalid then
+            m.global.lastNetworkError = "POST_timeout"
             print "[Wholphin] POST request timed out"
         end if
     end if

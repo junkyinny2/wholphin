@@ -3,7 +3,7 @@
 # Suppresses noise, highlights diagnostics
 # Usage: .\rokudebug.ps1 [RokuIP]
 #   If IP is provided, connects directly.
-#   If omitted, prompts with default from ROKU_IP env var or 192.168.1.100.
+#   If omitted, uses $env:ROKU_IP (required — no fallback default).
 #
 # Set ROKU_IP environment variable or pass IP as argument
 # ================================
@@ -15,9 +15,7 @@ param(
 $port = 8085
 
 if ($RokuIP -eq "") {
-    $defaultIP = $env:ROKU_IP
-    if (-not $defaultIP) { $defaultIP = "192.168.1.100" }
-    $ip = $defaultIP
+    $ip = if ($env:ROKU_IP) { $env:ROKU_IP } else { "192.168.1.196" }
 } else {
     $ip = $RokuIP
 }

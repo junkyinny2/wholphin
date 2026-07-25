@@ -1,32 +1,44 @@
-' Wholphin Roku - Home row with title and MarkupGrid
-
 sub Init()
     m.rowLabel = m.top.findNode("rowLabel")
     m.rowGrid = m.top.findNode("rowGrid")
 
     m.top.observeField("rowTitle", "onRowTitleChange")
     m.top.observeField("content", "onRowContentChange")
+    m.top.observeField("rowType", "onRowTypeChange")
     m.top.observeField("focusedChild", "onFocusedChildChange")
 end sub
 
-function onRowTitleChange() as Void
+sub onRowTitleChange()
     if m.rowLabel <> invalid then
         m.rowLabel.text = m.top.rowTitle
     end if
-end function
+end sub
+
+sub onRowTypeChange()
+    rowType = m.top.rowType
+    if rowType = "nextup" then
+        m.rowGrid.itemComponentName = "LandscapePosterItem"
+        m.rowGrid.itemSize = [320, 180]
+        m.rowGrid.numColumns = 10
+    else
+        m.rowGrid.itemComponentName = "HomeItem"
+        m.rowGrid.itemSize = [196, 294]
+        m.rowGrid.numColumns = 8
+    end if
+end sub
 
 sub onRowContentChange()
     content = m.top.content
-    ? "[HomeRow.onRowContentChange] content="; Type(content); " children="; content.getChildCount()
     if content = invalid then return
     items = content.getChildCount()
     if items = 0 then
         m.top.visible = false
         return
     end if
-    
+
     m.top.rowTitle = content.title
-    
+
+    rowType = m.top.rowType
     gridContent = CreateObject("roSGNode", "ContentNode")
     for i = 0 to items - 1
         child = content.getChild(i)
@@ -37,22 +49,32 @@ sub onRowContentChange()
             node.AddFields({ type: "", json: invalid })
             if child.hasField("type") then node.type = child.type
             if child.hasField("json") then node.json = child.json
+            if child.hasField("indexNumber") then node.indexNumber = child.indexNumber
             if child.HDPosterUrl <> invalid and child.HDPosterUrl <> "" then
                 node.HDPosterUrl = child.HDPosterUrl
                 node.SDPosterUrl = child.SDPosterUrl
             else if child.id <> "" then
-                img = PosterImage(child.id)
-                if img <> invalid then
-                    node.HDPosterUrl = img.url
-                    node.SDPosterUrl = img.url
+                if rowType = "nextup" then
+                    img = ThumbImageURL(child.id)
+                    if img <> "" then
+                        node.HDPosterUrl = img
+                        node.SDPosterUrl = img
+                    end if
+                else
+                    itemJson = invalid
+                    if child.hasField("json") then itemJson = child.json
+                    img = PosterImage(child.id, {}, itemJson)
+                    if img <> invalid then
+                        node.HDPosterUrl = img.url
+                        node.SDPosterUrl = img.url
+                    end if
                 end if
             end if
         end if
     end for
-    ? "[HomeRow.onRowContentChange] setting m.rowGrid.content, items="; gridContent.getChildCount()
+
     m.rowGrid.content = gridContent
     m.top.visible = true
-    ? "[HomeRow.onRowContentChange] grid set, visible=true"
 end sub
 
 sub onFocusedChildChange()

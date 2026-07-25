@@ -1,11 +1,42 @@
-' Wholphin Roku - Home screen rows component
-
 sub Init()
-    m.top.itemSize = [1720, 400]
-    m.top.itemComponentName = "HomeRow"
+    m.top.itemSize = [196, 294]
+    m.top.itemComponentName = "RowListItem"
     m.top.numRows = 0
-    m.top.rowHeights = [400]
-    m.top.rowSpacings = [30]
     m.top.rowFocusAnimationStyle = "floatingFocus"
+    m.top.showRowLabel = [true]
+    m.top.rowLabelOffset = [[0, 0]]
+
+    m.top.observeField("content", "onContentChange")
 end sub
 
+sub onContentChange()
+    content = m.top.content
+    if content = invalid then return
+    rowCount = content.getChildCount()
+    if rowCount = 0 then return
+
+    rowHeights = []
+    rowItemSizes = []
+    rowLabels = []
+    rowLabelOffsets = []
+    for i = 0 to rowCount - 1
+        rowNode = content.getChild(i)
+        rowType = ""
+        if rowNode.hasField("rowType") then rowType = rowNode.rowType
+        if rowType = "nextup" then
+            rowHeights.Push(220)
+            rowItemSizes.Push([320, 180])
+        else
+            rowHeights.Push(334)
+            rowItemSizes.Push([196, 294])
+        end if
+        rowLabels.Push(true)
+        rowLabelOffsets.Push([0, 0])
+    end for
+
+    m.top.rowHeights = rowHeights
+    m.top.rowItemSize = rowItemSizes
+    m.top.showRowLabel = rowLabels
+    m.top.rowLabelOffset = rowLabelOffsets
+    m.top.numRows = rowCount
+end sub

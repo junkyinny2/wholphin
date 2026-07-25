@@ -18,39 +18,41 @@ function ItemImages(id as String, params = {} as Object) as Object
     return images
 end function
 
-' Find the best poster image for an item (Primary > Logo > Thumb)
-function PosterImage(id as String, params = {} as Object) as Object
+' Find the best poster image for an item using ImageTags from item JSON
+function PosterImage(id as String, params = {} as Object, itemJson = invalid as Dynamic) as Object
     if params = invalid then params = {}
     
-    ' Set default quality
     if params.quality = invalid then params.quality = "90"
     if params.maxHeight = invalid then params.maxHeight = "384"
     if params.maxWidth = invalid then params.maxWidth = "196"
     
-    ' Try Primary first
-    url = ImageURL(id, "Primary", params)
-    if url <> "" then
-        node = CreateObject("roSGNode", "ImageData")
-        node.url = url
-        node.imagetype = "Primary"
-        return node
+    imageType = "Primary"
+    
+    if itemJson <> invalid then
+        imgTags = chainLookupReturn(itemJson, ["ImageTags"], invalid)
+        if imgTags <> invalid and type(imgTags) = "roAssociativeArray" and imgTags.Count() > 0 then
+            if imgTags.Lookup("Primary") <> invalid then
+                imageType = "Primary"
+            else if imgTags.Lookup("Thumb") <> invalid then
+                imageType = "Thumb"
+            else if imgTags.Lookup("Logo") <> invalid then
+                imageType = "Logo"
+            else if imgTags.Lookup("Backdrop") <> invalid then
+                imageType = "Backdrop"
+            else
+                for each tag in imgTags
+                    imageType = tag
+                    exit for
+                end for
+            end if
+        end if
     end if
     
-    ' Fallback to Logo
-    url = ImageURL(id, "Logo", params)
+    url = ImageURL(id, imageType, params)
     if url <> "" then
         node = CreateObject("roSGNode", "ImageData")
         node.url = url
-        node.imagetype = "Logo"
-        return node
-    end if
-    
-    ' Fallback to Thumb
-    url = ImageURL(id, "Thumb", params)
-    if url <> "" then
-        node = CreateObject("roSGNode", "ImageData")
-        node.url = url
-        node.imagetype = "Thumb"
+        node.imagetype = imageType
         return node
     end if
     

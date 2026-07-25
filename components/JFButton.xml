@@ -29,5 +29,5 @@
       horizAlign="center"
       vertAlign="center" />
   </children>
-  <script type="text/brightscript" uri="pkg:/components/JFButton.brs" />
+  <script type="text/brightscript" uri="pkg:/components/JFButton.bs" />
 </component>

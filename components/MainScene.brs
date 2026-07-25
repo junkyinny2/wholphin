@@ -2,6 +2,7 @@
 ' Handles top tabs, poster rows, action bar, focus navigation
 
 sub Init()
+    m.port = CreateObject("roMessagePort")
     m.tabList = m.top.findNode("tabList")
     m.posterRowList = m.top.findNode("posterRowList")
     m.actionBar = m.top.findNode("actionBar")

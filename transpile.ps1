@@ -208,6 +208,17 @@ $libInjections = @{
         'pkg:/source/api/Items.brs'
         'pkg:/source/api/userauth.brs'
     )
+    'HomeScreen.xml' = @(
+        'pkg:/source/utils/globals.brs'
+        'pkg:/source/utils/config.brs'
+        'pkg:/source/ShowScenes.brs'
+        'pkg:/source/MainEventHandlers.brs'
+        'pkg:/source/api/sdk.brs'
+        'pkg:/source/api/baserequest.brs'
+        'pkg:/source/api/userauth.brs'
+        'pkg:/source/api/Image.brs'
+        'pkg:/source/api/Items.brs'
+    )
     'LoadItemsTask.xml' = @(
         'pkg:/source/api/sdk.brs'
         'pkg:/source/api/baserequest.brs'

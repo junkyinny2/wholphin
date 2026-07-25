@@ -8,11 +8,11 @@ sub Init()
     m.errorLabel = m.top.findNode("errorLabel")
     m.btnSignIn = m.top.findNode("btnSignIn")
     m.btnCancel = m.top.findNode("btnCancel")
+    m.fieldFocusProxy = m.top.findNode("fieldFocusProxy")
 
     m.top.observeField("username", "onUsernameChange")
     m.top.observeField("authErrorMessage", "onAuthErrorChange")
-    m.btnSignIn.observeField("buttonSelected", "onSignInPressed")
-    m.btnCancel.observeField("buttonSelected", "onCancelPressed")
+    m.top.observeField("visible", "onVisibleChange")
 
     m.focusItems = [
         { node: m.top.findNode("usernameInputGroup"), id: "usernameInputGroup", type: "field" },
@@ -20,9 +20,13 @@ sub Init()
         { node: m.btnSignIn, id: "btnSignIn", type: "button" },
         { node: m.btnCancel, id: "btnCancel", type: "button" }
     ]
-    m.focusIndex = 0
+    m.focusIndex = 1
     updateItemFocus()
     ? "[SigninScene] Init done, items="; m.focusItems.Count()
+end sub
+
+sub onVisibleChange()
+    if m.top.visible then updateItemFocus()
 end sub
 
 function onUsernameChange() as Void
@@ -44,9 +48,9 @@ sub updateItemFocus()
             end if
         else if item.type = "button"
             item.node.buttonFocused = (i = m.focusIndex)
-            if i = m.focusIndex then item.node.setFocus(true)
         end if
     end for
+    m.fieldFocusProxy.setFocus(true)
 end sub
 
 function onKeyEvent(key as String, press as Boolean) as Boolean
@@ -82,21 +86,15 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
             showKeyboard("username")
         else if current.id = "passwordInputGroup" then
             showKeyboard("password")
+        else if current.id = "btnSignIn" then
+            performSignIn()
+        else if current.id = "btnCancel" then
+            hideSignIn()
         end if
         return true
     end if
     return false
 end function
-
-sub onSignInPressed()
-    ? "[SigninScene] onSignInPressed"
-    performSignIn()
-end sub
-
-sub onCancelPressed()
-    ? "[SigninScene] onCancelPressed"
-    hideSignIn()
-end sub
 
 sub showKeyboard(fieldName as String)
     ? "[SigninScene] showKeyboard field="; fieldName
@@ -147,17 +145,18 @@ end function
 
 sub hideSignIn()
     ? "[SigninScene] hideSignIn"
+    scene = m.top.getScene()
+    if scene <> invalid then
+        userSelect = scene.findNode("userSelect")
+        if userSelect <> invalid then userSelect.visible = true
+    end if
     PopCurrentScene()
     m.top.visible = false
-    scene = m.top.getScene()
-    if scene = invalid then return
-    userSelect = scene.findNode("userSelect")
-    if userSelect <> invalid then
-        userSelect.visible = true
-    end if
 end sub
 
 function performSignIn() as Void
+    m.top.authErrorMessage = ""
+    m.errorLabel.visible = false
     username = m.usernameLabel.text
     password = m.passwordLabel.text
     ? "[SigninScene] performSignIn user='"; username; "'"
@@ -180,7 +179,13 @@ function onAuthErrorChange() as Void
     ? "[SigninScene] onAuthErrorChange msg='"; msg; "'"
     m.top.isAuthenticating = false
     m.btnSignIn.buttonText = "Sign In"
-    if msg <> "" then showError(msg)
+    if msg <> "" then
+        showError(msg)
+        m.focusIndex = 1
+        m.passwordLabel.text = ""
+        m.top.password = ""
+        updateItemFocus()
+    end if
 end function
 
 function showError(message as String) as Void

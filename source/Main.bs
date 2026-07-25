@@ -1,4 +1,4 @@
-﻿' Wholphin Roku - Main Entry Point
+' Wholphin Roku - Main Entry Point
 ' Channel startup, event loop, and global initialization
 
 ' Load all source dependencies
@@ -73,11 +73,9 @@ sub Main(args as Object)
         ? "[Main] Found auto-login data for user="; autoUserId
     end if
     
-    ' Set server so LoginFlow doesn't block on SetServerScreen
-    ' Use env var JELLYFIN_SERVER_URL or default to empty (user will be prompted)
-    serverUrl = get_setting("wh_autologin_server", "")
-    if serverUrl = "" then serverUrl = "http://192.168.1.100:8096"
-    set_setting("server", serverUrl)
+    ' Clear server so LoginFlow doesn't block on SetServerScreen
+    ' Server will be set when user enters it or when auto-login succeeds
+    set_setting("server", "")
 
     m.screen.show()
     ? "[Main] Screen shown"
@@ -110,14 +108,11 @@ sub Main(args as Object)
     m.scene.observeField("pendingServerAction", m.port)
     m.scene.observeField("pendingShowSignIn", m.port)
 
-    ? "[Main] Calling LoginFlow"
-    loginResult = LoginFlow()
-    ? "[Main] LoginFlow setup done"
-
-    if loginResult then
-        CreateHomeGroup()
-    else if m.autoLoginData <> invalid then
-        ? "[Main] Auto-login bypassing LoginFlow"
+    ' Try auto-login before LoginFlow so HomeScreen never layers on login UI
+    ' DISABLED: AboutMe() blocks main thread for 30s when server unreachable / token expired.
+    ' TODO: make this async with a Task node
+    if m.autoLoginData <> invalid then
+        ? "[Main] Trying auto-login first"
         ald = m.autoLoginData
         set_setting("server", ald.server)
         session.server.Populate({ Url: ald.server, Id: "auto" })
@@ -127,11 +122,19 @@ sub Main(args as Object)
             session.user.UpdateFromAboutMe(myInfo)
             caps = getDeviceCapabilities()
             api.sessions.PostCapabilities(caps)
-            CreateHomeGroup()
+            loginResult = true
         else
             ? "[Main] Auto-login token expired"
             m.autoLoginData = invalid
+            loginResult = LoginFlow()
         end if
+    else
+        loginResult = LoginFlow()
+    end if
+    ? "[Main] LoginFlow setup done"
+
+    if loginResult then
+        CreateHomeGroup()
     end if
 
     ? "[Main] Entering event loop"

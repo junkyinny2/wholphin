@@ -5,13 +5,17 @@ sub Init()
     m.top.observeField("buttonText", "onButtonTextChange")
     m.top.observeField("width", "onWidthChange")
     m.top.observeField("buttonFocused", "onFocusedChange")
+    m.top.observeField("focusedChild", "onNativeFocusChange")
     updateDisplay()
+end sub
+
+sub onNativeFocusChange()
+    m.top.buttonFocused = m.top.hasFocus()
 end sub
 
 function onKeyEvent(key as String, press as Boolean) as Boolean
     if press and key = "OK" then
         m.top.buttonSelected = true
-        return true
     end if
     return false
 end function

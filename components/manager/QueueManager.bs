@@ -17,8 +17,8 @@ sub Init()
 end sub
 
 ' Push an item to the end of the queue
-function push(item as Object) as Void
-    if item = invalid then return
+function push(item as Object) as Boolean
+    if item = invalid then return true
     
     m.queueArray.Push(item)
     m.top.queue = m.queueArray
@@ -29,6 +29,7 @@ function push(item as Object) as Void
         m.top.currentIndex = 0
         m.top.currentItem = item
     end if
+    return true
 end function
 
 ' Pop the last item from the queue
@@ -43,7 +44,7 @@ function pop() as Object
 end function
 
 ' Set the entire queue
-function set(items as Object) as Void
+function set(items as Object) as Boolean
     m.queueArray = []
     for each item in items
         m.queueArray.Push(item)
@@ -56,24 +57,27 @@ function set(items as Object) as Void
         m.top.currentIndex = 0
         m.top.currentItem = m.queueArray[0]
     end if
+    return true
 end function
 
 ' Clear the entire queue
-function clear() as Void
+function clear() as Boolean
     m.queueArray = []
     m.top.queue = []
     m.top.currentIndex = -1
     m.top.currentItem = invalid
     m.top.queueLength = 0
     m.top.playSessionId = ""
+    return true
 end function
 
 ' Set the current position in the queue
-function setPosition(index as Integer) as Void
+function setPosition(index as Integer) as Boolean
     if index >= 0 and index < m.queueArray.Count() then
         m.top.currentIndex = index
         m.top.currentItem = m.queueArray[index]
     end if
+    return true
 end function
 
 ' Move to the next item in the queue
@@ -120,8 +124,8 @@ function getCurrentItem() as Object
 end function
 
 ' Set playback options (media source, audio/subtitle tracks, start time)
-function setPlaybackOptions(options as Object) as Void
-    if options = invalid then return
+function setPlaybackOptions(options as Object) as Boolean
+    if options = invalid then return true
     
     if options.mediaSourceId <> invalid then
         m.top.mediaSourceId = options.mediaSourceId
@@ -142,11 +146,13 @@ function setPlaybackOptions(options as Object) as Void
     if options.forceTranscode <> invalid then
         m.top.forceTranscode = options.forceTranscode
     end if
+    return true
 end function
 
 ' Set force transcode flag
-function setForceTranscode(force as Boolean) as Void
+function setForceTranscode(force as Boolean) as Boolean
     m.top.forceTranscode = force
+    return true
 end function
 
 ' Set the play session ID

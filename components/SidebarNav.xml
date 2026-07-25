@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component name="SidebarNav" extends="Group" >
+  <!-- Translucent Background Rail -->
+  <Rectangle
+    id="backgroundRail"
+    translation="[0, 0]"
+    width="120"
+    height="1080"
+    color="0xAA000000"
+  />
+
+  <!-- Sidebar Layout -->
+  <LayoutGroup
+    id="sidebarLayout"
+    translation="[0, 0]"
+    width="120"
+    height="1080"
+    orientation="vertical"
+  >
+    <!-- Nav Items -->
+    <ButtonGroup
+      id="navItem1"
+      translation="[0, 0]"
+      width="120"
+      height="100"
+      drawFocusBorder="true"
+    >
+      <Poster
+        id="navItem1Icon"
+        translation="[10, 10]"
+        width="40"
+        height="40"
+        uri="file://images/nav_icon_1.png"
+      />
+    </ButtonGroup>
+    <ButtonGroup
+      id="navItem2"
+      translation="[0, 120]"
+      width="120"
+      height="100"
+      drawFocusBorder="true"
+    >
+      <Poster
+        id="navItem2Icon"
+        translation="[10, 10]"
+        width="40"
+        height="40"
+        uri="file://images/nav_icon_2.png"
+      />
+    </ButtonGroup>
+  </LayoutGroup>
+</component>

@@ -11,6 +11,14 @@
   </interface>
   
   <children>
+    <!-- Scrim behind drawer (darkens the rest of the screen) -->
+    <Rectangle
+      id="sidebarScrim"
+      translation="[350, 0]"
+      width="1570"
+      height="1080"
+      color="0x000000AA" />
+
     <!-- Sidebar background -->
     <Rectangle
       id="sidebarBg"

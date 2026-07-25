@@ -1,0 +1,15 @@
+tools:
+    shell:
+        allow:
+            - Get-ChildItem *
+            - Where-Object { *
+            - Select-String *
+            - Select-Object Path, LineNumber, *
+            - Select-Object *
+            - npx bsc *
+            - head *
+            - $env:ROKU_IP *
+            - $env:ROKU_USERNAME *
+            - $env:ROKU_PASSWORD *
+            - .\deploy_roku.ps1
+            - .\rokudebug.ps1 *

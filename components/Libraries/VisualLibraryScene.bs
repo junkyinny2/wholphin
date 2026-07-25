@@ -68,6 +68,11 @@ function LoadData() as Void
         params.IncludeItemTypes = mediaType
     end if
 
+    libFilters = chainLookupReturn(libData, ["filters"], "")
+    if libFilters <> "" then
+        params.Filters = libFilters
+    end if
+
     result = api.items.Get(params)
     if result = invalid then
         m.loadingLabel.visible = false

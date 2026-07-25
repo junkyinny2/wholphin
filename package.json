@@ -17,6 +17,7 @@
     "roku-deploy": "^3.16.1"
   },
   "dependencies": {
+    "@babel/runtime": "^8.0.0",
     "archiver": "^8.0.0"
   }
 }

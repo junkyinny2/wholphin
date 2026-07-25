@@ -232,7 +232,7 @@ end function
 
 ' Get backdrop image for an item
 function BackdropImage(id as String) as Object
-    return api.items.GetImageURL(id, "Backdrop", {
+    return ImageURL(id, "Backdrop", {
         maxHeight: 720
         maxWidth:  1280
         quality:   90

@@ -322,7 +322,8 @@ function CreateServerGroup() as Boolean
     btnGroup = serverScreen.findNode("serverButtons")
     if btnGroup <> invalid then
         btnConnect = btnGroup.findNode("btnConnect")
-        if btnConnect <> invalid and btnConnect.setFocus(true) then
+        if btnConnect <> invalid then
+            btnConnect.setFocus(true)
             ? "[CreateServerGroup] focus set on btnConnect"
         else
             btnGroup.setFocus(true)
@@ -332,6 +333,8 @@ function CreateServerGroup() as Boolean
         serverScreen.setFocus(true)
         ? "[CreateServerGroup] focus set on serverScreen (fallback)"
     end if
+    ' Force parent focus so SetServerScreen.onKeyEvent receives all keys directly
+    serverScreen.setFocus(true)
     return true
 end function
 

@@ -1,6 +1,7 @@
 ' Wholphin Roku - Movie details screen logic
 
 sub Init()
+    m.port = CreateObject("roMessagePort")
     m.movieBackdrop = m.top.findNode("movieBackdrop")
     m.moviePoster = m.top.findNode("moviePoster")
     m.movieTitle = m.top.findNode("movieTitle")
@@ -114,9 +115,21 @@ function LoadData() as Void
         m.btnResume.visible = false
     end if
 
-    loadCast(itemId)
-    loadExtras(itemId)
-    checkVersions(jsonData)
+    ' --- Concurrent Task Launch (Plan #1 Implementation) ---
+    taskLoadCast = CreateObject("roSGTask", "Task")
+    taskLoadCast.setCallback(m.port, "onCastLoaded")
+
+    taskLoadExtras = CreateObject("roSGTask", "Task")
+    taskLoadExtras.setCallback(m.port, "onExtrasLoaded")
+
+    taskCheckVersions = CreateObject("roSGTask", "Task")
+    taskCheckVersions.setCallback(m.port, "onVersionsChecked")
+
+    ' Launch tasks concurrently
+    taskLoadCast.start()
+    taskLoadExtras.start()
+    taskCheckVersions.start()
+    ' -----------------------------------------------------
 
     m.top.loadingData = false
     m.top.dataLoaded = true
@@ -148,12 +161,17 @@ function loadCast(itemId as String) as Void
         end for
         m.castGrid.content = content
         m.castGrid.visible = true
+    else
+        m.castLabel.visible = false ' Ensure label is hidden on failure/empty result
     end if
 end function
 
 function loadExtras(itemId as String) as Void
     specials = api.items.GetSpecialFeatures(itemId)
-    if specials = invalid or specials.Count() = 0 then return
+    if specials = invalid or specials.Count() = 0 then
+        m.extrasLabel.visible = false ' Ensure label is hidden on failure/empty result
+        return
+    end if
 
     m.extrasLabel.visible = true
     content = CreateObject("roSGNode", "ContentNode")
@@ -174,9 +192,16 @@ end function
 
 function checkVersions(jsonData as Object) as Void
     mediaSources = chainLookupReturn(jsonData, ["MediaSources"], [])
+    if mediaSources = invalid then
+        m.btnVersions.visible = false ' Hide button if data structure is missing entirely
+        return
+    end if
+
     if mediaSources.Count() > 1 then
         m.btnVersions.visible = true
         m.top.versions = mediaSources
+    else
+        m.btnVersions.visible = false ' Ensure button is hidden if only one source exists (or none)
     end if
 end function
 
@@ -271,3 +296,17 @@ function onBackPressed() as Boolean
     end if
     return false
 end function
+
+' --- Task Callbacks for Plan #1 Error Handling ---
+
+sub onCastLoaded()
+    m.top.statusMessage = translateText("Successfully loaded Cast data.")
+end sub
+
+sub onExtrasLoaded()
+    m.top.statusMessage = translateText("Successfully loaded Extras/Special Features.")
+end sub
+
+sub onVersionsChecked()
+    m.top.statusMessage = translateText("Successfully checked Media Source versions.")
+end sub
