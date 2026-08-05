@@ -1,5 +1,22 @@
 # Wholphin Roku - Change History
 
+## 2026-08-05 — Published to GitHub (alpha / non-working snapshot)
+
+- **What:** Published the full project to GitHub `main` (https://github.com/junkyinny2/wholphin)
+  so the working copy can be removed locally and restored from the repo.
+- **Disclaimers added everywhere per user request:** prominent ALPHA / NON-WORKING
+  banner in `README.md`, new `WARNING.md` at repo root, and a header comment in
+  `source/Main.bs`. (Skipped `manifest` — Roku's manifest parser doesn't support
+  `#` comments and would break the build.)
+- **Everything included:** all source/config/docs tracked files committed, plus
+  gitignored local config (`bsconfig.deploy.local.json` — force-added) so the user's
+  deploy setup is fully backed up. Excluded regenerable `node_modules/`, `build/`,
+  `out/` (restore those with `npm install` + `npm run build`).
+- **Note:** `_archive/reference-docs/BrightScriptReferenceManual_ver9.pdf` is 76 MB
+  (> GitHub's 50 MB recommendation) but pushed successfully.
+- **Files touched:** `README.md`, `WARNING.md` (new), `source/Main.bs`, all tracked sources
+- **Automatic:** no (user request: publish + delete local)
+
 ## 2026-08-05 — Restored original Wholphin home screen + added server-switch deep link
 
 - **What:** Restored the original Wholphin home-screen look/behavior and added a
