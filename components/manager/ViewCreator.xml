@@ -3,4 +3,6 @@
   <interface>
     <field id="top" type="assocarray" />
   </interface>
+
+  <script type="text/brightscript" uri="pkg:/components/manager/ViewCreator.bs" />
 </component>

@@ -11,13 +11,15 @@
       id="buttonBg"
       width="200"
       height="50"
-      color="0x00A4DCFF" />
+      color="0x00A4DCFF"
+      focusable="false" />
     <Rectangle
       id="focusBorder"
       width="200"
       height="50"
       color="0x00FF00FF"
-      opacity="0" />
+      opacity="0"
+      focusable="false" />
     <Label
       id="buttonLabel"
       translation="[0, 0]"

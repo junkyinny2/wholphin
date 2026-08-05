@@ -14,21 +14,24 @@
       width="326"
       height="186"
       color="0x22D3EEFF"
-      visible="false" />
+      visible="false"
+      focusable="false" />
 
     <Poster
       id="itemPoster"
       translation="[0, 0]"
       width="320"
       height="180"
-      loadDisplayMode="scaleToFill" />
+      loadDisplayMode="scaleToFill"
+      focusable="false" />
 
     <Rectangle
       id="episodeBadge"
       translation="[272, 8]"
       width="40"
       height="22"
-      color="0x000000BB" />
+      color="0x000000BB"
+      focusable="false" />
 
     <Label
       id="episodeLabel"

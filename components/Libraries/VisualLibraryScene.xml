@@ -15,7 +15,8 @@
       id="libBackground"
       width="1920"
       height="1080"
-      color="0x1A1A2EFF" />
+      color="0x1A1A2EFF"
+      focusable="false" />
 
     <!-- Library title label -->
     <Label

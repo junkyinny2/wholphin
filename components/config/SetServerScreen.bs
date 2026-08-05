@@ -9,14 +9,19 @@ sub Init()
     m.btnDiscover = m.top.findNode("btnDiscover")
     m.btnManualEntry = m.top.findNode("btnManualEntry")
     m.serverButtons = m.top.findNode("serverButtons")
+    m.focusProxy = m.top.findNode("focusProxy")
     
     m.discoveredServerList.observeField("itemSelected", "onServerListItemSelected")
     m.discoveredServerList.observeField("itemFocused", "onServerListFocusChanged")
+    m.serverList.observeField("itemSelected", "onSavedServerListItemSelected")
     
     m.keyboardDialog = invalid
     m.focusedButtonIndex = 0
     m.listIndex = 0
     m.isDiscovering = false
+    
+    m.top.observeField("savedServers", "onSavedServersChanged")
+    populateSavedServers(m.top.savedServers)
     
     m.btnConnect.buttonText = "Connect"
     m.btnDiscover.buttonText = "Auto Discover"
@@ -27,16 +32,26 @@ sub Init()
     m.btnManualEntry.observeField("buttonSelected", "onManualEntryPressed")
     
     updateHighlights()
-    ' Ensure the screen gets focus so onKeyEvent receives input
     m.top.observeField("visible", "onVisibleChange")
-    ' Also set focus immediately in case screen is already visible
-    m.top.setFocus(true)
-    updateHighlights()
+    
+    ' Debug: write to temp file on device
+    WriteAsciiFile("tmp:/setserver_debug.txt", "SetServer Init done. focusable=" + (m.top.focusable).ToStr() + " bgRect.focusable=" + (m.top.findNode("bgRect").focusable).ToStr())
 end sub
+
+function OnScreenShown() as Boolean
+    m.top.screenShown = true
+    m.top.screenHidden = false
+
+    setOverhangTitle(m.top.overhangTitle)
+
+    m.focusProxy.setFocus(true)
+    WriteAsciiFile("tmp:/setserver_debug.txt", "OnScreenShown: focusProxy.focusable=" + (m.focusProxy.focusable).ToStr() + " focusProxy.hasFocus=" + (m.focusProxy.hasFocus()).ToStr())
+    return true
+end function
 
 sub onVisibleChange()
     if m.top.visible then
-        m.top.setFocus(true)
+        print "[SetServer] onVisibleChange: visible=true, calling updateHighlights"
         updateHighlights()
     end if
 end sub
@@ -54,12 +69,13 @@ sub onManualEntryPressed()
 end sub
 
 function onKeyEvent(key as String, press as Boolean) as Boolean
-    ? "[onKeyEvent] key="; key; " press="; press; " focusedIndex="; m.focusedButtonIndex
     if not press then return false
+
+    ? "[SetServer] key="; key; " idx="; m.focusedButtonIndex
+    WriteAsciiFile("tmp:/setserver_debug.txt", "onKeyEvent: key=" + key + " idx=" + m.focusedButtonIndex.ToStr() + " savedVis=" + (m.serverList.visible).ToStr() + " discVis=" + (m.discoveredServerList.visible).ToStr() + " fpHasFocus=" + (m.focusProxy.hasFocus()).ToStr())
     
-    ' Always consume BACK to prevent AppExit via backExitsScene
     if key = "back" then
-        if m.focusedButtonIndex = 3 and m.discoveredServerList.visible then
+        if listIsActive() then
             m.focusedButtonIndex = 0
             scene = m.top.getScene()
             if scene <> invalid then
@@ -74,16 +90,16 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
         return true
     end if
     
-    ' List mode (focus is on discovered servers list, managed manually)
-    if m.focusedButtonIndex = 3 and m.discoveredServerList.visible then
-        content = m.discoveredServerList.content
+    if listIsActive() then
+        lst = activeList()
+        content = lst.content
         count = 0
         if content <> invalid then count = content.getChildCount()
         
         if key = "up" then
             if m.listIndex > 0 then
                 m.listIndex = m.listIndex - 1
-                m.discoveredServerList.itemFocused = m.listIndex
+                lst.itemFocused = m.listIndex
                 updateListSelection()
             else
                 m.focusedButtonIndex = 0
@@ -94,14 +110,12 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
         else if key = "down" then
             if m.listIndex < count - 1 then
                 m.listIndex = m.listIndex + 1
-                m.discoveredServerList.itemFocused = m.listIndex
+                lst.itemFocused = m.listIndex
                 updateListSelection()
             end if
             return true
         else if key = "OK" then
-            ? "[onKeyEvent] CALLING selectListItem listIndex="; m.listIndex
-            selectListItem(m.listIndex)
-            ? "[onKeyEvent] selectListItem returned"
+            selectListItem(m.listIndex, lst)
             return true
         else if key = "left" then
             m.focusedButtonIndex = 0
@@ -113,39 +127,48 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
             updateHighlights()
             return true
 		end if
-		' Consume all keys to prevent focus shift to BaseScene
-		return true
+		return false
 	end if
     
-    ' Button mode
     if key = "up" or key = "left" then
-        if m.focusedButtonIndex < 3 then
-            m.focusedButtonIndex = (m.focusedButtonIndex - 1 + 3) MOD 3
+        m.focusedButtonIndex = (m.focusedButtonIndex - 1 + 3) MOD 3
+        updateHighlights()
+        return true
+    else if key = "down" then
+        if m.focusedButtonIndex = 0 and activeList() <> invalid then
+            m.focusedButtonIndex = 3
+            m.listIndex = 0
+            activeList().itemFocused = 0
+            m.listSelectionBar.visible = true
             updateHighlights()
+            updateListSelection()
             return true
         end if
-    else if key = "down" or key = "right" then
+        m.focusedButtonIndex = (m.focusedButtonIndex + 1) MOD 3
+        updateHighlights()
+        return true
+    else if key = "right" then
         if m.focusedButtonIndex < 3 then
-            if key = "down" and m.discoveredServerList.visible then
-                m.focusedButtonIndex = 3
-                m.listIndex = 0
-                m.discoveredServerList.itemFocused = 0
-                updateHighlights()
-                return true
-            end if
             m.focusedButtonIndex = (m.focusedButtonIndex + 1) MOD 3
             updateHighlights()
             return true
         end if
     else if key = "OK" then
-        if m.focusedButtonIndex = 0 then ConnectToServer()
-        if m.focusedButtonIndex = 1 then StartDiscovery()
-        if m.focusedButtonIndex = 2 then ShowKeyboard()
+        ? "[SetServer] OK pressed, focusedButtonIndex="; m.focusedButtonIndex
+        if m.focusedButtonIndex = 0 then
+            ? "[SetServer] calling ConnectToServer"
+            ConnectToServer()
+        else if m.focusedButtonIndex = 1 then
+            ? "[SetServer] calling StartDiscovery"
+            StartDiscovery()
+        else if m.focusedButtonIndex = 2 then
+            ? "[SetServer] calling ShowKeyboard"
+            ShowKeyboard()
+        end if
         return true
     end if
     
-    ' Consume all keys to prevent focus shift to BaseScene
-    return true
+    return false
 end function
 
 sub onServerListFocusChanged()
@@ -157,25 +180,66 @@ sub onServerListFocusChanged()
 end sub
 
 sub onServerListItemSelected()
-    ? "[onServerListItemSelected] index="; m.discoveredServerList.itemSelected
-    selectListItem(m.discoveredServerList.itemSelected)
+    selectListItem(m.discoveredServerList.itemSelected, m.discoveredServerList)
+end sub
+
+sub onSavedServerListItemSelected()
+    selectListItem(m.serverList.itemSelected, m.serverList)
+end sub
+
+function activeList() as Object
+    if m.serverList <> invalid and m.serverList.visible then return m.serverList
+    if m.discoveredServerList <> invalid and m.discoveredServerList.visible then return m.discoveredServerList
+    return invalid
+end function
+
+function listIsActive() as Boolean
+    return (m.focusedButtonIndex = 3) and (activeList() <> invalid)
+end function
+
+sub onSavedServersChanged()
+    populateSavedServers(m.top.savedServers)
+end sub
+
+sub populateSavedServers(servers as Object)
+    if servers = invalid or servers.Count() = 0 then
+        m.savedServersLabel.visible = false
+        m.serverList.visible = false
+        return
+    end if
+    content = CreateObject("roSGNode", "ContentNode")
+    for each url in servers
+        child = content.CreateChild("ContentNode")
+        child.title = url
+        child.url = url
+    end for
+    m.serverList.content = content
+    m.savedServersLabel.visible = true
+    m.serverList.visible = true
 end sub
 
 sub updateHighlights()
-    ? "[updateHighlights] index="; m.focusedButtonIndex
+    print "[SetServer] updateHighlights: idx="; m.focusedButtonIndex; " savedVis="; m.serverList.visible; " discVis="; m.discoveredServerList.visible
     m.btnConnect.buttonFocused = (m.focusedButtonIndex = 0)
     m.btnDiscover.buttonFocused = (m.focusedButtonIndex = 1)
     m.btnManualEntry.buttonFocused = (m.focusedButtonIndex = 2)
     if m.focusedButtonIndex = 3 then
-        m.discoveredServerList.setFocus(true)
-        m.discoveredServerList.itemFocused = m.listIndex
+        lst = activeList()
+        if lst <> invalid then lst.itemFocused = m.listIndex
+    end if
+    if m.focusProxy <> invalid then
+        m.discoveredServerList.focusable = false
+        m.serverList.focusable = false
+        m.focusProxy.setFocus(true)
+        print "[SetServer] updateHighlights: focus on focusProxy"
     else
         m.top.setFocus(true)
+        print "[SetServer] updateHighlights: focus on screen"
     end if
 end sub
 
 sub updateListSelection()
-    if m.discoveredServerList.visible then
+    if m.discoveredServerList.visible or m.serverList.visible then
         y = 530 + (m.listIndex * 50)
         m.listSelectionBar.translation = [560, y]
     end if
@@ -186,32 +250,48 @@ sub ConnectToServer()
     if url = "" then
         url = m.top.serverUrl
     end if
+    ? "[SetServer] ConnectToServer: url='"; url; "'"
     if url = "" then
+        ? "[SetServer] ConnectToServer: url empty, showing keyboard"
         ShowKeyboard()
         return
     end if
     scene = m.top.getScene()
     if scene <> invalid then
+        ? "[SetServer] ConnectToServer: setting pendingServerAction=connect"
         scene.setField("pendingServerAction", "connect")
         scene.setField("pendingServerUrl", url)
+    else
+        ? "[SetServer] ConnectToServer: scene is INVALID!"
     end if
 end sub
 
 sub StartDiscovery()
-    if m.isDiscovering then return
+    if m.isDiscovering then
+        ? "[SetServer] StartDiscovery: already discovering"
+        return
+    end if
+    ? "[SetServer] StartDiscovery: starting"
     m.isDiscovering = true
     m.top.isDiscovering = true
+    if m.discoveryTask <> invalid then
+        m.top.removeChild(m.discoveryTask)
+    end if
     m.discoveryTask = CreateObject("roSGNode", "ServerDiscoveryTask")
+    if m.discoveryTask = invalid then
+        ? "[SetServer] StartDiscovery: FAILED to create ServerDiscoveryTask!"
+        m.isDiscovering = false
+        return
+    end if
     m.discoveryTask.observeField("discoveredServers", "onDiscoveryComplete")
     m.discoveryTask.observeField("loadStatus", "onDiscoveryStatus")
+    m.top.appendChild(m.discoveryTask)
     m.discoveryTask.control = "RUN"
     m.btnDiscover.buttonText = translateText("Searching...")
-    ? "[StartDiscovery] discovery task started"
 end sub
 
 sub onDiscoveryStatus()
     status = m.discoveryTask.loadStatus
-    ? "[onDiscoveryStatus] status="; status
     if status = "done" then
         m.btnDiscover.buttonText = translateText("Auto Discover")
     end if
@@ -219,16 +299,19 @@ end sub
 
 sub onDiscoveryComplete()
     m.isDiscovering = false
+    m.top.isDiscovering = false
+    m.btnDiscover.buttonText = translateText("Auto Discover")
     servers = m.discoveryTask.discoveredServers
     if servers = invalid or servers.Count() = 0 then
         show_dialog(translateText("No Servers Found"), translateText("No Jellyfin servers discovered on the network."))
-        m.btnDiscover.buttonText = translateText("Auto Discover")
         return
     end if
     m.discoveredLabel.visible = true
     m.discoveredServerList.visible = true
     m.listSelectionBar.visible = true
     m.discoveredServerList.content = createDiscoveryContent(servers)
+    m.savedServersLabel.visible = false
+    m.serverList.visible = false
     m.discoveredServerList.itemFocused = 0
     m.listIndex = 0
     m.focusedButtonIndex = 3
@@ -247,73 +330,76 @@ function createDiscoveryContent(servers as Object) as Object
     return content
 end function
 
-sub selectListItem(index as Integer)
-    ? "[selectListItem] ENTERED index="; index
-    if m.discoveredServerList = invalid then
-        ? "[selectListItem] discoveredServerList is invalid"
+sub selectListItem(index as Integer, lst as Object)
+    if lst = invalid then
         return
     end if
-    content = m.discoveredServerList.content
-    ? "[selectListItem] content="; content
+    content = lst.content
     if content = invalid then
-        ? "[selectListItem] content is invalid"
         return
     end if
     item = content.getChild(index)
-    ? "[selectListItem] item="; item
     if item = invalid then
-        ? "[selectListItem] item at index "; index; " is invalid"
         return
     end if
     url = item.url
-    ? "[selectListItem] url="; url
     if url <> "" then
         scene = m.top.getScene()
         if scene <> invalid then
             scene.setField("pendingServerAction", "connect")
             scene.setField("pendingServerUrl", url)
-            ? "[selectListItem] queued pendingServerAction=connect url="; url
         end if
     end if
 end sub
 
 sub ShowKeyboard()
-    ? "[ShowKeyboard] Creating KeyboardDialog"
+    ? "[SetServer] ShowKeyboard: creating KeyboardDialog"
     keyboard = CreateObject("roSGNode", "KeyboardDialog")
-    ? "[ShowKeyboard] type="; Type(keyboard)
+    if keyboard = invalid then
+        ? "[SetServer] ShowKeyboard: FAILED to create KeyboardDialog!"
+        return
+    end if
     keyboard.title = translateText("Enter Server URL")
     keyboard.text = m.serverInputText.text
-    ? "[ShowKeyboard] text="; m.serverInputText.text
     keyboard.buttons = [translateText("OK"), translateText("Cancel")]
-    ? "[ShowKeyboard] buttons="; keyboard.buttons
     
     m.keyboardDialog = keyboard
     
-    ' Observe buttonSelected via callback (m.port invalid on render thread)
     keyboard.observeField("buttonSelected", "onKeyboardButton")
     keyboard.id = "KeyboardDialog"
-    ? "[ShowKeyboard] observeField buttonSelected via callback"
     
     scene = m.top.getScene()
+    ? "[SetServer] ShowKeyboard: scene.valid="; (scene <> invalid)
     if scene <> invalid and scene.HasField("dialog") then
         scene.dialog = keyboard
-        ? "[ShowKeyboard] dialog shown"
-    else
-        ? "[ShowKeyboard] ERROR: no scene dialog"
+        ? "[SetServer] ShowKeyboard: dialog set"
+        ' Force focus to the keyboard dialog's keyboard child so key events go to it
+        if keyboard.HasField("keyboard") then
+            kb = keyboard.keyboard
+            if kb <> invalid then kb.setFocus(true)
+        end if
+        if keyboard.HasField("content") then
+            c = keyboard.content
+            if c <> invalid then c.setFocus(true)
+        end if
+        keyboard.setFocus(true)
+        ? "[SetServer] ShowKeyboard: focus set on keyboard"
     end if
 end sub
 
 sub onKeyboardButton()
-    ? "[SetServerScreen] onKeyboardButton fired"
+    ? "[SetServer] onKeyboardButton: called"
     scene = m.top.getScene()
     if scene = invalid then return
     dialog = scene.dialog
     if dialog = invalid then return
     btnIndex = dialog.buttonSelected
     url = dialog.text
+    ? "[SetServer] onKeyboardButton: btnIndex=" + btnIndex.ToStr() + " url=" + url
     scene.dialog = invalid
+    m.focusProxy.setFocus(true)
     if btnIndex = 0 and url <> "" then
-        ? "[SetServerScreen] setting pendingServerAction=connect url="; url
+        ? "[SetServer] onKeyboardButton: setting pendingServerAction=connect"
         scene.setField("pendingServerUrl", url)
         scene.setField("pendingServerAction", "connect")
     end if

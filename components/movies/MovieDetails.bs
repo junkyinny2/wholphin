@@ -2,6 +2,9 @@
 
 sub Init()
     m.port = CreateObject("roMessagePort")
+    m.focusedBtnIdx = 0
+    m.focusZone = -1   ' -1 = action buttons; 0+ = index into visible content grids
+    m.handlingButtonSelected = false
     m.movieBackdrop = m.top.findNode("movieBackdrop")
     m.moviePoster = m.top.findNode("moviePoster")
     m.movieTitle = m.top.findNode("movieTitle")
@@ -42,6 +45,98 @@ function onMovieChange() as Void
     LoadData()
 end function
 
+function OnScreenShown() as Boolean
+    m.top.screenShown = true
+    m.top.screenHidden = false
+    setOverhangTitle(m.top.overhangTitle)
+    print "[MovieDetails] OnScreenShown called"
+
+    if m.lastFocusNode <> invalid then
+        m.lastFocusNode.setFocus(true)
+    else
+        m.top.setFocus(true)
+    end if
+
+    if m.btnPlay <> invalid and m.btnPlay.visible then
+        print "[MovieDetails] Setting focus to btnPlay"
+        m.btnPlay.setFocus(true)
+    end if
+    return true
+end function
+
+function onKeyEvent(key as String, press as Boolean) as Boolean
+    if not press then return false
+    print "[MovieDetails] onKeyEvent: key="; key; " focusedBtnIdx="; m.focusedBtnIdx; " focusZone="; m.focusZone
+
+    buttons = [m.btnPlay, m.btnResume, m.btnTrailer, m.btnFavorite, m.btnMyList, m.btnSubtitles, m.btnVersions]
+    visibleButtons = []
+    for each btn in buttons
+        if btn <> invalid and btn.visible then visibleButtons.Push(btn)
+    end for
+
+    grids = visibleContentGrids()
+
+    if key = "down" then
+        if m.focusZone < grids.Count() - 1 then
+            m.focusZone = m.focusZone + 1
+            grids[m.focusZone].setFocus(true)
+            return true
+        end if
+        return false
+    else if key = "up" then
+        if m.focusZone > -1 then
+            m.focusZone = m.focusZone - 1
+            if m.focusZone >= 0 and m.focusZone < grids.Count() then
+                grids[m.focusZone].setFocus(true)
+            else
+                focusButton(visibleButtons)
+            end if
+            return true
+        end if
+        return false
+    else if key = "left" then
+        if m.focusZone = -1 then
+            newIdx = (m.focusedBtnIdx - 1 + visibleButtons.Count()) MOD visibleButtons.Count()
+            visibleButtons[newIdx].setFocus(true)
+            m.focusedBtnIdx = newIdx
+            return true
+        end if
+        return false
+    else if key = "right" then
+        if m.focusZone = -1 then
+            newIdx = (m.focusedBtnIdx + 1) MOD visibleButtons.Count()
+            visibleButtons[newIdx].setFocus(true)
+            m.focusedBtnIdx = newIdx
+            return true
+        end if
+        return false
+    else if key = "back" then
+        if m.focusZone > -1 then
+            m.focusZone = -1
+            focusButton(visibleButtons)
+            return true
+        end if
+        PopCurrentScene()
+        return true
+    end if
+
+    return false
+end function
+
+function visibleContentGrids() as Object
+    grids = []
+    if m.extrasGrid <> invalid and m.extrasGrid.visible then grids.Push(m.extrasGrid)
+    if m.castGrid <> invalid and m.castGrid.visible then grids.Push(m.castGrid)
+    return grids
+end function
+
+sub focusButton(visibleButtons as Object)
+    if visibleButtons.Count() = 0 then return
+    idx = m.focusedBtnIdx
+    if idx < 0 or idx >= visibleButtons.Count() then idx = 0
+    visibleButtons[idx].setFocus(true)
+end sub
+
 function LoadData() as Void
     m.top.loadingData = true
     m.top.overhangTitle = translateText("Movie Details")
@@ -74,7 +169,7 @@ function LoadData() as Void
         m.movieRuntime.text = minutes.ToStr() + " " + translateText("min")
     end if
 
-    rating = chainLookupReturn(jsonData, ["CommunityRating"], "")
+    rating = chainLookupReturn(jsonData, ["CommunityRating"], 0)
     if rating <> invalid and rating > 0 then
         m.movieRating.text = "★ " + Str(rating).Trim()
     end if
@@ -115,21 +210,13 @@ function LoadData() as Void
         m.btnResume.visible = false
     end if
 
-    ' --- Concurrent Task Launch (Plan #1 Implementation) ---
-    taskLoadCast = CreateObject("roSGTask", "Task")
-    taskLoadCast.setCallback(m.port, "onCastLoaded")
+    loadCast(itemId)
+    loadExtras(itemId)
+    checkVersions(jsonData)
 
-    taskLoadExtras = CreateObject("roSGTask", "Task")
-    taskLoadExtras.setCallback(m.port, "onExtrasLoaded")
-
-    taskCheckVersions = CreateObject("roSGTask", "Task")
-    taskCheckVersions.setCallback(m.port, "onVersionsChecked")
-
-    ' Launch tasks concurrently
-    taskLoadCast.start()
-    taskLoadExtras.start()
-    taskCheckVersions.start()
-    ' -----------------------------------------------------
+    m.focusedBtnIdx = 0
+    m.btnResume.visible = (playbackPosition > 0 and not played)
+    m.btnResume = m.btnResume
 
     m.top.loadingData = false
     m.top.dataLoaded = true
@@ -137,12 +224,8 @@ end function
 
 function loadCast(itemId as String) as Void
     cast = chainLookupReturn(m.top.movie, ["json", "People"], [])
-    if cast = invalid or cast.Count() = 0 then
-        itemData = api.items.GetByID(itemId)
-        if itemData <> invalid then
-            cast = chainLookupReturn(itemData, ["People"], [])
-        end if
-    end if
+    ' Note: api.items.GetByID would call roUrlTransfer on the render thread which
+    ' causes a crash. Use only the data already in m.top.movie, skip the API call.
 
     if cast <> invalid and cast.Count() > 0 then
         m.castLabel.visible = true
@@ -167,7 +250,9 @@ function loadCast(itemId as String) as Void
 end function
 
 function loadExtras(itemId as String) as Void
-    specials = api.items.GetSpecialFeatures(itemId)
+    ' Note: api.items.GetSpecialFeatures calls roUrlTransfer which is forbidden on render thread
+    ' Use only data already in m.top.movie (special features are included in movie JSON)
+    specials = chainLookupReturn(m.top.movie, ["json", "SpecialFeatures"], [])
     if specials = invalid or specials.Count() = 0 then
         m.extrasLabel.visible = false ' Ensure label is hidden on failure/empty result
         return
@@ -206,8 +291,25 @@ function checkVersions(jsonData as Object) as Void
 end function
 
 function onButtonSelected() as Void
-    btn = m.top.lastEventNode
-    if btn = invalid then return
+    if m.handlingButtonSelected = true then return
+    m.handlingButtonSelected = true
+
+    print "[MovieDetails] onButtonSelected fired"
+    btn = invalid
+
+    candidates = [m.btnPlay, m.btnResume, m.btnTrailer, m.btnFavorite, m.btnMyList, m.btnSubtitles, m.btnVersions]
+    for each candidate in candidates
+        if candidate <> invalid and candidate.buttonSelected then
+            btn = candidate
+            candidate.buttonSelected = false
+            print "[MovieDetails] Found button with buttonSelected=true: "; candidate.id
+        end if
+    end for
+
+    if btn = invalid then
+        m.handlingButtonSelected = false
+        return
+    end if
 
     btnText = btn.id
 
@@ -242,6 +344,8 @@ function onButtonSelected() as Void
     else if btnText = "btnVersions" then
         toggleVersionPanel()
     end if
+
+    m.handlingButtonSelected = false
 end function
 
 function toggleVersionPanel() as Void

@@ -1,28 +1,42 @@
 ' Wholphin Roku - View factory functions for creating and showing views
 
+function _sceneManager() as Object
+    if m <> invalid and m.top <> invalid then
+        scene = m.top.getScene()
+        if scene <> invalid and scene.sceneManager <> invalid then return scene.sceneManager
+    end if
+    gaa = getGlobalAA()
+    if gaa <> invalid and gaa.scene <> invalid and gaa.scene.sceneManager <> invalid then return gaa.scene.sceneManager
+    return invalid
+end function
+
 function createVideoPlayerView() as Object
     ' Create the video player view
+    print "[PLAY] createVideoPlayerView: creating VideoPlayerView node"
     player = CreateObject("roSGNode", "VideoPlayerView")
-    
+    sm = _sceneManager()
+    print "[PLAY] createVideoPlayerView: node valid="; (player <> invalid).ToStr(); " sceneManager valid="; (sm <> invalid).ToStr()
+
     ' Push onto the scene stack
-    m.global.sceneManager.callFunc("pushScene", player)
-    
+    if sm <> invalid then sm.callFunc("pushScene", player)
+
     ' Start playback
     player.callFunc("startPlayback")
-    
+
     return player
 end function
 
 function createAudioPlayerView() as Object
     ' Create the audio player view
     player = CreateObject("roSGNode", "AudioPlayerView")
-    
+    sm = _sceneManager()
+
     ' Push onto the scene stack
-    m.global.sceneManager.callFunc("pushScene", player)
-    
+    if sm <> invalid then sm.callFunc("pushScene", player)
+
     ' Start playback
     player.callFunc("startPlayback")
-    
+
     return player
 end function
 

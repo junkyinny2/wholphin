@@ -12,7 +12,8 @@
       width="200"
       height="100"
       color="0x00000080"
-      translation="[-100, -50]" />
+      translation="[-100, -50]"
+      focusable="false" />
     
     <!-- Animated spinner poster -->
     <Poster
@@ -21,7 +22,8 @@
       width="60"
       height="60"
       uri="pkg:/images/spinner.png"
-      visible="true" />
+      visible="true"
+      focusable="false" />
     
     <!-- Loading text -->
     <Label

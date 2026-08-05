@@ -337,9 +337,7 @@ namespace api.items
     end function
 
     function PostPlayBackInfo(id as String, mediaSourceId = "" as String, audioStreamIndex = -1 as Integer, subtitleStreamIndex = -1 as Integer, startTimeTicks = 0 as Integer) as Object
-        deviceProfile = getDeviceProfile()
         body = {
-            DeviceProfile:    deviceProfile
             MediaSourceId:    mediaSourceId
             AudioStreamIndex: audioStreamIndex
             SubtitleStreamIndex: subtitleStreamIndex
@@ -350,6 +348,7 @@ namespace api.items
             EnableTranscoding: true
             MaxAudioChannels: 6
             UserId:           session.user.GetId()
+            DeviceProfile:    getDeviceProfile()
         }
         req = APIRequest("/Items/" + id + "/PlaybackInfo")
         return postJson(req, body)

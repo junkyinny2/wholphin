@@ -1,0 +1,15 @@
+sub init()
+    m.top.functionName = "processEvent"
+end sub
+
+sub processEvent()
+    event = m.top.getevent()
+    select case event.type
+        case "rowselected"
+            ' Handle row selection if needed
+            exit function
+        case else
+            ' Ignore other events
+    end select
+    m.top.postevent(event.type, event)
+end sub

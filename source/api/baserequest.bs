@@ -53,7 +53,15 @@ function buildAuthHeader() as String
     appInfo = m.global.appInfo
     deviceInfo = m.global.deviceInfo
     userId = session.user.GetId()
-    token = chainLookupReturn(m.global.session.user, ["accessToken"], "")
+    if m.global.session <> invalid then
+        if m.global.session.user <> invalid then
+            token = chainLookupReturn(m.global.session.user, ["accessToken"], "")
+        else
+            token = ""
+        end if
+    else
+        token = ""
+    end if
     
     header = "MediaBrowser Client=" + HttpEncode(appInfo.displayName)
     header = header + ", Device=" + HttpEncode(deviceInfo.modelDisplay)
@@ -152,6 +160,7 @@ function postJson(spec as Object, data as Object) as Object
     req.SetRequest("POST")
     
     jsonData = FormatJson(data)
+    print "[Wholphin] POST body length=" + Len(jsonData).ToStr() + " url=" + spec.url
     
     if req.AsyncPostFromString(jsonData) then
         msg = wait(30000, port)
@@ -164,7 +173,9 @@ function postJson(spec as Object, data as Object) as Object
                 end if
             else
                 m.global.lastNetworkError = "HTTP_POST_" + responseCode.ToStr()
-                print "[Wholphin] HTTP POST Error: " + responseCode.ToStr()
+                print "[Wholphin] HTTP POST Error: " + responseCode.ToStr() + " URL=" + spec.url
+                print "[Wholphin] POST error body: " + msg.GetString()
+                print "[Wholphin] POST request was: " + jsonData
             end if
         else if msg = invalid then
             m.global.lastNetworkError = "POST_timeout"

@@ -29,7 +29,6 @@ sub onWidthChange()
 end sub
 
 sub onFocusedChange()
-    ? "[JFButton.onFocusedChange] buttonFocused="; m.top.buttonFocused; " id="; m.top.id
     if m.top.buttonFocused then
         m.focusBorder.opacity = 1
         m.buttonLabel.color = "0x000000FF"

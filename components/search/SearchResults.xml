@@ -1,9 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <component name="searchResults" extends="JFScreen">
   <children>
-    <Rectangle width="1920" height="1080" color="#020B2A" opacity="0.75" />
+    <Rectangle id="searchBg" width="1920" height="1080" color="#020B2A" opacity="0.75" focusable="false" />
     <LayoutGroup layoutDirection="horiz" id="SearchAlphabox" translation="[70, 120]">
-      <SearchBox id="SearchBox" visible="true" focusable="true" />
+      <Keyboard id="SearchBox" visible="true" focusable="true" />
     </LayoutGroup>
     <LayoutGroup layoutDirection="vert" id="searchResults" translation="[470, 150]">
       <Text id="SearchHelpText" text="" />
@@ -29,7 +29,8 @@
     <field id="selectedItem" type="node" alwaysNotify="true" />
     <field id="quickPlayNode" type="node" alwaysNotify="true" />
     <field id="imageDisplayMode" type="string" value="" />
-    <field id="searchAlpha" type="string" alias="SearchBox.search_values" alwaysNotify="true" onChange="searchMedias" />
+     <field id="searchAlpha" type="string" alias="SearchBox.text" alwaysNotify="true" onChange="searchMedias" />
   </interface>
 
+  <script type="text/brightscript" uri="pkg:/components/search/SearchResults.brs" />
 </component>

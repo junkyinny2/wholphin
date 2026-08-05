@@ -1,5 +1,5 @@
 sub Init()
-    m.top.itemSize = [196, 294]
+    m.top.itemSize = [1720, 320]
     m.top.itemComponentName = "RowListItem"
     m.top.numRows = 0
     m.top.rowFocusAnimationStyle = "floatingFocus"

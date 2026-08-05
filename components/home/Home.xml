@@ -14,7 +14,8 @@
       translation="[0, 0]"
       width="1920"
       height="1080"
-      color="0x1A1A2EFF" />
+      color="0x1A1A2EFF"
+      focusable="false" />
     
     <!-- Backdrop image -->
     <Poster
@@ -24,7 +25,8 @@
       height="1080"
       loadDisplayMode="scaleToFit"
       visible="true"
-      uri="pkg:/images/roku_logo.png" />
+      uri="pkg:/images/roku_logo.png"
+      focusable="false" />
     
     <!-- Transition backdrop for cross-fade -->
     <Poster
@@ -34,7 +36,8 @@
       height="1080"
       loadDisplayMode="scaleToFit"
       visible="false"
-      opacity="0" />
+      opacity="0"
+      focusable="false" />
     
     <!-- Hero banner at the top -->
     <HeroBanner
@@ -64,9 +67,11 @@
     <!-- Options slider (side panel) -->
     <Group id="optionsSlider" translation="[1920, 100]" visible="false">
       <Rectangle
+        id="optionsSliderBg"
         width="400"
         height="980"
-        color="0x16213EFF" />
+        color="0x16213EFF"
+        focusable="false" />
     </Group>
   </children>
   

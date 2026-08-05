@@ -1,0 +1,4 @@
+{
+  "extends": "bsconfig.deploy.json",
+  "password": "whit"
+}

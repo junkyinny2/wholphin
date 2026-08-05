@@ -4,6 +4,15 @@
     <field id="sceneStack" type="array" value="" />
     <field id="activeScene" type="node" alwaysNotify="true" />
     <field id="sceneCount" type="int" value="0" alwaysNotify="true" />
+
+    <function name="pushScene" />
+    <function name="popScene" />
+    <function name="replaceScene" />
+    <function name="clearScenes" />
+    <function name="getActiveScene" />
+    <function name="getScene" />
+    <function name="getSceneCount" />
+    <function name="clearPreviousScene" />
   </interface>
   
   <script type="text/brightscript" uri="pkg:/components/manager/SceneManager.bs" />

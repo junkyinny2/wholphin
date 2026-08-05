@@ -8,4 +8,5 @@
     <field id="itemSelected" type="node" alwaysNotify="true" />
   </interface>
 
+  <script type="text/brightscript" uri="pkg:/components/search/SearchRow.brs" />
 </component>

@@ -10,51 +10,35 @@
   </interface>
   
   <children>
-    <!-- Focus indicator (visible when item has focus) -->
     <Rectangle
       id="focusIndicator"
       translation="[-4, -4]"
       width="204"
       height="302"
-      color="0x00A4DC00"
-      blendColor="0x00A4DCFF"
-      visible="false" />
+      color="0x2FD0FFFF"
+      blendColor="0x2FD0FFFF"
+      visible="false"
+      focusable="false" />
     
-    <!-- Item poster -->
-    <Poster
-      id="itemPoster"
-      translation="[0, 0]"
-      width="196"
-      height="294"
-      loadDisplayMode="scaleToFit" />
+    <Group id="posterContainer" clipRect="[0,0,196,294]">
+      <Poster
+        id="itemPoster"
+        translation="[0, 0]"
+        width="196"
+        height="294"
+        loadDisplayMode="scaleToZoom"
+        focusable="false" />
+    </Group>
     
-    <!-- Played indicator overlay -->
     <Rectangle
       id="playedCheckmark"
       translation="[164, 12]"
       width="24"
       height="24"
       color="0x1F9D55FF"
-      visible="false" />
+      visible="false"
+      focusable="false" />
 
-    <!-- Progress bar track (bottom of poster) -->
-    <Rectangle
-      id="progressTrack"
-      translation="[0, 290]"
-      width="196"
-      height="4"
-      color="0x40464EFF"
-      visible="false" />
-
-    <Rectangle
-      id="progressFill"
-      translation="[0, 290]"
-      width="0"
-      height="4"
-      color="0x22D3EEFF"
-      visible="false" />
-
-    <!-- Favorite heart badge -->
     <Poster
       id="favoriteBadge"
       translation="[6, 10]"
@@ -62,9 +46,9 @@
       height="26"
       uri="pkg:/images/icons/nav_favorites.png"
       blendColor="0xFF4D6DFF"
-      visible="false" />
+      visible="false"
+      focusable="false" />
     
-    <!-- Item title -->
     <Label
       id="itemLabel"
       translation="[0, 298]"

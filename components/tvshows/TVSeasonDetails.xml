@@ -12,21 +12,24 @@
       translation="[0, 0]"
       width="1920"
       height="300"
-      loadDisplayMode="scaleToFit" />
+      loadDisplayMode="scaleToFit"
+      focusable="false" />
 
     <Rectangle
       id="seasonBackdropOverlay"
       translation="[0, 0]"
       width="1920"
       height="300"
-      color="0x00000060" />
+      color="0x00000060"
+      focusable="false" />
 
     <Poster
       id="seasonPoster"
       translation="[60, 30]"
       width="160"
       height="240"
-      loadDisplayMode="scaleToFit" />
+      loadDisplayMode="scaleToFit"
+      focusable="false" />
 
     <Label
       id="seasonTitle"

@@ -14,7 +14,8 @@
       id="serverBg"
       width="800"
       height="80"
-      color="0x16213EFF" />
+      color="0x16213EFF"
+      focusable="false" />
 
     <Label
       id="serverNameLabel"

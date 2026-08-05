@@ -36,9 +36,13 @@ end function
 function LoadData() as Void
     m.top.loadingData = true
     m.loadingLabel.visible = true
+    ? "[VLS] LoadData: libId="; chainLookupReturn(m.top.libraryData, ["id"], ""); " mediaType="; m.top.mediaType
 
     libData = m.top.libraryData
-    if libData = invalid then return
+    if libData = invalid then
+        m.top.loadingData = false
+        return
+    end if
 
     libName = chainLookupReturn(libData, ["title"], "")
     if libName = "" then
@@ -50,43 +54,52 @@ function LoadData() as Void
     libId = chainLookupReturn(libData, ["id"], "")
     if libId = "" then libId = chainLookupReturn(libData, ["Id"], "")
 
-    mediaType = m.top.mediaType
-
-    params = {
-        userId:     session.user.GetId()
-        parentId:   libId
-        Limit:      m.pageSize.ToStr()
-        StartIndex: (m.currentPage * m.pageSize).ToStr()
-        SortBy:     m.top.sortBy
-        SortOrder:  m.top.sortOrder
-        Recursive:  "true"
-        Fields:     "PrimaryImageAspectRatio,BasicSyncInfo"
-        ImageTypeLimit: "1"
-    }
-
-    if mediaType <> "" then
-        params.IncludeItemTypes = mediaType
-    end if
-
     libFilters = chainLookupReturn(libData, ["filters"], "")
-    if libFilters <> "" then
-        params.Filters = libFilters
+    if libFilters = invalid then libFilters = ""
+
+    userId = session.user.GetId()
+
+    if m.loadTask <> invalid then
+        m.loadTask.unobserveField("loadStatus")
+        m.top.removeChild(m.loadTask)
+        m.loadTask = invalid
     end if
 
-    result = api.items.Get(params)
-    if result = invalid then
-        m.loadingLabel.visible = false
-        m.top.loadingData = false
-        return
-    end if
+    ' Load items in a Task - roUrlTransfer is forbidden on the render thread
+    task = CreateObject("roSGNode", "LoadItemsTask2")
+    task.parentId = libId
+    task.includeItemTypes = m.top.mediaType
+    task.sortBy = m.top.sortBy
+    task.sortOrder = m.top.sortOrder
+    task.limit = m.pageSize
+    task.startIndex = m.currentPage * m.pageSize
+    task.filters = libFilters
+    task.userId = userId
+    m.loadTask = task
+    task.observeField("loadStatus", "onLoadItemsComplete")
+    m.top.appendChild(task)
+    task.control = "RUN"
+end function
 
-    items = chainLookupReturn(result, ["Items"], [])
-    if items = invalid or items.Count() = 0 then
-        m.loadingLabel.visible = false
-        m.top.loadingData = false
-        return
-    end if
+sub onLoadItemsComplete()
+    task = m.loadTask
+    if task = invalid then return
+    status = task.loadStatus
+    items = task.loadedItems
+    totalCount = task.totalCount
+    ? "[VLS] onLoadItemsComplete: status="; status; " items="; items.Count(); " total="; totalCount
+    task.unobserveField("loadStatus")
+    m.top.removeChild(task)
+    m.loadTask = invalid
 
+    if status = "loaded" and items <> invalid and items.Count() > 0 then
+        populateGrid(items, totalCount)
+    end if
+    m.loadingLabel.visible = false
+    m.top.loadingData = false
+end sub
+
+sub populateGrid(items as Object, totalCount as Integer)
     m.top.items = items
 
     content = CreateObject("roSGNode", "ContentNode")
@@ -106,17 +119,13 @@ function LoadData() as Void
 
     m.itemGrid.content = content
     m.itemGrid.visible = true
-    m.loadingLabel.visible = false
     m.itemGrid.setFocus(true)
 
-    totalCount = chainLookupReturn(result, ["TotalRecordCount"], 0)
     if totalCount > 100 then
         m.alphaJump.visible = true
     end if
-
-    m.top.loadingData = false
     m.top.dataLoaded = true
-end function
+end sub
 
 function onItemSelected() as Void
     focused = m.itemGrid.focusedItem
@@ -201,7 +210,7 @@ function onLetterSelected() as Void
 end function
 
 function onBackPressed() as Boolean
-    m.global.sceneManager.callFunc("popScene")
+    PopCurrentScene()
     return true
 end function
 

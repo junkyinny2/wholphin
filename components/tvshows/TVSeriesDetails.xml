@@ -14,21 +14,24 @@
       translation="[0, 0]"
       width="1920"
       height="520"
-      loadDisplayMode="scaleToFit" />
+      loadDisplayMode="scaleToFit"
+      focusable="false" />
 
     <Rectangle
       id="seriesBackdropOverlay"
       translation="[0, 0]"
       width="1920"
       height="520"
-      color="0x00000060" />
+      color="0x00000060"
+      focusable="false" />
 
     <Poster
       id="seriesPoster"
       translation="[60, 80]"
       width="260"
       height="390"
-      loadDisplayMode="scaleToFit" />
+      loadDisplayMode="scaleToFit"
+      focusable="false" />
 
     <Label
       id="seriesTitle"

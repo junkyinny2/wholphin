@@ -12,9 +12,11 @@
   <children>
     <!-- Background -->
     <Rectangle
+      id="audioPlayerBg"
       width="1920"
       height="1080"
-      color="0x1A1A2EFF" />
+      color="0x1A1A2EFF"
+      focusable="false" />
 
     <!-- Album art -->
     <Poster
@@ -22,7 +24,8 @@
       translation="[310, 140]"
       width="500"
       height="500"
-      loadDisplayMode="scaleToFit" />
+      loadDisplayMode="scaleToFit"
+      focusable="false" />
 
     <!-- Track info -->
     <Label

@@ -14,12 +14,22 @@
       id="overhangBg"
       width="1920"
       height="90"
-      color="0x1A1A2E80" />
+      color="0x1A1A2E80"
+      focusable="false" />
     
+    <!-- User profile image (top-left) -->
+    <Poster
+      id="overlayCurrentUserProfileImage"
+      translation="[20, 15]"
+      width="60"
+      height="60"
+      loadDisplayMode="scaleToFit"
+      uri="" />
+
     <!-- Title text -->
     <Label
       id="overlayTitle"
-      translation="[60, 25]"
+      translation="[100, 25]"
       width="1000"
       height="45"
       font="font:MediumBoldSystemFont"
@@ -37,26 +47,6 @@
       color="0xB0B0B0FF"
       text=""
       horizAlign="right"
-      vertAlign="center" />
-    
-    <!-- User profile image -->
-    <Poster
-      id="overlayCurrentUserProfileImage"
-      translation="[1640, 15]"
-      width="60"
-      height="60"
-      loadDisplayMode="scaleToFit"
-      uri="" />
-    
-    <!-- User name -->
-    <Label
-      id="overlayCurrentUser"
-      translation="[1720, 35]"
-      width="200"
-      height="30"
-      font="font:SmallSystemFont"
-      color="0xB0B0B0FF"
-      text=""
       vertAlign="center" />
   </children>
   

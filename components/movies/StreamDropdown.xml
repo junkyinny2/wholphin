@@ -12,7 +12,8 @@
       id="dropdownBg"
       width="400"
       height="500"
-      color="0x16213EFF" />
+      color="0x16213EFF"
+      focusable="false" />
 
     <Label
       id="dropdownTitle"
@@ -27,8 +28,6 @@
     <LabelList
       id="dropdownList"
       translation="[20, 70]"
-      width="360"
-      height="400"
       itemSize="[360, 50]"
       font="font:SmallSystemFont"
       color="0xB0B0B0FF"

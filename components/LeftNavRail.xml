@@ -11,7 +11,8 @@
       id="navBg"
       width="80"
       height="1080"
-      color="0x0A0E14BB" />
+      color="0x0A0E14BB"
+      focusable="false" />
 
     <Group id="navItemsGroup" translation="[0, 80]" />
 
@@ -21,7 +22,8 @@
       height="36"
       color="0x22D3EEFF"
       translation="[77, 90]"
-      opacity="0" />
+      opacity="0"
+      focusable="false" />
   </children>
 
   <script type="text/brightscript" uri="pkg:/components/LeftNavRail.brs" />

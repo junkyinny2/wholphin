@@ -15,7 +15,8 @@
       translation="[0, 0]"
       width="196"
       height="294"
-      loadDisplayMode="scaleToFit" />
+      loadDisplayMode="scaleToZoom"
+      focusable="false" />
 
     <Poster
       id="playedCheckmark"
@@ -23,7 +24,8 @@
       width="30"
       height="30"
       uri="pkg:/images/icons/checked.png"
-      visible="false" />
+      visible="false"
+      focusable="false" />
 
     <Poster
       id="favoriteIcon"
@@ -31,7 +33,8 @@
       width="25"
       height="25"
       uri="pkg:/images/icons/favorites.png"
-      visible="false" />
+      visible="false"
+      focusable="false" />
 
     <Label
       id="itemLabel"

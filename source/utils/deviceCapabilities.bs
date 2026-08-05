@@ -26,17 +26,20 @@ function getDeviceProfile() as Object
     
     ' Determine max supported bitrate based on device capabilities
     bitrate = 40000000 ' 40 Mbps default
-    
-    ' Get user bitrate setting
+
+    ' Get user bitrate setting (stored in bps, e.g. 200000000 = 200 Mbps)
     userBitrate = session.user.GetSetting("playback.bitrate", "")
     if userBitrate <> "" then
         parsedBitrate = Val(userBitrate)
-        if parsedBitrate > 0 then bitrate = parsedBitrate * 1000000
+        if parsedBitrate > 0 then bitrate = parsedBitrate
     end if
+
+    ' Jellyfin DeviceProfile.MaxStreamingBitrate/MaxStaticBitrate are Int32;
+    ' clamp to keep the profile valid and avoid overflow rejection.
+    if bitrate > 120000000 then bitrate = 120000000
     
     profile = {
         Name:             "Wholphin Roku"
-        Id:               ""
         MaxStreamingBitrate: bitrate
         MaxStaticBitrate:     bitrate
         MusicStreamingTranscodingBitrate: 320000
@@ -53,47 +56,54 @@ end function
 
 ' Get DirectPlay profiles supported by Roku
 function GetDirectPlayProfiles() as Object
+    di = CreateObject("roDeviceInfo")
     profiles = []
-    
-    ' Video containers
-    videoContainers = ["mp4", "m4v", "mov", "mkv", "wmv", "asf", "avi", "mts", "m2ts", "ts"]
-    videoCodecs = ["h264", "h265", "hevc", "mpeg4", "mpeg2video", "vc1"]
+
+    videoContainers = ["mp4", "mkv", "ts", "mov", "m4v", "wmv", "asf", "avi", "mts", "m2ts"]
+    ' NOTE: exclude hevc/h265. CanDecodeVideo may report HEVC support on some Roku
+    ' models, but HEVC playback reliably fails at runtime (state=error). Forcing
+    ' Jellyfin to transcode HEVC -> h264 is the only dependable path.
+    videoCodecs = ["h264", "mpeg4", "mpeg2video", "vc1"]
     audioCodecs = ["aac", "mp3", "mp2", "ac3", "eac3", "dts", "dca", "wma", "wmapro", "pcm_s16le", "truehd"]
-    
+
     for each container in videoContainers
-        profile = {
-            Container:  container
-            Type:       "Video"
-            VideoCodec: ""
-            AudioCodec: ""
-        }
-        profiles.Push(profile)
+        codecs = ""
+        for each codec in videoCodecs
+            if di.CanDecodeVideo({ Codec: codec, Container: container }).Result then
+                if codecs <> "" then codecs = codecs + ","
+                codecs = codecs + codec
+            end if
+        end for
+        if codecs <> "" then
+            profiles.Push({
+                Container:  container
+                Type:       "Video"
+                VideoCodec: codecs
+                AudioCodec: ""
+            })
+        end if
     end for
-    
-    ' Audio containers
+
     audioContainers = ["mp3", "wma", "wav", "ogg", "oga", "flac", "aac", "m4a", "m4b", "opus"]
     for each container in audioContainers
-        profile = {
+        profiles.Push({
             Container:  container
             Type:       "Audio"
             VideoCodec: ""
             AudioCodec: ""
-        }
-        profiles.Push(profile)
+        })
     end for
-    
-    ' Photo containers
+
     photoContainers = ["jpg", "jpeg", "png", "gif", "bmp", "webp"]
     for each container in photoContainers
-        profile = {
+        profiles.Push({
             Container:  container
             Type:       "Photo"
             VideoCodec: ""
             AudioCodec: ""
-        }
-        profiles.Push(profile)
+        })
     end for
-    
+
     return profiles
 end function
 
@@ -118,40 +128,14 @@ function GetTranscodingProfiles(bitrate as Integer) as Object
         CopyTimestamps:  false
     })
     
-    ' HLS video transcoding
-    disableHevc = session.user.GetSetting("playback.compatibility.disablehevc", "false")
-    videoCodecs = "h264"
-    if disableHevc <> "true" then
-        videoCodecs = "h264,h265,hevc"
-    end if
-    
+    ' MP4 HTTP video transcoding (works with Roku Video node; output must be h264 since Roku cannot decode HEVC)
     profiles.Push({
-        Container:       "ts"
+        Container:       "mp4"
         Type:            "Video"
         AudioCodec:      "aac,mp3,ac3,eac3"
-        VideoCodec:      videoCodecs
-        Protocol:        "hls"
-        EstimateContentLength: false
-        MinSegments:     2
-        SegmentLength:   0
-        BreakOnNonKeyFrames: true
-        Context:         "Streaming"
-        MaxAudioChannels: 6
-        TranscodeSeekInfo: "Auto"
-        CopyTimestamps:  false
-    })
-    
-    ' Direct streaming fallback
-    profiles.Push({
-        Container:       "ts,mkv,mp4"
-        Type:            "Video"
-        AudioCodec:      "aac,mp3,ac3,eac3,dts,dca,wma,pcm_s16le"
-        VideoCodec:      "h264,h265,hevc,mpeg4,mpeg2video,vc1"
+        VideoCodec:      "h264"
         Protocol:        "http"
         EstimateContentLength: false
-        MinSegments:     0
-        SegmentLength:   0
-        BreakOnNonKeyFrames: false
         Context:         "Streaming"
         MaxAudioChannels: 6
         TranscodeSeekInfo: "Auto"
@@ -189,13 +173,6 @@ function GetCodecProfiles() as Object
         Conditions:      h264Conditions
     })
     
-    ' HEVC level restrictions
-    profiles.Push({
-        Type:            "Video"
-        Codec:           "hevc"
-        Conditions:      []
-    })
-    
     ' AAC profile restrictions
     profiles.Push({
         Type:            "VideoAudio"
@@ -219,17 +196,17 @@ function GetSubtitleProfiles() as Object
     ' SRT - burn in (for transcoding)
     profiles.Push({
         Format:    "srt"
-        Method:    "BurnIn"
+        Method:    "Encode"
     })
     
     ' SSA/ASS - burn in required
     profiles.Push({
         Format:    "ssa"
-        Method:    "BurnIn"
+        Method:    "Encode"
     })
     profiles.Push({
         Format:    "ass"
-        Method:    "BurnIn"
+        Method:    "Encode"
     })
     
     ' VTT - external
@@ -247,13 +224,13 @@ function GetSubtitleProfiles() as Object
     ' PGS/HDMV PGS - burn in
     profiles.Push({
         Format:    "pgssub"
-        Method:    "BurnIn"
+        Method:    "Encode"
     })
     
     ' DVD subtitles - burn in
     profiles.Push({
         Format:    "dvdsub"
-        Method:    "BurnIn"
+        Method:    "Encode"
     })
     
     return profiles

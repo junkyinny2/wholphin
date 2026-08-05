@@ -13,7 +13,8 @@
       translation="[0, 0]"
       width="290"
       height="290"
-      loadDisplayMode="scaleToFit" />
+      loadDisplayMode="scaleToZoom"
+      focusable="false" />
 
     <Label
       id="itemMediumLabel"

@@ -7,8 +7,8 @@
     <field id="availabilityStatus" type="integer" value="1" />
   </interface>
   <children>
-    <Poster id="posterImage" width="260" height="390" loadDisplayMode="scaleToZoom" failedBitmapUri="pkg:/images/default_poster.png" />
-    <Rectangle id="availBadge" width="40" height="24" translation="[210, 8]" color="#00FF00" visible="false" />
+    <Poster id="posterImage" width="260" height="390" loadDisplayMode="scaleToZoom" failedBitmapUri="pkg:/images/default_poster.png" focusable="false" />
+    <Rectangle id="availBadge" width="40" height="24" translation="[210, 8]" color="#00FF00" visible="false" focusable="false" />
     <Label id="titleLabel" translation="[0, 395]" width="260" height="40" font="font:SmallestSystemFont" wrap="true" maxLines="2" />
   </children>
 </component>

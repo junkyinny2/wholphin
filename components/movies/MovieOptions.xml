@@ -10,7 +10,8 @@
       id="optionsBg"
       width="400"
       height="980"
-      color="0x16213EFF" />
+      color="0x16213EFF"
+      focusable="false" />
 
     <Label
       id="optionsTitle"
@@ -25,8 +26,6 @@
     <LabelList
       id="optionsList"
       translation="[20, 80]"
-      width="360"
-      height="850"
       itemSize="[360, 55]"
       font="font:SmallSystemFont"
       color="0xB0B0B0FF"

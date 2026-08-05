@@ -24,7 +24,26 @@ if (Test-Path $ConfigFile) {
 Write-Host ""
 Write-Host "=== Wholphin Deployment ===" -ForegroundColor Yellow
 
-if (-not $RokuIP) { $RokuIP = "192.168.1.196" }
+$DefaultRokuIP = "192.168.1.196"
+if (-not $RokuIP) {
+    $entered = Read-Host "Enter Roku IP (press Enter for $DefaultRokuIP)"
+    if ($entered.Trim() -ne "") { $RokuIP = $entered.Trim() } else { $RokuIP = $DefaultRokuIP }
+}
+
+# Bump build_version so the Roku always detects a fresh build and never serves cached code
+$manifestPath = Join-Path $PSScriptRoot "manifest"
+if (Test-Path $manifestPath) {
+    $manifestText = Get-Content $manifestPath -Raw
+    if ($manifestText -match '(?m)^build_version=(\d+)\s*$') {
+        $oldVer = [int]$Matches[1]
+        $newVer = $oldVer + 1
+        $manifestText = $manifestText -replace '(?m)^build_version=\d+\s*$', "build_version=$newVer"
+        Set-Content -Path $manifestPath -Value $manifestText -NoNewline
+        Write-Host "[INFO] Bumped build_version $oldVer -> $newVer (forces fresh install)" -ForegroundColor Gray
+    }
+} else {
+    Write-Host "[WARNING] manifest not found at $manifestPath, skipping version bump." -ForegroundColor Yellow
+}
 
 Write-Host ""
 Write-Host "[1/3] Cleaning old build artifacts..." -ForegroundColor Cyan

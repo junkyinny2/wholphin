@@ -16,7 +16,8 @@
       id="itemBg"
       width="1800"
       height="120"
-      color="0x1A1A2E80" />
+      color="0x1A1A2E80"
+      focusable="false" />
 
     <!-- Episode thumbnail -->
     <Poster
@@ -24,7 +25,8 @@
       translation="[10, 10]"
       width="180"
       height="100"
-      loadDisplayMode="scaleToFit" />
+      loadDisplayMode="scaleToFit"
+      focusable="false" />
 
     <!-- Episode number -->
     <Label

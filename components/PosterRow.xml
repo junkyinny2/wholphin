@@ -11,7 +11,8 @@
       translation="[0, 0]"
       width="300"
       height="390"
-      loadDisplayMode="scaleToFit" />
+      loadDisplayMode="scaleToZoom"
+      focusable="false" />
 
     <!-- Continue watching progress bar -->
     <Rectangle
@@ -19,13 +20,15 @@
       translation="[0, 390]"
       width="300"
       height="4"
-      color="0x444444FF" />
+      color="0x444444FF"
+      focusable="false" />
     <Rectangle
       id="progressBarFill"
       translation="[0, 390]"
       width="0"
       height="4"
-      color="0x00A4DCFF" />
+      color="0x00A4DCFF"
+      focusable="false" />
 
     <!-- Item title -->
     <Label

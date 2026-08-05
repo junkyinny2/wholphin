@@ -16,12 +16,13 @@ end function
 
 ' Push a new scene onto the stack
 function pushScene(scene as Object) as Boolean
+    print "[V35-DEBUG] SceneManager.pushScene START"
     if scene = invalid then
-        ? "[SceneManager] pushScene: scene is invalid!"
+        print "[SceneManager] pushScene: scene is invalid!"
         return false
     end if
     
-    ? "[SceneManager] pushScene: "; scene.Subtype()
+    print "[SceneManager] pushScene: "; scene.Subtype()
     
     if m.sceneStack.Count() > 0 then
         currentScene = m.sceneStack.Peek()
@@ -60,7 +61,18 @@ function pushScene(scene as Object) as Boolean
     
     scene.callFunc("OnScreenShown")
     
-    scene.setFocus(true)
+    ' Only call scene.setFocus(true) if no child already has focus
+    ' (Screens like SetServerScreen and MovieDetails manage their own child focus)
+    ' Use focusedChild field instead of getFocusedChild() method for firmware compat
+    if scene.focusedChild = invalid then
+        scene.setFocus(true)
+    end if
+    
+    ' Re-assert focus proxy for manual-focus screens (AGENTS.md §4.4)
+    focusProxy = scene.findNode("focusProxy")
+    if focusProxy <> invalid then
+        focusProxy.setFocus(true)
+    end if
     ? "[SceneManager] pushScene complete, stack="; m.sceneStack.Count()
     return true
 end function
@@ -90,19 +102,31 @@ function popScene() as Boolean
             previousScene.screenHidden = false
         end if
         
-         previousScene.callFunc("OnScreenShown")
+         if previousScene.Subtype() = "JFScreen" then
+             previousScene.callFunc("OnScreenShown")
+         else if previousScene.HasField("OnScreenShown") then
+             previousScene.callFunc("OnScreenShown")
+         end if
          previousScene.visible = true
 
          ' Update overhang
          if previousScene.HasField("overhangTitle") then
              sceneManager = m.top.getScene()
              if sceneManager <> invalid then
-                 sceneManager.setOverhangTitle(previousScene.overhangTitle)
+                 sceneManager.callFunc("setOverhangTitle", previousScene.overhangTitle)
              end if
          end if
 
-         ' Set focus to previous scene
-         previousScene.setFocus(true)
+         ' Set focus to previous scene (focus inner content for non-JFScreen home screens)
+         ' Only touch focus if the previous scene has no valid focusedChild (see AGENTS.md §4.5)
+         if previousScene.focusedChild = invalid then
+             homeRows = previousScene.findNode("homeRows")
+             if homeRows <> invalid then
+                 homeRows.setFocus(true)
+             else
+                 previousScene.setFocus(true)
+             end if
+         end if
     else
         m.top.activeScene = invalid
     end if

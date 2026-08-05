@@ -1,5 +1,289 @@
 # Wholphin Roku - Change History
 
+## 2026-08-05 — Restored original Wholphin home screen + added server-switch deep link
+
+- **What:** Restored the original Wholphin home-screen look/behavior and added a
+  way to bypass auto-login / switch servers.
+- **Home-screen fix (multiple tiles per row):** `HomeRows.bs` `Init()` had been
+  set to `itemSize = [196, 294]` (one poster width = one tile per row). Restored
+  the original `itemSize = [1720, 320]` so the RowList row strip is wide enough
+  to render multiple posters per row (~8 at 196px each). Verified: boot trace shows
+  `finishLoading content rows= 4` + `homeRows set, focus=true`.
+- **Home screen / NavRail:** Reverted the redesign overlay back to the original
+  `HomeScreen.xml`/`.brs`, `HomeRows.bs`/`.xml`, `LoadItemsTask.bs` and restored
+  the dynamic cyan `NavRail.brs` (Wholphin glyphs) from HEAD.
+- **Server switching:**
+  - The in-app path already exists (NavRail → Settings → Change Server →
+    `pendingServerAction=showserver` → `CreateServerGroup`). The §4.4 focus-proxy
+    pattern is active on `SetServerScreen` (`focus on focusProxy`).
+  - Added an **ECP deep link** so the server picker can be launched directly,
+    bypassing the saved auto-login: `POST /launch/dev?content=<base64(json)>`
+    where json = `{"command":"showServerPicker"}`. Roku delivers the base64 in
+    `args["content"]`; `Main.bs` decodes it and, if `command == showServerPicker`,
+    sets `skipAutoLogin=true`, bypasses the auto-login block, and calls
+    `CreateServerGroup()` (deferred until after SceneManager is initialized) to
+    push `SetServerScreen`. Verified on-device (build 152): `skipAutoLogin=true`
+    → `pushScene: SetServerScreen`, no `CreateHomeGroup`, no runtime errors.
+  - Added `base64Decode()` (roByteArray lookup indexed by `Asc(char)` — BrightScript
+    AAs are case-insensitive so an `{}` alphabet table collapses 'J'/'j') and
+    `parseJsonSafe()` (uses the built-in `ParseJSON`, since `roJSONParser` does not
+    exist on this firmware) to `source/utils/misc.bs`.
+  - Added `HandleDeepLink` `showServerPicker`/`switchServer` →
+    `pendingServerAction=showserver` routing in `MainEventHandlers.bs` for the
+    `/input` runtime deep-link path on an already-running channel.
+- **Security:** replaced the verbose args-dump debug print in `Main` (which echoed
+  the access token to stdout) with a single `hasContent=` summary line.
+- **Files touched:** `components/home/HomeRows.bs`, `source/Main.bs`,
+  `source/utils/misc.bs`, `source/MainEventHandlers.bs`
+- **Verified on-device (build 152):** ECP `POST /launch/dev?content=` with
+  `{"command":"showServerPicker"}` → cold boot shows `[DIAG] skipAutoLogin=true`
+  → `CreateServerGroup` → `SetServerScreen`, no auto-login, no Micro Debugger.
+- **Timestamp:** 2026-08-05
+
+## 2026-08-04 — Fixed FF/Rewind dead keys + blank screen on Back
+
+- **What:** Dedicated rewind/fast-forward remote buttons did nothing, and pressing Back during a movie left a blank screen instead of returning to MovieDetails.
+- **Root cause #1 (FF/RW dead):** The Roku remote's rewind/FF buttons deliver `key="rewind"` / `key="fastforward"` (lowercase, full words), but `VideoPlayerView.onKeyEvent` only handled `"Rev"`/`"Fwd"` — so the seeks were never triggered. D-pad left/right DID seek (confirmed in console).
+- **Fix #1:** Handle `"rewind"`/`"fastforward"` in addition to `"Rev"`/`"Fwd"` in `VideoPlayerView.bs` `onKeyEvent`.
+- **Root cause #2 (blank screen):** `ShowScenes.PopCurrentScene()` popped/removed the player scene but never set the previous scene back to visible, while `SceneManager.popScene()` (SceneManager.bs:106) does `previousScene.visible = true`. The underlying MovieDetails stayed invisible → blank.
+- **Fix #2:** `PopCurrentScene()` now mirrors `popScene()`: re-sets `previousScene.visible = true`, calls `previousScene.callFunc("OnScreenShown")` (unconditional — `HasField()` returns false for interface `<function>` entries), and `setFocus(true)`.
+- **Also added** permanent `? "[VideoPlayer] key=..."` smoke-test print at the top of `VideoPlayerView.onKeyEvent` (AGENTS.md §4.4 pattern) and seek debug prints in `seekForward`/`seekBackward`.
+- **Verified on-device (build 96):** ECP `Fwd` (→ `fastforward`) seeks +30s ×2, ECP `Rev` (→ `rewind`) seeks −10s ×2 (position confirmed via `/query/media-player`); Back stops video, returns to MovieDetails (`OnScreenShown called`, `Setting focus to btnPlay`), zero runtime errors.
+- **Note:** ECP key names are `Fwd`/`Rev`; in-app `onKeyEvent` receives `fastforward`/`rewind`. `FastForward`/`Rewind` are NOT valid ECP names.
+- **Files touched:** `components/video/VideoPlayerView.bs`, `source/ShowScenes.bs`, `AGENTS.md`
+- **Timestamp:** 2026-08-04
+- **Automatic:** yes
+
+## 2026-08-04 — Fixed video playback fatal error + added transport key handling (pause/stop/seek)
+
+- **What:** Movies now play (DirectPlay h264) AND respond to remote transport keys (Play/Pause, Back to stop+exit, Left/Right seek, Rev/Fwd).
+- **Root cause #1 (fatal `mediaplayer:6`):** `LoadVideoContentTask.bs` set `content.AudioTracks`, `content.AudioTrackIndex`, `content.Streams` on the `ContentNode` with **raw Jellyfin associative arrays**. Those fields are not valid on a `ContentNode` (runtime warnings confirmed: "Tried to set nonexistent field audiotracks/audiotrackindex of a ContentNode") and corrupt it, so the Roku Video node hit `state=error` → `finished` → fatal mediaplayer error. The Video node manages audio/subtitle tracks natively via `m.video.audioTrack`/`subtitleTrack` — the content node only needs `url` + `streamformat`.
+- **Fix #1:** Removed the invalid track/Streams assignments in `LoadVideoContentTask.bs` (content node now = url + streamformat only).
+- **Root cause #2 (no pause/stop):** `VideoPlayerView` is a focusable `JFScreen` (via `JFGroup`) but had **no `onKeyEvent`**, so all remote keys bubbled up to MainScene and were dropped. The OSD's own `onKeyEvent` never fires because the OSD is not focusable and never receives focus.
+- **Fix #2:** Added `onKeyEvent` to `VideoPlayerView.bs` handling: `play`/`pause`/`OK` (toggle), `back` (stop + `PopCurrentScene`), `Rev`/`Fwd`/`left`/`right` (seek ±10/30s), `up`/`down` (show OSD). OSD calls go through `callFunc("restartHideTimer")`/`callFunc("show")` after exposing `show`/`hide`/`restartHideTimer` as `<function>` in `OSD.xml` interface (script functions are NOT callable on node refs — only interface functions/callFunc).
+- **Root cause #3 (runtime error on back):** `PopCurrentScene()` lives in `source/ShowScenes.bs`, which was not injected into `VideoPlayerView.xml` → "Function is not defined in component's namespace (&h91)" when pressing Back.
+- **Fix #3:** Added `ShowScenes.brs` (+ globals/config/MainActions/quickplay) to the `VideoPlayerView.xml` entry in `transpile.ps1` `$libInjections`.
+- **Also cleaned XML warnings:** removed invalid `showStatusMessage` on `<Video>`, `width`/`height` on `<Group>` (captionGroup/nextUpBox), and `width`/`height` on `<LabelList>` (MovieDetails/StreamDropdown/VersionSelector/MovieOptions).
+- **Verified on-device:** buffering → playing → paused → buffering → playing → stopped, zero runtime errors. Build 94.
+- **Files touched:** `components/ItemGrid/LoadVideoContentTask.bs`, `components/video/VideoPlayerView.bs`, `components/video/VideoPlayerView.xml`, `components/video/OSD.xml`, `components/movies/MovieDetails.xml`, `components/movies/StreamDropdown.xml`, `components/movies/VersionSelector.xml`, `components/movies/MovieOptions.xml`, `transpile.ps1`
+- **Timestamp:** 2026-08-04
+- **Automatic:** yes
+
+## 2026-08-02 — MASSIVE: Added focusable="false" to ALL Posters/Rectangles across entire codebase (40+ files)
+
+- **What:** Systematic audit and fix of every Poster and Rectangle XML element missing `focusable="false"`. This is the recurring bug pattern from AGENTS.md §4.4 that has caused focus-stealing issues 5+ times.
+- **Root cause:** SceneGraph makes Posters and Rectangles focusable by default. Any visible one in the tree can silently steal real focus from manual-highlight screens (SetServerScreen, SigninScene), causing `onKeyEvent` handlers to stop firing entirely. Each past fix patched ONE element; new ones kept appearing.
+- **Fix:** Added `focusable="false"` to EVERY Poster and Rectangle across 40+ component XML files:
+  - **Screen backgrounds:** HomeScreen.xml (bgFill, heroBackdrop, heroGradient), MainScene.xml (background, backgroundOverlay, detailsOverlay), HomeScene.xml (background, heroBackdrop, gradientOverlay), BaseScene.xml (miniPlayerBackground)
+  - **SetServerScreen:** bgRect, logoImage, serverInputBg, serverInputFocus, listSelectionBar
+  - **SigninScene:** signinBg, logoImage, usernameInputBg (fieldFocusProxy intentionally stays focusable="true")
+  - **UserSelect:** userSelectBg, logoImage
+  - **NavRail.xml:** railBackground, railLogo, ALL nav highlight rectangles + icon posters (10 groups = 20 elements)
+  - **LeftNavRail:** navBg, activeIndicator
+  - **Sidebar/Drawer:** SidebarNav.xml (backgroundRail, navItem1Icon, navItem2Icon), WholphinSidebar.xml (sidebarScrim, sidebarBg, sidebarUserImage)
+  - **Details/Hero panels:** DetailsPanel.xml (detailPoster, progressBarBg/fill, playBtnBg/resumeBtnBg), HeroBanner.xml (backdropImage, gradientOverlay)
+  - **Button components:** JFButton.xml (buttonBg, focusBorder) — JFButton itself stays focusable="true"
+  - **Video screens:** VideoPlayerView.xml (posterBackground, nextUpBg/image, skipSegmentBg, bufferingOverlay), OSD.xml (osdTopBar/bottomBar, progress bg/fill)
+  - **Movie/TV details:** MovieDetails.xml, TVSeriesDetails.xml, TVSeasonDetails.xml, TVEpisodeListItem.xml — all backdrop posters + overlays
+  - **Music views:** ArtistView.xml, AlbumView.xml, AudioPlayerView.xml — backdrops + album art
+  - **Content items:** PosterRow.xml, RowListItem.xml (thumb/cornerMask/badge/focusRing), HomeItem.xml (focusIndicator/poster/checkmark/badge), GridItem.xml/Small/Medium.xml, LandscapePosterItem.xml, UserItem.xml, PosterItem.xml
+  - **Library views:** AudioBookLibraryView.xml, MusicLibraryView.xml, LiveTVLibraryView.xml, OtherLibrary.xml, VisualLibraryScene.xml — all backgrounds
+  - **Filters/Dialogs:** EmbyFilterMenu.xml, LibraryFilterDialog.xml (filterDialogBg), Alpha.xml (alphaBg)
+  - **Misc:** Spinner.xml (spinnerBg/image), JFOverhang.xml (overhangBg), Home.xml (bgFill, backdrops, optionsSliderBg), MovieOptions/VersionSelector/StreamDropdown.xml — all overlay backgrounds
+- **Files touched:** 40+ XML files in components/ — ALL Posters and Rectangles now have `focusable="false"`.
+- **Timestamp:** 2026-08-02
+- **Automatic:** yes (auto-enforce per AGENTS.md §4.4 rule #3)
+
+## 2026-08-02 — Fixed Auto Discover unreachable after discovery + logo Poster focus steal
+
+- **What:** Auto Discover button became permanently unselectable after server discovery completed. Also added `focusable="false"` to `logoImage` Poster.
+- **Root cause (navigation):** In `SetServerScreen.onKeyEvent`, the UP/LEFT and DOWN/RIGHT handlers had a condition `if m.discoveredServerList.visible` that redirected button navigation into the server list whenever it was visible. This meant:
+  - Pressing UP from Auto Discover (index 1) or Manual Entry (index 2) jumped to the server list instead of cycling buttons
+  - Pressing DOWN/RIGHT from index 1+ also redirected to the server list
+  - After discovery set `focusedButtonIndex = 3`, pressing DOWN from any button never reached Auto Discover — it was trapped between Connect (0) and Manual Entry (2)
+- **Fix:** Decoupled button cycling from server-list visibility:
+  - UP/LEFT now always cycle buttons via MOD arithmetic regardless of list visibility
+  - DOWN only enters the server list when at index 0 (Connect) AND list is visible
+  - RIGHT cycles through buttons normally (no server-list redirect)
+- **Fix (focus steal):** `logoImage` Poster in SetServerScreen.xml had no `focusable="false"`. Posters are focusable by default in SceneGraph and would silently steal focus from the proxy node, causing `onKeyEvent` to stop firing. Added per AGENTS.md §4.4 rule #3.
+- **Files touched:** `components/config/SetServerScreen.bs` (navigation logic + logo Poster), `components/config/SetServerScreen.xml` (focusable="false" on logo)
+- **Timestamp:** 2026-08-02
+- **Automatic:** yes (auto-enforce per AGENTS.md §4.4 — recurring bug pattern)
+
+## 2026-07-31 — SetServerScreen focus stealing: permanent prevention rules (v32-v33)
+
+- **What:** Documented the recurring focus-stealing bug on manual-focus screens and added auto-enforce rules to `AGENTS.md` (§4.4).
+- **Root cause (why it keeps breaking):** `SetServerScreen` uses manual focus management (`m.focusedButtonIndex` drives the highlight), but SceneGraph only routes keys to `onKeyEvent` on the node that actually owns real focus. Any focusable node in the visible tree — Posters, Rectangles, or the JFButtons themselves (focusable by default) — can steal focus. Each past fix patched ONE focus-stealer (`imageBackground` Poster), so new focusable nodes re-triggered it.
+- **v32 fix (focus-proxy pattern):** Added hidden `<Rectangle id="focusProxy" ... focusable="true" />` to `SetServerScreen.xml`; set `focusable="false"` on btnConnect/btnDiscover/btnManualEntry; `updateHighlights()` now does `m.focusProxy.setFocus(true)` (except discovered-list index 3, which focuses `discoveredServerList`).
+- **v33 fix:** Added permanent smoke-test print `? "[SetServer] key="; key; " idx="; m.focusedButtonIndex` at the top of `SetServerScreen.onKeyEvent`. If no `[SetServer] key=` line appears when the user presses a button, a focusable node is stealing focus.
+- **Verified:** Telnet capture shows `[SetServer] key=right idx=0` — keys ARE reaching `SetServerScreen.onKeyEvent` after v33, so real focus is on the screen (the proxy holds it).
+- **Prevention rules added to AGENTS.md §4.4 (must never be removed):**
+  1. Manual-highlight screens hold real focus on a hidden `focusProxy` Rectangle; NEVER `m.top.setFocus(true)` as the primary path.
+  2. All JFButtons on those screens MUST be `focusable="false"` (else `JFButton.onNativeFocusChange` overwrites the manual highlight).
+  3. Every decorative node (Posters, Rectangles) in the visible tree MUST be `focusable="false"`.
+  4. Re-assert `m.focusProxy.setFocus(true)` after any dialog closes.
+  5. The `[SetServer] key=` diagnostic is a permanent smoke test — keep it.
+- **Files touched:** `AGENTS.md` (new §4.4), `components/config/SetServerScreen.xml` (focusProxy + buttons focusable=false), `components/config/SetServerScreen.bs` (proxy focus + smoke-test print), `manifest` (build_version 32→33), `history/history.md`
+- **Timestamp:** 2026-07-31
+
+## 2026-07-30 — Redesigned HomeScreen with hero banner + Play/More Info buttons + carousels
+
+- **What:** Redesigned HomeScreen to match Roku-style streaming interface per user request:
+  1. **Hero banner** — 594px tall with background art (heroBackdrop), gradient overlay, title/subtitle/meta/description labels
+  2. **Play/More Info buttons** — restored Play and More Info JFButton components in heroButtons group at [140, 410]
+  3. **Hero button navigation** — UP from rows → hero buttons, DOWN from hero buttons → rows, LEFT from hero buttons → NavRail, OK on hero buttons → HandleItemSelection
+  4. **Carousel posters** — RowListItem updated with posterContainer group with clipRect for rounded corners, focus ring color cyan (0x2FD0FFFF) with opacity 0.8, focus scale 1.06x
+  5. **Removed progress bars** — removed progressTrack/progressFill from HomeItem.xml and HomeItem.bs
+  6. **Removed debug text** — removed statusLabel from BaseScene.xml, removed imageBackground Roku logo placeholder, removed all `?` debug print statements from Main.bs, ShowScenes.bs, LoadItemsTask.bs, SetServerScreen.bs, MainEventHandlers.bs, JFButton.bs
+  7. **Removed statusMessage field** from BaseScene.xml interface and BaseScene.bs
+  8. **Cleaned up comments** — removed all debug comments from all modified files
+- **Files touched:**
+  - `components/HomeScreen.xml` — added heroButtons group with Play/More Info JFButtons, moved loadingLabel to y=500
+  - `components/HomeScreen.brs` — added hero button focus handling in onKeyEvent, added m.heroItemJson tracking, removed debug prints
+  - `components/home/HomeItem.xml` — removed progress bars, added posterContainer with clipRect for rounded corners
+  - `components/home/HomeItem.bs` — removed progress bar code, added posterContainer reference, removed header comment
+  - `components/RowListItem.xml` — added posterContainer with clipRect, updated focus ring color to cyan with opacity
+  - `components/RowListItem.brs` — updated for posterContainer, focus ring with offset for glow effect
+  - `components/BaseScene.xml` — removed imageBackground Poster, removed statusLabel, removed comments
+  - `components/BaseScene.bs` — removed statusMessage handling, removed imageBackground reference, removed setBackground function, removed comments
+  - `components/JFButton.bs` — removed debug print in onFocusedChange
+  - `components/home/LoadItemsTask.bs` — removed all debug prints, removed comments
+  - `source/Main.bs` — removed all debug prints, removed comments
+  - `source/ShowScenes.bs` — removed all debug prints, removed comments
+  - `source/MainEventHandlers.bs` — removed debug print in HandleDialogCallback, removed print in HandlePlaybackError, removed comments
+  - `components/config/SetServerScreen.bs` — removed all debug prints, removed comments
+- **Timestamp:** 2026-07-30T23:15:00Z
+
+## 2026-07-30 — Fixed RowList to show multiple items per row
+
+- **What:** Fixed RowList configuration so carousels show multiple posters per row instead of just 1:
+  1. **Added width to HomeRows** — set `width="1660"` in HomeScreen.xml so RowList knows how many items to display
+  2. **Fixed `showRowLabel`** — changed from array `[false]` to boolean `false` (was causing issues with RowList rendering)
+  3. **Added `itemSpacing`** — set to `[20, 0]` for proper horizontal spacing between posters
+  4. **Set `rowFocusColor` and `rowUnfocusColor`** — for proper focus highlighting
+  5. **Removed redundant `rowLabels` and `rowLabelOffsets` arrays** from onContentChange (showRowLabel is now set once in Init)
+- **Files touched:**
+  - `components/home/HomeRows.xml` — added empty `<children>` block
+  - `components/home/HomeRows.bs` — fixed showRowLabel, added itemSpacing, rowFocusColor, rowUnfocusColor, removed redundant arrays
+  - `components/HomeScreen.xml` — added `width="1660"` to HomeRows
+- **Timestamp:** 2026-07-30T23:30:00Z
+
+## 2026-07-30 — Fixed RowList field errors
+
+- **What:** Removed invalid RowList fields that were causing warnings:
+  1. **Removed `rowLabelPos`** — not a valid RowList field
+  2. **Removed `rowFocusColor` and `rowUnfocusColor`** — not valid RowList fields (focus highlighting is handled by the RowListItem component's focusRing)
+- **Files touched:**
+  - `components/home/HomeRows.bs` — removed invalid field assignments
+- **Timestamp:** 2026-07-30T23:45:00Z
+
+- **What:** Fixed a BrightScript syntax error in HomeScreen.brs `onKeyEvent` that prevented item selection:
+  - **Bug:** `onRowItemSelected(event = invalid, rc)` — invalid syntax (can't pass args by name in BrightScript) and `onRowItemSelected` expects an event object, not a row/col array
+  - **Fix:** Replaced with direct item selection logic: extracts focused item from HomeRows content, builds item AA, and calls `HandleItemSelection()` directly
+- **Files touched:** `components/HomeScreen.brs` — rewrote OK handler in onKeyEvent
+- **Timestamp:** 2026-07-30T22:30:00Z
+
+## 2026-07-30 — Fixed home screen layout to match ui.md spec + debug text cleanup
+
+- **What:** Redesigned HomeScreen to match the "Hero + Shelves" layout specified in ui.md, and removed debug text:
+  1. **NavRail position** — moved from `[0,0]` to `[40,40]` per spec (fixed, 80px wide icon rail with 40px margin)
+  2. **HeroBanner height** — reduced from full 1080px to 594px (55% of screen per spec); `heroBackdrop` `loadDisplayMode` changed from `scaleToFill` to `scaleToZoom`
+  3. **Removed hero buttons** — deleted Play/More Info JFButton Group (ui.md specifies HeroBanner is a display surface only)
+  4. **HomeRows position** — moved from y=560 to y=600 (below shorter hero section)
+  5. **Background color** — changed from `0x0A0E14FF` to `0x0B0E14FF` per spec (`#0B0E14`)
+  6. **Focus indicator color** — changed from green (`0xFFA4DC00`) to cyan (`0x2FD0FFFF`) per spec accent color
+  7. **SetServerScreen focus fix** — added `focusable="false"` to `imageBackground` Poster in BaseScene.xml (Posters are focusable by default and were stealing focus from SetServerScreen)
+  8. **Main.bs focus fix** — added explicit `ss.setFocus(true)` after `m.screen.show()` (Init's setFocus runs before screen is visible)
+  9. **Debug text cleanup** — cleared `statusMessage` after home screen loads in both auto-login and sign-in paths (was showing "HomeScreen should be visible now!" etc.)
+  10. **onKeyEvent cleanup** — rewrote HomeScreen.onKeyEvent to match ui.md spec: UP from first row → NavRail, LEFT from leftmost item → NavRail, OK on row item → select item
+- **Files touched:**
+  - `components/HomeScreen.xml` — NavRail position, hero height, removed buttons, rows position, bg color
+  - `components/HomeScreen.brs` — removed hero button code, rewrote onKeyEvent, removed unused functions (getCurrentHeroItem, setHeroButtonFocus, clearHeroButtonFocus, onHeroButtonFocus)
+  - `components/home/HomeItem.xml` — focus indicator color green→cyan
+  - `components/home/HomeRows.bs` — showRowLabel [true]→[false]
+  - `components/BaseScene.xml` — imageBackground focusable="false"
+  - `source/Main.bs` — setFocus after screen.show(), clear statusMessage after home load
+- **Status:** Deployed to 192.168.1.196. Awaiting user verification.
+- **Timestamp:** 2026-07-30T22:00:00Z
+
+## 2026-07-30 — Root cause analysis: focus management pitfalls (and how to avoid them)
+
+- **What:** Documented the root causes of the SetServerScreen navigation breakage and home screen visual issues, with prevention strategies for future reference.
+- **Root causes identified:**
+  1. **Poster stealing focus** — In Roku SG, `Poster` nodes are focusable by default. Any Poster placed as a child of a Scene/Group can steal focus from the intended interactive component. **Prevention:** Add `focusable="false"` to all decorative/Background Poster nodes in XML.
+  2. **setFocus timing** — Calling `m.top.setFocus(true)` in a component's `Init()` runs before `m.screen.show()`. The Scene doesn't have focus yet, so the call is ineffective. **Prevention:** Call `setFocus(true)` AFTER `m.screen.show()` in the main thread, or use a deferred Timer (duration=0.1) to retry focus after the scene is visible.
+  3. **Color alpha = 0 (invisible)** — Roku color format is `0xAARRGGBB`. An alpha of `0x00` means fully transparent. The HomeItem focus indicator had `color="0x00A4DC00"` — invisible. **Prevention:** Always use `0xFF` for opaque colors (e.g., `0xFFA4DC00`), or use 6-digit hex `0xA4DC00` which defaults to opaque.
+  4. **Duplicate RowList labels** — RowList's built-in `showRowLabel` field renders row title labels from the content, but if the item component (HomeRow) also has its own title label, the labels appear twice. **Prevention:** Set `showRowLabel=[false]` on RowList when the item component handles its own labels.
+  5. **Channel restart after sideload** — Sideloading updates files on disk but the Roku channel process keeps running old compiled code in memory. **Prevention:** Always instruct users to fully restart the channel (HOME → relaunch, or System restart) after every deploy.
+- **Files touched:** `history/history.md` (this entry)
+- **Timestamp:** 2026-07-30T21:30:00Z
+
+## 2026-07-30 — Fixed SetServerScreen focus (buttons not responding to remote)
+
+- **What:** Fixed SetServerScreen buttons (Connect, Auto Discover, Manual Entry) not responding to remote control navigation.
+- **Root cause:** `imageBackground` Poster in `BaseScene.xml` was focusable by default (Posters are focusable in Roku SG) and was the first focusable child of the Scene. It stole focus from SetServerScreen, so SetServerScreen's `onKeyEvent` never fired. Additionally, SetServerScreen's `m.top.setFocus(true)` in `Init()` ran before `m.screen.show()`, so the focus call was ineffective.
+- **Fix:**
+  1. Added `focusable="false"` to `imageBackground` Poster in `BaseScene.xml` — prevents it from stealing focus.
+  2. Added explicit `ss.setFocus(true)` call in `Main.bs` right after `m.screen.show()` — ensures SetServerScreen gets focus after the screen is visible.
+- **Files touched:**
+  - `components/BaseScene.xml` — added `focusable="false"` to imageBackground Poster
+  - `source/Main.bs` — added `ss.setFocus(true)` after `m.screen.show()`
+- **Timestamp:** 2026-07-30T21:15:00Z
+
+## 2026-07-30 — Fixed HomeScreen focus indicator + row label duplication
+
+- **What:** Fixed two visual issues on the HomeScreen:
+  1. **HomeItem focus indicator invisible** — `focusIndicator` Rectangle in `components/home/HomeItem.xml` had `color="0x00A4DC00"` (alpha=00, fully transparent). Changed to `0xFFA4DC00` so the green focus ring is now visible when an item is selected.
+  2. **Duplicate row labels** — `HomeRows` (extends RowList) had `showRowLabel=[true]` which caused the RowList to render its own row title labels in addition to the labels already rendered by each `HomeRow` component. Changed to `showRowLabel=[false]` so row titles appear only once.
+- **Files touched:**
+  - `components/home/HomeItem.xml` — focus indicator alpha 0x00→0xFF
+  - `components/home/HomeRows.bs` — showRowLabel [true]→[false]
+- **Status:** Deployed to 192.168.1.196. Awaiting user verification on Roku.
+- **Timestamp:** 2026-07-30T20:45:00Z
+
+## 2026-07-26 — Redesigned HomeScreen to match ui.md spec
+
+- **What:** Redesigned HomeScreen layout to match the "Hero + Shelves" layout specified in `ui.md`:
+  1. **HomeScreen.xml** — NavRail moved from `[0,0]` to `[40,40]`; hero height reduced from 1080px to 594px (55% of screen); hero image `loadDisplayMode` changed from `scaleToFill` to `scaleToZoom`; hero text labels grouped into `HeroTextBlock` Group; removed Play/More Info hero buttons (HeroBanner is a display surface per spec); background color updated to `0x0B0E14FF`; shelf rows moved from y=560 to y=600 to fit shorter hero.
+  2. **HomeScreen.brs** — Removed all hero button code: `m.playButton`/`m.infoButton` references, `setHeroButtonFocus()`/`clearHeroButtonFocus()`/`onHeroButtonFocus()` methods, `heroButtonFocused`/`heroButtonIndex` variables, `getCurrentHeroItem()` function (unused after button removal). Rewrote `onKeyEvent()` for NavRail↔Shelf focus routing: LEFT from shelf (leftmost item) → NavRail, RIGHT/DOWN from NavRail → Shelf, UP from shelf (first row) → NavRail, BACK from shelf → NavRail (BACK from NavRail → exit).
+  3. **HomeItem.xml** — Focus indicator color changed from `0x00A4DC00` (transparent, invisible) to `0x00D4FFFF` (cyan, per ui.md spec); removed invalid `blendColor` property.
+- **Files touched:**
+  - `components/HomeScreen.xml` — NavRail position, hero height, image mode, HeroTextBlock group, removed hero buttons, bg color, shelf position
+  - `components/HomeScreen.brs` — Removed button code, rewrote onKeyEvent, removed unused getCurrentHeroItem
+  - `components/home/HomeItem.xml` — Focus indicator color + removed blendColor
+- **Timestamp:** 2026-07-26T12:30:00Z
+- **Automatic:** yes
+
+## 2026-07-26 — Fixed button components across 5 files
+
+- **What:** Fixed 5 button-related bugs preventing buttons from working or displaying correctly:
+  1. **DetailsPanel.brs** — `updateButtonFocus()` used `btn.findNode(btn.id + "Bg")` which looked for `playButtonBg`/`resumeButtonBg`, but `DetailsPanel.xml` defined them as `playBtnBg`/`resumeBtnBg`. Focus highlight never applied. Renamed XML node IDs to match.
+  2. **HomeScene.brs** — Observed `itemSelected` on standard Roku `Button` components, but `Button` has no `itemSelected` field (it fires `buttonPressed`). Play/More Info button click handlers never fired. Changed to `buttonPressed`.
+  3. **HeroBanner.xml** — Missing `<script>` tag (HeroBanner.brs never loaded), missing `btnPlay`/`btnMoreInfo` JFButton nodes, and node IDs didn't match HeroBanner.brs expectations (`backdropImage` vs `heroBackdrop`, `titleLabel` vs `heroTitle`, etc.). Added script tag, JFButton nodes, and renamed all nodes to match.
+  4. **JFButton.xml** — Focus border color was `0x00FF00FF` (bright green, debug color). Changed to `0x22D3EEFF` (cyan) to match app accent color used in LeftNavRail.brs.
+  5. **HomeSceneFocus.brs** — Entire file was on a single line (unreadable), not loaded in `HomeScene.xml` (missing `<script>` tag), and referenced nonexistent `m.contentRows` (should be `m.nextUpRow`). Reformatted to multi-line, added script tag to HomeScene.xml, fixed variable reference.
+  6. **HomeScreen.brs** — Observed `itemSelected` on `LeftNavRail`, but the field is defined as `onItemSelected` in `LeftNavRail.xml`. Nav rail OK button selection never triggered navigation. Changed to `onItemSelected`.
+- **Files touched:**
+  - `components/DetailsPanel.xml` — Renamed `playBtnBg`→`playButtonBg`, `resumeBtnBg`→`resumeButtonBg`
+  - `components/HomeScene.brs` — `itemSelected`→`buttonPressed` (2 observers)
+  - `components/HeroBanner.xml` — Added `<script>` tag, `btnPlay`/`btnMoreInfo` JFButton nodes, renamed 4 node IDs to match .brs, added `heroEpisodeTitle`/`heroClock` labels
+  - `components/JFButton.xml` — Focus border color `0x00FF00FF`→`0x22D3EEFF`
+  - `components/HomeSceneFocus.brs` — Reformatted from 1 line to 40 lines, fixed `m.contentRows`→`m.nextUpRow`
+  - `components/HomeScene.xml` — Added `<script>` tag for HomeSceneFocus.brs
+  - `components/HomeScreen.brs` — `itemSelected`→`onItemSelected` for navRail observer
+- **Timestamp:** 2026-07-26T12:24:00Z
+- **Automatic:** yes
+
+## 2026-07-25 — Fixed HomeScreen hero buttons (Play/More Info): wrong findNode IDs
+
+- **What:** Fixed hero buttons (Play/More Info) being completely non-functional — couldn't scroll between them or select them
+- **Root cause:** `HomeScreen.brs` referenced `findNode("playBtnBg")` and `findNode("infoBtnBg")`, but those node IDs don't exist in `HomeScreen.xml`. The actual nodes are JFButton components with ids `playButton` and `infoButton`. Both variables were always `invalid`, causing `setHeroButtonFocus()` to return early at its guard check, so `m.heroButtonFocused` never became `true` and all button interaction code in `onKeyEvent` was dead code.
+- **Fix:** Changed variable names from `m.playBtnBg`/`m.infoBtnBg` to `m.playButton`/`m.infoButton`, updated `findNode` calls to correct IDs, updated `focusedChild` observers, and changed `setHeroButtonFocus`/`clearHeroButtonFocus` to call `setFocus(true)` on JFButton nodes (not their internal Rectangles) and access `buttonBg` children for color changes.
+- **Files touched:** `components/HomeScreen.brs`
+- **Verification:** Build + sideload to 192.168.1.196 — SUCCESS
+- **Timestamp:** 2026-07-25T12:00:00Z
+- **Automatic:** no (user-directed)
+
 ## 2026-07-25 — Fixed HomeScreen interaction bugs (row selection, hero focus, button handlers)
 
 - **What:** Fixed 4 critical bugs preventing HomeScreen from being interactive:
@@ -496,3 +780,224 @@
 - **Verification:** Deployed to 192.168.1.196. Auto-login works (straight to HomeScreen), no crashes. Login screen fixes await manual testing via "Change Server" flow.
 - **Timestamp:** 2026-07-16T21:30:00Z
 - **Automatic:** no (user-directed)
+ 
+## Fix DiscoverPage Auto Discovery Scrolling
+- **When:** 2026-07-29 20:41 EDT
+- **What:** Enabled vertical scrolling on DiscoverPage MarkupGrid
+- **Why:** Grid was limited to 2 rows with no scrolling making it impossible to browse all auto-discovered content
+- **Changes:** components/DiscoverPage.xml - set numRows=4 added scrollingEnabled=true and scrollSpeedMultiplier=1.5
+
+
+## 2026-07-31 � Fixed home screen layout (root-cause fixes for rows, NavRail, hero)
+
+- **What:** Diagnosed via Roku dev console + Roku RowList docs; fixed the actual root causes:
+  1. **Rows showed 1 tile each** � `itemSize` on RowList is the *row* size, not item size. `itemSize=[196,294]` made each row only 196px wide. Set `itemSize=[1660,334]` so rows span full width (server returns 10-20 items per category).
+  2. **RowList has NO width/height fields** � removed invalid `width="1660" height="520"` from HomeScreen.xml (was throwing "Tried to set nonexistent field" warnings; row width now comes from itemSize).
+  3. **itemSpacing x-dim is ignored by RowList** � switched to `rowItemSpacing=[[20,0],...]` for horizontal poster gaps; kept itemSpacing for vertical row gaps.
+  4. **showRowLabel must be an array** � now `[true,...]` per row with `rowLabelOffset=[[0,-30]]` so row titles (Continue Watching, etc.) show above each carousel.
+  5. **RowListItem focus used non-existent field** `rowListItemFocused` � RowList sets `itemHasFocus`/`rowHasFocus`; rewired onFocusChanged to `itemHasFocus and rowListHasFocus` so the focus ring actually displays.
+  6. **NavRail sat behind the JFOverhang and its dark background clipped the hero title** � moved NavRail to `[0,90]` (below 90px overhang), brightened rail background, enlarged icons to 30px, cyan highlight with opacity.
+  7. **Garbled hero meta text** � setHeroItem formatted raw `type + Type + ISO dateAdded` (e.g. "Movie Movie 2026-07-31T..."); rewrote to clean `Type � ProductionYear � YYYY-MM-DD`.
+  8. **Duplicate clock** � removed HomeScreen clockLabel + clock timer (JFOverhang already shows a clock).
+- **Why:** User reported rows showing a single box, blank left rail, dim icon bar behind overhang, cutoff/garbled hero text.
+- **Files touched:**
+  - `components/home/HomeRows.bs` � itemSize/itemSpacing/showRowLabel/rowItemSpacing/rowLabelOffset per-row arrays
+  - `components/HomeScreen.xml` � NavRail translation [0,90], removed clockLabel, hero labels widened (title 1300px, desc 1100px), removed invalid HomeRows width/height
+  - `components/HomeScreen.brs` � clean hero meta formatting, added ProductionYear to heroData, removed clock code
+  - `components/NavRail.xml` � rail bg 0x10141DFF height 990, 30px icons, cyan highlight rects
+  - `components/RowListItem.xml`/`.brs` � correct RowList focus fields (itemHasFocus/rowHasFocus)
+  - `source/Main.bs` � temporary autologin/token diagnostics added then removed
+  - `manifest` � build_version 19 -> 25
+- **Verification:** Deployed to 192.168.1.196; console showed clean HomeScreen creation (no more width/height warnings), auto-login OK, HomeScreen Init. Queried Jellyfin at 192.168.1.224:8097 (via captured token): GetLatest=10, Resume=20, NextUp=0 items. Temporary diagnostic prints removed after verification.
+- **Timestamp:** 2026-07-31
+
+## 2026-07-31 (manual)
+- **What changed:** deploy_roku.ps1 now prompts interactively for the target Roku IP (Read-Host). Blank input falls back to the default 192.168.1.196; env var ROKU_IP still bypasses the prompt entirely.
+- **Why:** User needs to sideload to multiple Rokus.
+- **Files touched:** deploy_roku.ps1 (lines 27-31)
+- **Timestamp:** 2026-07-31
+
+## 2026-07-31 (automatic)
+- **What changed:** Audited all 27 onKeyEvent handlers against the roadmap rule "return false if unhandled or you eat the event". Fixed 6 violations in 5 files:
+  - components/config/SigninScene.bs - if not press then return true -> alse (was eating all key releases)
+  - components/login/UserSelect.bs - same fix
+  - components/JFMessageDialog.bs - added if not press then return false guard (BACK fired backPressed on both press AND release = double-fire)
+  - components/search/SearchResults.bs - added press guard (left/right/play were double-handled)
+  - components/config/SetServerScreen.bs - trailing 
+eturn true (x2) -> alse (was swallowing ALL unhandled keys)
+- **Why:** Roadmap Phase 2 flags this exact bug class (returning true on unhandled keys breaks focus chain / back behavior).
+- **Files touched:** SigninScene.bs, UserSelect.bs, JFMessageDialog.bs, SearchResults.bs, SetServerScreen.bs
+- **Verification:** 	ranspile.ps1 + uild.js -> "Transpile complete! (163 BS files processed)" / "BUILD OK". sc --project bsconfig.json errors (14, in HeroBanner/HomeScene/NextUpRow/SidebarNav XML) confirmed pre-existing via git stash.
+- **Timestamp:** 2026-07-31
+
+## 2026-07-31 — Fixed "can't select and play movies" (script scope + dead code)
+
+- **What:** (manual) MovieDetails/TVSeries/Artist/etc. were calling namespaced functions (`MainAction_Play`, `quickplay.video`, `api.*`, `CreatePersonView`) that were never injected into those components' XML scopes — every call was an undefined-function runtime error, so pressing Play did nothing.
+  1. Extended `transpile.ps1` `libInjections` so detail/library screens get the scripts they call: `MainActions.brs`, `utils/quickplay.brs`, `api/sdk.brs`, `api/Items.brs` (+ globals/config/ShowScenes/MainEventHandlers/userauth for Movie/TVSeries) injected into MovieDetails, TVSeriesDetails, TVSeasonDetails, AlbumView, ArtistView, VisualLibraryScene, MusicLibraryView, LiveTVLibraryView, OtherLibrary, AudioBookLibraryView.
+  2. Removed legacy `CreateObject("roSGTask", "Task")` + `setCallback` concurrent-load block in `MovieDetails.LoadData` (roSGTask/setCallback don't exist on Roku — threw a runtime error mid-LoadData); replaced with direct `loadCast`/`loadExtras`/`checkVersions` calls.
+  3. Added `lastEventNode` fallback in `MovieDetails.onButtonSelected` (scan buttons via `buttonSelected`) so Play/Resume/Trailer/Favorite/MyList/Subtitles/Versions resolve even if `lastEventNode` is unset.
+- **Why:** User reported "i can not select and play movies".
+- **Files touched:** `transpile.ps1`, `components/movies/MovieDetails.bs`, `manifest` (build_version 27→28)
+- **Build:** v28 deployed successfully; app launched, no errors in console.
+
+## 2026-07-31 — Movie tiles letterboxed (centered) instead of poster-fill
+
+- **What:** (manual) Changed `loadDisplayMode` from `scaleToFit` to `scaleToZoom` (cover) on all poster tile components so images fill the whole tile regardless of source aspect ratio: HomeItem, RowListItem, GridItem, GridItemSmall, GridItemMedium, PosterRow.
+- **Why:** User reported some movie tiles showed the image centered inside the tile (letterbox bars) instead of a full poster.
+- **Files touched:** `components/home/HomeItem.xml`, `components/RowListItem.xml`, `components/ItemGrid/GridItem.xml`, `GridItemSmall.xml`, `GridItemMedium.xml`, `components/PosterRow.xml`, `manifest` (build_version 28→29)
+- **Build:** v29 deployed successfully.
+
+## 2026-07-31 — Home screen redesigned to Plex/Wholphin style (removed hero banner)
+
+- **What:** (manual, per user feedback "doesn't look like the reference Wholphin yet") Removed the large 594px hero banner takeover and switched to a Plex-style home: dark full-bleed background + left nav rail + content rows filling the whole screen.
+  1. `HomeScreen.xml`: deleted heroBackdrop, heroGradient, heroTitle/Subtitle/Meta/Description, heroButtons (Play/More Info); moved HomeRows to `[140, 0]` full height; centered loading/error UI.
+  2. `HomeScreen.brs`: removed `setHeroItem`, the `hero` LoadItemsTask (pendingSections 5→4), `onRowItemFocused` observer + function, hero key handling. Simplified `onKeyEvent` (left→rail, right→rows, up@top row→rail, down@rail→rows, back→rail). Rows now fill 1080px.
+  3. `HomeRows.bs`: bigger cards — Continue Watching/Next Up rows 400x225 (16:9), poster rows 214x320 (2:3), row headers offset [-45].
+  4. `RowListItem.brs`: `onSizeChanged` now updates posterContainer clipRect to match new card sizes.
+  5. `NavRail.xml`: widened to 90px, icons 40px, added channel logo at top (railLogo), bigger highlight pills.
+- **Why:** User: "the home screen still doesnt look like the reference [Wholphin] but its getting close"; confirmed Plex-style home (no hero banner).
+- **Files touched:** `components/HomeScreen.xml`, `components/HomeScreen.brs`, `components/home/HomeRows.bs`, `components/RowListItem.brs`, `components/NavRail.xml`, `manifest` (build_version 29→30)
+- **Build:** v30 deployed; console clean ([NavRail.init] OK, [HomeScreen.init] ok, no errors).
+## 2026-08-02 - SetServerScreen buttons + MovieDetails crash + _sm() diagnostics
+
+- **What:** Fixed SetServerScreen login buttons not selectable; fixed MovieDetails crash on rating type mismatch; added diagnostics to _sm() and Create* functions.
+- **SetServerScreen root cause:** (1) JFScreen.OnScreenShown() calls setFocus(true) on screen, overriding focusProxy; (2) discoveredServerList LabelList had focusable=true, stealing focus; (3) onKeyboardButton did not re-assert focusProxy after dialog.
+- **SetServerScreen fix:** SetServerScreen.xml: Added focusable=false to component def + discoveredServerList; SetServerScreen.bs: Overrode OnScreenShown to call focusProxy.setFocus(true); updateHighlights toggles discoveredServerList.focusable; onKeyboardButton re-asserts focusProxy after dialog.
+- **MovieDetails fix:** Changed chainLookupReturn default from empty string to 0 for CommunityRating field to fix type mismatch crash at line 78.
+- **Diagnostics:** Enhanced _sm() with detail output; added debug prints to CreateServerGroup, CreateHomeGroup, CreateMovieDetailsGroup, CreateSearchPage.
+- **Files:** components/config/SetServerScreen.xml, components/config/SetServerScreen.bs, components/movies/MovieDetails.bs, source/ShowScenes.bs
+## 2026-08-03 - MovieDetails buttons/focus fixes
+
+- **What:** Fixed MovieDetails OnScreenShown crash, stale buttonSelected state, and MainAction.EditSubtitles m.scene crash.
+- **Root cause 1:** `setFocus(true)` (bare, no receiver) in MovieDetails.bs OnScreenShown line 54 and JFScreen.bs line 23 calls an undefined function -> OnScreenShown throws before btnPlay.setFocus(true), so initial focus is never set on a button.
+- **Root cause 2:** `buttonSelected` on JFButtons was never reset; the onButtonSelected handler iterated candidates and picked the LAST button with `buttonSelected=true`, so a stale selection routed OK presses to the wrong action (btnSubtitles instead of btnPlay).
+- **Root cause 3:** MainAction.EditSubtitles used `m.scene.dialog = dialog`; when called from MovieDetails context, `m` is MovieDetails (no `scene` field) -> `invalid` -> crash.
+- **Fix 1:** `setFocus(true)` -> `m.top.setFocus(true)` in MovieDetails.bs and JFScreen.bs.
+- **Fix 2:** Added `<function name="OnScreenShown" />` / `<function name="OnScreenHidden" />` to MovieDetails.xml interface so callFunc reliably finds them.
+- **Fix 3:** onButtonSelected now resets each matched button's `buttonSelected=false` and uses a `m.handlingButtonSelected` re-entry guard.
+- **Fix 4:** MainAction.EditSubtitles resolves the scene via `m.top.getScene()` with a `getGlobalAA().scene` fallback.
+- **Fix 5:** Initialized `m.focusedBtnIdx = 0` and `m.handlingButtonSelected = false` in MovieDetails.Init().
+- **Files:** components/movies/MovieDetails.bs, components/movies/MovieDetails.xml, components/JFScreen.bs, source/MainActions.bs
+- **Build:** transpile.ps1 + build.js OK (Wholphin.zip ~422KB).
+## 2026-08-03 - setOverhangTitle crash + Auto Discover stuck task
+
+- **What:** Fixed the crash that blocked MovieDetails/SetServerScreen from being pushed, and fixed Auto Discover so it can be re-run.
+- **Root cause (crash):** `roku_monitor_20260803_112920.log` showed `Member function not found ... JFGroup.brs(31)` in `scene.setOverhangTitle(title)`. On this firmware, cross-node functions must be declared in the target component's `<interface>` before they can be called via dot-notation or callFunc. `setOverhangTitle` is defined in BaseScene.bs but was NOT in BaseScene.xml's interface -> every `OnScreenShown` that called `setOverhangTitle` (MovieDetails, SetServerScreen, JFScreen) crashed. The earlier fix (adding `OnScreenShown` to MovieDetails.xml interface) made `callFunc("OnScreenShown")` actually invoke, which then exposed this crash.
+- **Root cause (Auto Discover):** `ServerDiscoveryTask` was created and set to `control = "RUN"` but never appended to the scene tree (every other task in the app is appended). The task may not execute `functionName`, so `onDiscoveryComplete` never fired, `m.isDiscovering` stayed `true`, and every later "Auto Discover" press hit the "already discovering" guard -> button appeared dead/stuck at "Searching...".
+- **Fix 1:** JFGroup.bs `setOverhangTitle` now calls `scene.callFunc("setOverhangTitle", title)`.
+- **Fix 2:** Added `<function name="setOverhangTitle" />` to BaseScene.xml interface.
+- **Fix 3:** SceneManager.bs popScene now uses `sceneManager.callFunc("setOverhangTitle", ...)`.
+- **Fix 4:** Added `<function name="OnScreenShown" />` / `<function name="OnScreenHidden" />` to JFScreen.xml interface so callFunc resolves the lifecycle callbacks on every JFScreen descendant.
+- **Fix 5:** StartDiscovery removes the old task, appends the new task via `m.top.appendChild`, and onDiscoveryComplete resets `m.isDiscovering`, `m.top.isDiscovering`, and the button text.
+- **Files:** components/JFGroup.bs, components/BaseScene.xml, components/manager/SceneManager.bs, components/JFScreen.xml, components/config/SetServerScreen.bs
+- **Build:** transpile.ps1 + build.js OK (Wholphin.zip).
+
+
+
+- **Fix:** deploy_roku.ps1 now auto-bumps manifest build_version on every deploy so Roku detects a fresh build and recompiles (never serves cached bytecode). Cleanup of build/ + out/ already forces fresh staging. Upload stays mysubmit=Replace.
+- **Files:** deploy_roku.ps1
+- **Build:** N/A (script change only)
+
+- **Fix:** MovieDetails vertical scroll - onKeyEvent now handles down/up: moves focus between action buttons (focusZone=-1) and visible content grids (extrasGrid, castGrid) via new visibleContentGrids()/focusButton() helpers. left/right only consumed on buttons so grids can navigate horizontally. back from a grid returns to buttons before popping scene.
+- **Fix:** quickplay.brs crash - replaced m.global.queueManager (namespace funcs have no valid m) with getGlobalAA().queueManager in all 6 queue funcs, plus if queueManager = invalid then return guard in each.
+- **Files:** components/movies/MovieDetails.bs, source/utils/quickplay.bs
+- **Build:** transpile.ps1 + build.js OK (Wholphin.zip).
+
+- **Deploy:** Out-of-band redeploy via deploy_roku.ps1 (IP 192.168.1.196). Root cause of "scrolled briefly then froze" = device was still running the OLD build (log 115437 shows m.global.queueManager crash, zero focusZone/getGlobalAA references). My scroll + quickplay fixes were built but never uploaded. Version bumped 39->40, Replace sideload OK.
+- **Files:** none changed (deploy only)
+
+- **Fix:** VisualLibraryScene froze when opening a library - LoadData() called api.items.Get() on the render thread; CreateObject('roUrlTransfer') is forbidden there, returns invalid, then req.SetUrl(spec.url) threw 'Dot' operator invalid (log 115810: baserequest.brs(103), stack VisualLibraryScene.loadData -> api_items_get -> getjson). Refactored LoadData to use LoadItemsTask2 task (parentId/includeItemTypes/sortBy/sortOrder/limit/startIndex/filters/userId), callback onLoadItemsComplete -> populateGrid. Guards re-entry, removes/unobserves task when done.
+- **Files:** components/Libraries/VisualLibraryScene.bs
+- **Build+Deploy:** deploy_roku.ps1, build_version 41->42, Replace sideload OK.
+
+- **Fix:** MovieDetails buttons Favorite / My List / Mark Watched crashed on render thread (log 120401: baserequest.brs(103) via MovieDetails.onButtonSelected -> MainAction_AddToMyList). Created components/ItemGrid/UserDataTask (markfavorite/unmarkfavorite/markplayed/unmarkplayed) and rewrote MainActions MarkFavorite/MarkPlayed/AddToMyList/RemoveFromMyList/MarkWatched/MarkUnwatched to dispatch via RunUserDataTask() -> getGlobalAA().scene.appendChild(task). Task self-removes via finish().
+- **Files:** components/ItemGrid/UserDataTask.xml, components/ItemGrid/UserDataTask.bs, source/MainActions.bs
+- **Build+Deploy:** build_version 43->44, Replace sideload OK.
+- **Note:** PlayTrailer's GetIntros + AlbumView/AudioPlayerView/TVSeriesDetails/MusicLibraryView/OtherLibrary/AudioBookLibraryView still do render-thread api.* calls - need task conversion (untested/not yet hit).
+
+
+- **Fix (automatic):** MovieDetails Back froze the whole app instead of returning to Home. Root cause: PopCurrentScene() did scene-graph surgery (previousScene.visible=true on the large HomeScreen tree + removeChild of the focused MovieDetails) SYNCHRONOUSLY inside the onKeyEvent handler -> render thread stall (looks like hard freeze; telnet console buffers output 30-60s so it LOOKED frozen even when not). Bisected via noop/test builds 105-114: key handler itself is fine; the visible=true + removeChild combo on HomeScreen re-show is the trigger. Fixed PopCurrentScene() to defer ALL surgery to a one-shot Timer (pop stack sync, store getGlobalAA().__pendingPop, sm.createChild('Timer') -> onPendingPopFired does re-show + focus + removeChild). Focus only moved if previousScene.focusedChild = invalid.
+- **Also fixed:** 6 library/Settings screens (AudioBookLibraryView, LiveTVLibraryView, MusicLibraryView, OtherLibrary, VisualLibraryScene, SettingsView) used broken m.global.sceneManager.callFunc('popScene') (field is void-typed invalid from Main.bs addFields({sceneManager: invalid}), so the call would throw on invalid). Switched to PopCurrentScene() and added pkg:/source/ShowScenes.brs to their transpile.ps1 .
+- **Files:** source/ShowScenes.bs, components/movies/MovieDetails.bs, components/Libraries/{AudioBookLibraryView,LiveTVLibraryView,MusicLibraryView,OtherLibrary,VisualLibraryScene}.bs, components/SettingsView.bs, transpile.ps1, AGENTS.md (4.5 rules 6-9)
+- **Verified on-device (build 115):** Home -> Down x3 -> Select (MovieDetails) -> Back -> returned to Home, then Down/Right/Select opened a second MovieDetails (Home fully interactive). FF/RW, video->MovieDetails back also confirmed working.
+- **Builds:** 96 (FF/RW keys + player back) ... 115 (current, clean deferred pop + lib back-handler fixes).
+
+- **Fix (automatic):** User could NOT select other servers. Root cause: Saved Servers UI was dead code. CreateServerGroup() (ShowScenes.bs) set serverScreen.savedServers but SetServerScreen never observed the field, never populated serverList, and savedServersLabel/serverList were permanently hidden (focusable=false added to serverList; connect was impossible). Wired up: m.serverList.observeField("itemSelected",...), m.top.observeField("savedServers",...), populateSavedServers() on init + on change, generalized listIsActive()/activeList()/selectListItem(index,lst) to work with either saved or discovered list, updateHighlights() handles focusedButtonIndex=3 for either list (both lists focusable=false, focusProxy pattern per AGENTS.md 4.4).
+- **Files:** components/config/SetServerScreen.bs, components/config/SetServerScreen.xml
+- **Build:** 118 (deployed)
+
+- **Testing methodology discovery:** ECP keypress delivery (curl :8060/keypress) is unreliable in this environment - keys are delayed/dropped whether or not the telnet console is attached (livemon55-58: zero [Home] prints while heartbeat kept firing; livemon60: zero [Home]/[POP] prints during full nav window, heartbeat continuous -> app BS thread never stalls). Earlier "17s Back gap" was input-queue contamination + telnet buffer lag, not app freeze. Deferred pop completes in <1s. On-device verification of back-paths now requires physical remote testing by the user.
+- **Instrumentation (builds 119-121):** [HB] 5s heartbeat, [HERO]/[FIN] wall-clock, [Home] key= in HomeScreen.onKeyEvent, [POP]/[POP-FIRED] wall-clock in ShowScenes. All proved the main thread never stalls and pop is fast. Removed in build 122.
+
+- **Fix (automatic):** PopCurrentScene guard swallowed a second Back pressed while a pop's deferred timer was in flight (~1s window) - dropped key could read as a freeze. Changed to queue: __queuedPop flag set instead of dropping; onPendingPopFired processes the queued pop after completing the current one. ClearAllScenes resets both __pendingPop and __queuedPop.
+- **Files:** source/ShowScenes.bs
+- **Build:** 122 (deployed, app boots clean, no errors, all Home sections load)
+- **Timestamp:** 2026-08-04 17:09
+
+- **Cleanup (automatic):** Moved unused/debris files into _archive/ subfolders. Nothing deleted, all recoverable.
+  - _archive/debug-logs/: livemon*.txt, roku_monitor_*.log, telnet*.txt, roku_debug*.txt/.log, focusable/buttons/textbuttons/rectangles/interactive_elements/tmpfiles txts, monitor_job_id.txt, roku_live.txt
+  - _archive/test-scripts/: test_*.ps1 (capture/backpath/nav/key/videopath/freeze/resp/final/live), capture_debug.ps1
+  - _archive/skeleton-and-experiments/: ai code/ skeleton, movievault_icon.png, jellyrock_icon.png, dev_icon.png, dev_icon_test.jpg, dev_page.html
+  - _archive/obsolete-scripts/: fix-library-paths.ps1, new.ps1, run_debug.ps1, stray file '0'
+  - _archive/reference-docs/: BrightScriptReferenceManual_ver9.pdf, BrightScript_Reference_Manual_3.0_draft.pdf
+  - _archive/planning-docs/: ui.md, plans.md, roadmap.md, changelog.md, features.md, UI Redesign Spec Wholphin Roku App.md
+- **Kept:** manifest, source/, components/, images/, locale/, settings/, docs/, build tooling (transpile.ps1, build.js, deploy_roku.ps1, bsconfig*.json, package.json, node_modules/), dev tools (livemon.ps1, setup.ps1, debugroku.ps1, skills-lock.json), AGENTS.md, README.md, .gitignore, history/, .agents/, .poolside/
+- **Note:** deploy_roku.ps1/README/AGENTS reference 'rokudebug.ps1' but that file never existed; actual telnet debug script is debugroku.ps1 (pre-existing inconsistency).
+- **Verified:** transpile.ps1 + build.js still OK (164 BS files, BUILD OK).
+- **Timestamp:** 2026-08-04 18:47
+
+## NavRail dynamic side menu (automatic)
+- **What:** Rebuilt NavRail.brs/.xml with official Wholphin drawer order (profile -> search -> home -> favorites -> discover-if-enabled -> dynamic libraries from GET /Users/{userId}/Views -> settings). Icons: nav_user/nav_search/nav_home/nav_favorites/nav_movies/nav_tv/nav_playlist/nav_cast/nav_library/nav_collection/nav_settings. 90px rail, 84px item pitch, 72x56 cyan highlight, home icon always cyan. Dynamic library loading via LoadItemsTask (itemsToLoad="libraries"). Selection ids: profile/search/home/favorites/discover/lib:{id}/settings -> HomeScreen.onNavItemSelected routes to CreateSearchPage/CreateHomeGroup/CreateSettingsScreen/CreateDiscoverPage/openLibraryById (visual library by collectionType; music/livetv special-cased).
+- **Why:** Official Wholphin Android drawer parity; dynamic library items from the server.
+- **Bugs found & fixed during this work:**
+  1. Build 123: unc_name_resolver failed resolving 'updatehighlights' � rebuildRail() called updateHighlights() which was never defined. Fixed by adding updateHighlights().
+  2. Build 124-125: HomeScreen creation still failed with a micro-debugger drop-in. Root cause: if session <> invalid and session.user <> invalid then userId = session.user.GetId() in NavRail.brs � in a component script session is the injected NAMESPACE (function-container), so session.user field access throws. HomeScreen.brs is unaffected because transpile rewrites the whole session.user.GetId() call to session_user_GetId(), but a bare session.user comparison is not rewritten. Fixed by reading m.global.session.user.id via chainLookupReturn instead.
+  3. updateScroll itemPitch was 64 (old XML spec); official rail uses 84px pitch. Fixed.
+- **Files touched:** components/NavRail.brs, components/NavRail.xml, components/HomeScreen.brs (onNavItemSelected was already wired), history/history.md. Added dev_capture.ps1 (telnet capture helper) in repo root.
+- **Verified:** build 0.1.127 deployed and running; trace shows [NavRail.init] OK, dynamic, [NavRail] libraries loaded= 3, [HomeScreen.init] navRail=true homeRows=true, inishLoading called, no BrightScript errors, no micro-debugger drop-in, active-app=dev 0.1.127.
+- **Known limitation:** ECP key delivery is unreliable with telnet attached, so interactive nav (selecting a library from the rail) still needs physical-remote verification. Deferred-pop and Back handling unchanged (build 122) and untouched.
+- **Timestamp:** 2026-08-04 20:05
+
+## Fix: side-menu destinations stuck on Loading/blank (automatic)
+- **Symptom:** After NavRail went live, almost every nav option (libraries, Favorites, Search, Settings) showed "Loading..." or a blank screen and did nothing.
+- **Root causes (all pre-existing wiring gaps, newly reachable because NavRail exposes all destinations for the first time):**
+  1. **Libraries + Favorites hang:** LoadItemsTask2 (used by VisualLibraryScene) called api.items.Get() but its XML only had misc/session/baserequest/Image injected � missing api/Items.brs + api/sdk.brs + api/userauth.brs. Task threw &h91 on the render thread, loadStatus never fired, loading label stayed forever. Fixed by adding LoadItemsTask2.xml to transpile.ps1 libInjections.
+  2. **Search does nothing:** SearchTask.xml, SearchRow.xml, and searchResults.xml had NO script tags at all, so their .bs logic never loaded (SearchTask.functionName never set, SearchRow never populated). Added script tags; added SearchTask libInjections (api/Items for searchMedia).
+  3. **Settings blank:** SettingsView.xml had no script tag, so callFunc("loadSettings") had no handler. Added script tag + utils/globals.brs injection (getThemeColors).
+  4. **VisualLibraryScene item-select crash risk:** it calls HandleItemSelection (MainEventHandlers.brs) which was not injected. Added to its libInjections.
+- **Files touched:** transpile.ps1 (libInjections: +LoadItemsTask2.xml, +SearchTask.xml, SettingsView.xml +globals, VisualLibraryScene.xml +MainEventHandlers), components/search/SearchTask.xml, components/search/SearchRow.xml, components/search/SearchResults.xml, components/SettingsView.xml. Removed temporary NavRail.onKeyEvent print; kept low-frequency [VLS] LoadData/onLoadItemsComplete prints in VisualLibraryScene.bs for future verification.
+- **Verified:** build 0.1.131 boots clean (NavRail.init OK, 3 libraries loaded, HomeScreen.init, finishLoading, no BrightScript errors). Server-side queries for the 3 libraries return data (Movies 2959, Collections 1, Playlists 1) so the task will populate grids. Interactive nav still needs physical-remote confirmation (ECP directional keys do not reach the app in this environment; only OS-level Home works).
+- **Known, not fixed (not reachable with current 3 libraries):** MusicLibraryView/LiveTVLibraryView call api.* directly on the render thread (same bug class already fixed for VisualLibraryScene) � would hang if a music/livetv library is added. DiscoverPage is an incomplete stub (only reachable if discover.enabled, currently false). Logged for future work.
+- **Timestamp:** 2026-08-04 20:25
+## 2026-08-05 12:10 - Change Server / Sign Out entry points (build 0.1.132)
+- WHAT: Added 'Change Server' + 'Sign Out' actions to the Settings screen so a logged-in user can reach the SetServerScreen (previously unreachable after auto-login).
+- WHY: User cannot switch servers (e.g. to http://192.168.1.224:9100/) � no UI path after auto-login pins the app to the saved server.
+- FILES: settings/settings.json (2 new action-type settings), components/SettingsView.bs (executeAction routes action.changeServer/showserver + action.signOut/signout via scene.setField pendingServerAction), source/Main.bs (new pendingServerAction cases: showserver -> CreateServerGroup(); signout -> SignOut()+CreateServerGroup()).
+- VERIFY: Deployed 0.1.132 (BUILD OK, 419.1 KB). Clean boot trace (auto-login OK, 3 libraries, finishLoading, no errors). Interactive test requires physical remote (ECP keys don't reach app).
+
+## 2026-08-05 - Home screen redesign: HeroPanel + PosterCard shelves + purple NavRail (build 0.1.135)
+- WHAT: Full home-screen visual overhaul to match the reference streaming layout.
+  - New `components/home/HeroPanel.xml`/`.bs`: 454px cinematic backdrop (scaleToZoom) with 250ms crossfade (programmatic Animation, no XML Animation/state reliance), hero_gradient + hero_fade_bottom overlays, LargeBold title, rich meta line, 4-line wrap description, purple "Continue Watching" CTA (focusable, wired to HandleItemSelection), top-right clock.
+  - New `components/home/PosterCard.xml`/`.bs`: uniform 220x330 2:3 card, rounded corners via MaskGroup(maskUri=poster_mask_2x3.png), purple 4px progress bar (PlaybackPositionTicks/RunTimeTicks), episode-number badge, purple glow + ring + lift(-6) + scale(1.09) focus animation (easeOutQuad, scaleRotateCenter=[110,165]).
+  - `components/home/HomeRows.bs`: uniform row geometry (rowHeights 430, rowItemSizes [220,330], itemSpacing [24,28]), itemComponentName=PosterCard, LargeBoldSystemFont row headers.
+  - `components/home/LoadItemsTask.bs`: expanded homeFields (RunTimeTicks, PlaybackPositionTicks, OfficialRating, CommunityRating, CriticRating, CriticRatingScorePercent, ProductionYear, EndDate); favorites->IncludeItemTypes Series; new movies/tvshows/collections branches via GetUserViews + api.items.Get.
+  - `components/HomeScreen.xml`: added home_bg.png gradient background; replaced inline hero labels with HeroPanel; rows moved to y=500.
+  - `components/HomeScreen.brs`: deterministic section order (resume, favorites, movies, tvshows, latestmedia, collections) with m.sectionResults collection -> finishLoading emits rows in fixed order (kills race-order glitch); setHeroItem builds rich meta "Year � 2h 7m � 1h 36m left � PG-13 � ? 8.0 � 91% � Ends at 9:37 PM"; cleanTitle() never shows raw filenames; CTA handler onHeroContinueSelected; focus routing homeRows<->btnContinue<->navRail.
+  - `components/NavRail.brs`: purple accent (0x7B3FF2FF), 44px icons centered, 46px pitch, 64x44 highlight pill, selected scale 1.1, scroll viewHeight 880.
+  - Assets: home_bg.png, hero_fade_bottom.png, poster_mask_2x3.png, focus_glow.png + nav_* icon set generated via gen-assets.js (sharp).
+- BUGS FOUND & FIXED during deploy:
+  1. Build 133: ContentNode has no built-in `meta`/`backdropURL`/`showContinue` fields - silent warnings. Fixed with heroNode.AddFields().
+  2. Build 133: `Animation.resetChildrenToKeyValue()` does not exist at runtime - dropped into micro-debugger on first focus. Removed; start/stop + manual base-state reset instead.
+  3. Build 134: `roDateTime.AddSeconds` not available on this firmware - "Ends at" now computed via minute arithmetic (mod 1440).
+- FILES: components/home/{HeroPanel,PosterCard,HomeRows,LoadItemsTask}.{xml,bs}, components/{HomeScreen,HomeScreen.brs,NavRail}.{xml,brs}, images/*, UI_REDESIGN_PLAN.md.
+- VERIFY: build 0.1.135 deployed. Clean boot: [HomeScreen.init] navRail=true homeRows=true, all 7 sections launched, finishLoading called, no BrightScript errors, no micro-debugger, no "Warning occurred while setting a field" (ContentNode fix confirmed), active-app responsive (ECP Home). tvshows section reports "error" simply because this server has NO tvshows library (Views = Collections/Movies/Playlists) - expected skip, not a bug.
+- NOT VERIFIED (needs physical remote): row scrolling, hero crossfade on focus change, CTA focus/play, purple focus glow. ECP directional keys do not reach the app in this environment.
+
+## 2026-08-05 - Reverted home redesign; restored Wholphin home + kept server-switch
+- WHAT: Reverted the HomeScreen/HeroPanel/PosterCard/NavRail-redesign changes (build 0.1.135) and restored the original Wholphin home screen (HEAD baseline) so the rows look right again. Re-deployed build 0.1.136.
+- WHY: The redesign did not match the Wholphin aesthetic. Restored full-bleed heroBackdrop Poster, hero meta labels, Play/More Info buttons, RowList rows via RowListItem, dynamic cyan NavRail.
+- FILES reverted (git checkout HEAD): components/HomeScreen.xml, components/HomeScreen.brs, components/home/HomeRows.bs, components/home/HomeRows.xml, components/home/LoadItemsTask.bs. NavRail.brs manually restored to the dynamic version (HEAD has an older hardcoded rail; only my purple/pitch edits were reversed, keeping the dynamic rail).
+- FILES removed (redesign-only, unused): components/home/HeroPanel.{xml,bs}, components/home/PosterCard.{xml,bs}, UI_REDESIGN_PLAN.md, images/{home_bg,hero_fade_bottom,poster_mask_2x3,focus_glow}.png, images/icons/{nav_discover,nav_music}.png.
+- KEPT (functional fixes, untouched): Settings->Change Server/Sign Out wiring in settings/settings.json + components/SettingsView.bs + source/Main.bs (pendingServerAction showserver/signout -> CreateServerGroup()/SignOut()); JFOverhang top-left avatar.
+- VERIFY: build 0.1.136 deployed (BUILD OK, 436.8 KB). Clean boot: LoadItemsTask nextup/favorites/resume loaded, no Micro Debugger, no runtime errors.
+- NOTE: this server has only Collections/Movies/Playlists libraries (no TV Shows), so the TV Shows section is absent by design.

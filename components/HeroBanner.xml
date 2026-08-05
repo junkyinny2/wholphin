@@ -7,6 +7,7 @@
     width="1920"
     height="400"
     uri="file://images/hero_backdrop.jpg"
+    focusable="false"
   />
   
   <!-- Gradient Overlay -->
@@ -17,6 +18,7 @@
     height="400"
     blendColor="0x88FFFFFF"
     opacity="0.5"
+    focusable="false"
   />
   
   <!-- Title/Subtitle/Metadata/Description -->

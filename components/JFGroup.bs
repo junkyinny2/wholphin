@@ -28,6 +28,6 @@ function setOverhangTitle(title as String) as Void
     m.top.overhangTitle = title
     scene = m.top.getScene()
     if scene <> invalid then
-        scene.setOverhangTitle(title)
+        scene.callFunc("setOverhangTitle", title)
     end if
 end function

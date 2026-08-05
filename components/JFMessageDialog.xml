@@ -5,6 +5,7 @@
       id="dialogBackground"
       uri="pkg:/images/dialog.9.png"
       translation="[0, 0]"
+      focusable="false"
     />
     <Label id="messageText" horizAlign="center" wrap="true" />
     <LabelList id="optionList" vertFocusAnimationStyle="floatingFocus" textHorizAlign="center">

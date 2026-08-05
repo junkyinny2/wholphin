@@ -13,56 +13,40 @@
     <field id="pendingUserPassword" type="string" value="" alwaysNotify="true" />
     <field id="statusMessage" type="string" value="" alwaysNotify="true" />
     <function name="showSidebar" />
+    <function name="setOverhangTitle" />
   </interface>
   
   <children>
-    <!-- Background image -->
-    <Poster
-      id="imageBackground"
-      translation="[0, 0]"
-      width="1920"
-      height="1080"
-      loadDisplayMode="scaleToFit"
-      visible="true"
-      uri="pkg:/images/roku_logo.png" />
-    
-    <!-- Main content area where scenes are displayed -->
     <Group
       id="content"
       translation="[0, 0]">
     </Group>
     
-    <!-- SetServerScreen: pre-included due to appendChild bug on this firmware -->
     <SetServerScreen
       id="serverScreen"
       translation="[0, 0]"
       visible="true" />
     
-    <!-- UserSelect: pre-included for static navigation -->
     <UserSelect
       id="userSelect"
       translation="[0, 0]"
       visible="false" />
 
-    <!-- SigninScene: pre-included due to appendChild bug -->
     <SigninScene
       id="signinScene"
       translation="[0, 0]"
       visible="false" />
     
-    <!-- Navigation sidebar -->
     <WholphinSidebar
       id="sidebar"
       translation="[0, 0]"
       visible="false" />
     
-    <!-- Top bar overlay -->
     <JFOverhang
       id="overhang"
       translation="[0, 0]"
       visible="true" />
     
-    <!-- Mini audio player bar -->
     <Group
       id="audioMiniPlayer"
       translation="[0, 980]"
@@ -71,28 +55,15 @@
         id="miniPlayerBackground"
         width="1920"
         height="100"
-        uri="" />
+        uri=""
+        focusable="false" />
     </Group>
     
-    <!-- Loading spinner overlay -->
     <Spinner
       id="spinner"
       translation="[860, 490]"
       visible="false" />
-    
-    <!-- Diagnostic status message (visible during auth) -->
-    <Label
-      id="statusLabel"
-      translation="[20, 1020]"
-      width="1880"
-      height="40"
-      font="font:SmallestSystemFont"
-      color="0xFFCC00FF"
-      text=""
-      horizAlign="left"
-      vertAlign="center"
-      visible="false" />
-    
+
   </children>
   
   <script type="text/brightscript" uri="pkg:/components/BaseScene.bs" />

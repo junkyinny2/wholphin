@@ -1,0 +1,44 @@
+' Wholphin Roku - Async task for user data actions (favorite / played) to avoid render-thread API calls
+
+sub Init()
+    m.top.functionName = "processUserData"
+end sub
+
+sub processUserData()
+    itemId = m.top.itemId
+    if itemId = "" then
+        m.top.loadStatus = "error"
+        finish()
+        return
+    end if
+
+    action = m.top.action
+
+    if action = "markfavorite" then
+        m.top.result = (api.users.MarkFavorite(itemId) <> invalid)
+    else if action = "unmarkfavorite" then
+        m.top.result = (api.users.UnmarkFavorite(itemId) <> invalid)
+    else if action = "markplayed" then
+        m.top.result = (api.users.MarkPlayed(itemId) <> invalid)
+    else if action = "unmarkplayed" then
+        m.top.result = (api.users.UnmarkPlayed(itemId) <> invalid)
+    else
+        m.top.loadStatus = "error"
+        finish()
+        return
+    end if
+
+    if m.top.result then
+        m.top.loadStatus = "done"
+    else
+        m.top.loadStatus = "error"
+    end if
+    finish()
+end sub
+
+sub finish()
+    parent = m.top.getParent()
+    if parent <> invalid then
+        parent.removeChild(m.top)
+    end if
+end sub

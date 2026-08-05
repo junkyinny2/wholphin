@@ -5,6 +5,8 @@ sub init()
     m.top.optionsAvailable = false
     m.searchRow = m.top.findnode("searchRow")
     m.searchTask = CreateObject("roSGNode", "SearchTask")
+    m.searchAlphabox = m.top.findNode("SearchAlphabox")
+    m.searchBox = m.top.findNode("SearchBox")
 
     'set label text
     m.searchHelpText = m.top.findNode("SearchHelpText")
@@ -36,14 +38,17 @@ sub loadResults()
 
     stopLoadingSpinner()
     m.searchRow.itemData = m.searchTask.results
-    m.searchRow.query = m.top.SearchAlpha
+    m.searchRow.query = m.top.searchAlpha
     m.searchHelpText.visible = false
     if m.searchTask.results.TotalRecordCount = 0
         ' make sure focus is on the keyboard
         if m.searchRow.isinFocusChain()
-            m.searchAlphabox.setFocus(true)
-            group = m.global.sceneManager.callFunc("getActiveScene")
-            group.lastFocus = m.searchAlphabox
+            if m.searchAlphabox <> invalid then m.searchAlphabox.setFocus(true)
+            group = invalid
+            if m.global <> invalid and m.global.sceneManager <> invalid then
+                group = m.global.sceneManager.callFunc("getActiveScene")
+            end if
+            if group <> invalid then group.lastFocus = m.searchAlphabox
         end if
         return
     end if
@@ -52,22 +57,25 @@ sub loadResults()
 end sub
 
 function onKeyEvent(key as string, press as boolean) as boolean
-    m.searchAlphabox = m.top.findNode("search_Key")
-    if m.searchAlphabox.textEditBox.hasFocus()
-        m.searchAlphabox.textEditBox.translation = "[0, -150]"
-    else
-        m.searchAlphabox.textEditBox.translation = "[0, 0]"
+    if not press then return false
+
+    if m.searchBox <> invalid
+        if m.searchBox.hasFocus()
+            m.searchBox.translation = "[0, -150]"
+        else
+            m.searchBox.translation = "[0, 0]"
+        end if
     end if
 
     if key = "left" and m.searchRow.isinFocusChain()
-        m.searchAlphabox.setFocus(true)
+        if m.searchBox <> invalid then m.searchBox.setFocus(true)
         group = m.global.sceneManager.callFunc("getActiveScene")
-        group.lastFocus = m.searchAlphabox
+        if group <> invalid then group.lastFocus = m.searchBox
         return true
     else if key = "right" and m.searchRow.content <> invalid and m.searchRow.content.getChildCount() > 0
         m.searchRow.setFocus(true)
         group = m.global.sceneManager.callFunc("getActiveScene")
-        group.lastFocus = m.searchRow
+        if group <> invalid then group.lastFocus = m.searchRow
         return true
     else if key = "play" and m.searchRow.isinFocusChain() and m.searchRow.rowItemFocused.count() > 0
         if m.searchRow.rowItemFocused <> invalid
@@ -96,14 +104,17 @@ function getItemFocused() as object
 end function
 
 sub OnScreenShown()
-    group = m.global.sceneManager.callFunc("getActiveScene")
+    group = invalid
+    if m.global <> invalid and m.global.sceneManager <> invalid then
+        group = m.global.sceneManager.callFunc("getActiveScene")
+    end if
 
     if isValid(m.top.lastFocus)
         m.top.lastFocus.setFocus(true)
-        group.lastFocus = m.top.lastFocus
+        if group <> invalid then group.lastFocus = m.top.lastFocus
     else
         m.top.setFocus(true)
-        group.lastFocus = m.top
+        if group <> invalid then group.lastFocus = m.top
     end if
 
     if isStringEqual(m.loadStatus, ViewLoadStatus.INIT)

@@ -95,6 +95,6 @@ function onItemSelected() as Void
 end function
 
 function onBackPressed() as Boolean
-    m.global.sceneManager.callFunc("popScene")
+    PopCurrentScene()
     return true
 end function

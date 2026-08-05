@@ -7,6 +7,7 @@
     width="120"
     height="1080"
     color="0xAA000000"
+    focusable="false"
   />
 
   <!-- Sidebar Layout -->
@@ -31,6 +32,7 @@
         width="40"
         height="40"
         uri="file://images/nav_icon_1.png"
+        focusable="false"
       />
     </ButtonGroup>
     <ButtonGroup
@@ -46,6 +48,7 @@
         width="40"
         height="40"
         uri="file://images/nav_icon_2.png"
+        focusable="false"
       />
     </ButtonGroup>
   </LayoutGroup>

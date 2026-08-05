@@ -1,5 +1,13 @@
 # Wholphin Roku
 
+> ⚠️ **ALPHA — NON-WORKING / UNSTABLE PERSONAL DEV BUILD**
+>
+> This is a **personal, experimental, incomplete** BrighterScript project. It is
+> **not a working, production-ready application** — features may be broken,
+> half-implemented, or missing entirely. **Do not expect it to work.** Use at
+> your own risk; there is **no support**. This is published only as a development
+> snapshot / backup. See [`WARNING.md`](WARNING.md) for details.
+
 A Jellyfin media client for Roku TV, built in BrighterScript.
 
 ## Features

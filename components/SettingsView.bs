@@ -12,6 +12,7 @@ sub init()
   m.settingsList.observeField("focusItem", "onSettingFocused")
   m.valueList.observeField("itemSelected", "onValueSelected")
   m.top.overhangTitle = translateText("Settings")
+  loadSettings()
 end sub
 
 sub loadSettings()
@@ -42,7 +43,22 @@ end function
 sub onSettingSelected()
   selected = m.settingsList.itemSelected
   if selected = invalid then return
+  if selected.settingType = "action" then
+    executeAction(selected)
+    return
+  end if
   showSettingDetail(selected)
+end sub
+
+sub executeAction(settingNode as Object)
+  name = settingNode.id
+  scene = m.top.getScene()
+  if scene = invalid then return
+  if name = "action.changeServer" then
+    scene.setField("pendingServerAction", "showserver")
+  else if name = "action.signOut" then
+    scene.setField("pendingServerAction", "signout")
+  end if
 end sub
 
 sub onSettingFocused()
@@ -132,7 +148,7 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
       m.settingsList.setFocus(true)
       return true
     end if
-    m.global.sceneManager.callFunc("popScene")
+    PopCurrentScene()
     return true
   end if
   return false

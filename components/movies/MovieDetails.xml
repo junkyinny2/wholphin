@@ -1,13 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <component name="MovieDetails" extends="JFScreen">
   <interface>
-    <field id="movie" type="node" alwaysNotify="true" />
+    <field id="movie" type="assocarray" alwaysNotify="true" />
     <field id="metaData" type="node" />
     <field id="isFavorite" type="boolean" value="false" />
     <field id="isPlayed" type="boolean" value="false" />
     <field id="versions" type="array" value="" />
     <field id="selectedVersion" type="int" value="0" />
     <field id="extras" type="array" value="" />
+    <function name="OnScreenShown" />
+    <function name="OnScreenHidden" />
   </interface>
 
   <children>
@@ -17,14 +19,16 @@
       translation="[0, 0]"
       width="1920"
       height="520"
-      loadDisplayMode="scaleToFit" />
+      loadDisplayMode="scaleToFit"
+      focusable="false" />
 
     <Rectangle
       id="backdropOverlay"
       translation="[0, 0]"
       width="1920"
       height="520"
-      color="0x00000060" />
+      color="0x00000060"
+      focusable="false" />
 
     <!-- Movie poster -->
     <Poster
@@ -32,7 +36,8 @@
       translation="[60, 80]"
       width="260"
       height="390"
-      loadDisplayMode="scaleToFit" />
+      loadDisplayMode="scaleToFit"
+      focusable="false" />
 
     <!-- Title section -->
     <Label
@@ -88,7 +93,7 @@
       vertAlign="top" />
 
     <!-- Action buttons -->
-    <Group id="actionButtons" translation="[360, 310]">
+    <Group id="actionButtons" translation="[360, 310]" focusable="false">
       <JFButton id="btnPlay" translation="[0, 0]" buttonText="Play" width="160" />
       <JFButton id="btnResume" translation="[180, 0]" buttonText="Resume" width="160" visible="false" />
       <JFButton id="btnTrailer" translation="[360, 0]" buttonText="Trailer" width="160" />
@@ -99,7 +104,7 @@
     </Group>
 
     <!-- Content section below backdrop -->
-    <Group id="contentSection" translation="[0, 530]">
+    <Group id="contentSection" translation="[0, 530]" focusable="false">
       <!-- Extras row -->
       <Label
         id="extrasLabel"
@@ -114,8 +119,6 @@
       <MarkupGrid
         id="extrasGrid"
         translation="[60, 60]"
-        width="1800"
-        height="280"
         itemComponentName="HomeItem"
         itemSize="[196, 270]"
         itemSpacing="[10, 0]"
@@ -137,8 +140,6 @@
       <MarkupGrid
         id="castGrid"
         translation="[60, 400]"
-        width="1800"
-        height="200"
         itemComponentName="CastItem"
         itemSize="[150, 200]"
         itemSpacing="[10, 0]"
@@ -148,7 +149,7 @@
     </Group>
 
     <!-- Version selector side panel -->
-    <Group id="versionPanel" translation="[1920, 0]" width="400" height="1080" visible="false">
+    <Group id="versionPanel" translation="[1920, 0]" visible="false" focusable="false">
       <Rectangle
         id="versionPanelBg"
         width="400"
@@ -165,8 +166,6 @@
       <LabelList
         id="versionList"
         translation="[20, 80]"
-        width="360"
-        height="900"
         itemSize="[360, 60]"
         font="font:SmallSystemFont"
         color="0xB0B0B0FF"

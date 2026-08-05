@@ -12,21 +12,24 @@
       translation="[0, 0]"
       width="1920"
       height="400"
-      loadDisplayMode="scaleToFit" />
+      loadDisplayMode="scaleToFit"
+      focusable="false" />
 
     <Rectangle
       id="artistOverlay"
       translation="[0, 0]"
       width="1920"
       height="400"
-      color="0x00000060" />
+      color="0x00000060"
+      focusable="false" />
 
     <Poster
       id="artistImage"
       translation="[60, 60]"
       width="280"
       height="280"
-      loadDisplayMode="scaleToFit" />
+      loadDisplayMode="scaleToFit"
+      focusable="false" />
 
     <Label
       id="artistName"

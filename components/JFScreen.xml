@@ -5,6 +5,8 @@
     <field id="screenHidden" type="boolean" alwaysNotify="true" />
     <field id="dataLoaded" type="boolean" value="false" />
     <field id="loadingData" type="boolean" value="false" />
+    <function name="OnScreenShown" />
+    <function name="OnScreenHidden" />
   </interface>
   
   <script type="text/brightscript" uri="pkg:/components/JFScreen.bs" />

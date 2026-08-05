@@ -15,13 +15,15 @@
       width="1920"
       height="1080"
       loadDisplayMode="scaleToFit"
-       uri="pkg:/images/roku_logo.png" />
+       uri="pkg:/images/roku_logo.png"
+      focusable="false" />
     <Rectangle
       id="backgroundOverlay"
       translation="[0, 0]"
       width="1920"
       height="1080"
-      color="0x000000CC" />
+      color="0x000000CC"
+      focusable="false" />
 
     <!-- Top navigation tabs -->
     <LabelList
@@ -79,7 +81,8 @@
         translation="[0, 0]"
         width="1920"
         height="1080"
-        color="0x000000CC" />
+        color="0x000000CC"
+        focusable="false" />
       <DetailsPanel
         id="detailsPanel"
         translation="[200, 150]"

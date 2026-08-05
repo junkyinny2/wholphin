@@ -2,34 +2,21 @@
 
 sub Init()
     m.content = m.top.findNode("content")
-    m.imageBackground = m.top.findNode("imageBackground")
     m.sidebar = m.top.findNode("sidebar")
     m.overhang = m.top.findNode("overhang")
     m.spinner = m.top.findNode("spinner")
     m.audioMiniPlayer = m.top.findNode("audioMiniPlayer")
     
-    ' Set up scene manager reference
     if m.top.sceneManager <> invalid then
-        m.global.sceneManager = m.top.sceneManager
+        gaa = getGlobalAA()
+        if gaa <> invalid then gaa.sceneManager = m.top.sceneManager
     end if
     
-    m.statusLabel = m.top.findNode("statusLabel")
-    m.top.observeField("statusMessage", "onStatusMessageChange")
-    
-    ' Find sidebar lists
     m.sidebarDests = invalid
     m.sidebarLibs = invalid
     if m.sidebar <> invalid then
         m.sidebarDests = m.sidebar.findNode("sidebarDestinations")
         m.sidebarLibs = m.sidebar.findNode("sidebarLibraryList")
-    end if
-end sub
-
-sub onStatusMessageChange()
-    msg = m.top.statusMessage
-    if m.statusLabel <> invalid then
-        m.statusLabel.text = msg
-        m.statusLabel.visible = (msg <> "")
     end if
 end sub
 
@@ -65,12 +52,6 @@ function onKeyEvent(key as String, press as Boolean) as Boolean
         return false
     end if
     return false
-end function
-
-function setBackground(url as String) as Void
-    if m.imageBackground <> invalid and url <> "" then
-        m.imageBackground.uri = url
-    end if
 end function
 
 function setOverhangTitle(title as String) as Void

@@ -234,6 +234,18 @@
       "description": "Seerr/Overseerr API key",
       "settingType": "string",
       "default": ""
+    },
+    {
+      "settingName": "action.changeServer",
+      "title": "Change Server",
+      "description": "Switch to a different Jellyfin server",
+      "settingType": "action"
+    },
+    {
+      "settingName": "action.signOut",
+      "title": "Sign Out",
+      "description": "Sign out and return to the server selection screen",
+      "settingType": "action"
     }
   ]
 }

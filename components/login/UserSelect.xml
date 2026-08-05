@@ -9,9 +9,11 @@
 
   <children>
     <Rectangle
+      id="userSelectBg"
       width="1920"
       height="1080"
-      color="0x1A1A2EFF" />
+      color="0x1A1A2EFF"
+      focusable="false" />
 
     <!-- Wholphin logo centred top -->
     <Poster
@@ -20,7 +22,8 @@
       width="400"
       height="150"
       loadDisplayMode="scaleToFit"
-      uri="pkg:/images/roku_logo.png" />
+      uri="pkg:/images/roku_logo.png"
+      focusable="false" />
 
     <Label
       id="userSelectTitle"

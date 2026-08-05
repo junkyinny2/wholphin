@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<component name="SetServerScreen" extends="JFScreen">
+<component name="SetServerScreen" extends="JFScreen" focusable="false">
   <interface>
     <field id="serverUrl" type="string" value="" />
     <field id="savedServers" type="array" value="" />
@@ -8,9 +8,11 @@
 
   <children>
     <Rectangle
+      id="bgRect"
       width="1920"
       height="1080"
-      color="0x1A1A2EFF" />
+      color="0x1A1A2EFF"
+      focusable="false" />
 
     <!-- Wholphin logo centred top -->
     <Poster
@@ -19,7 +21,8 @@
       width="400"
       height="150"
       loadDisplayMode="scaleToFit"
-      uri="pkg:/images/roku_logo.png" />
+      uri="pkg:/images/roku_logo.png"
+      focusable="false" />
 
     <Label
       id="serverTitle"
@@ -44,18 +47,20 @@
       horizAlign="center"
       vertAlign="center" />
 
-    <Group id="serverInputGroup" translation="[560, 340]">
+    <Group id="serverInputGroup" translation="[560, 340]" focusable="false">
       <Rectangle
         id="serverInputBg"
         width="800"
         height="50"
-        color="0x16213EFF" />
+        color="0x16213EFF"
+        focusable="false" />
       <Rectangle
         id="serverInputFocus"
         width="800"
         height="50"
         color="0x0A3D62FF"
-        visible="false" />
+        visible="false"
+        focusable="false" />
       <Label
         id="serverInputText"
         translation="[15, 10]"
@@ -67,11 +72,14 @@
         vertAlign="center" />
     </Group>
 
+    <!-- Focus proxy (sibling, non-visible) so real focus never lands on a button -->
+    <Rectangle id="focusProxy" width="1" height="1" opacity="0" focusable="true" />
+
     <!-- Buttons -->
-    <LayoutGroup id="serverButtons" translation="[560, 410]" layoutDirection="horiz" itemSpacings="[20, 20]">
-      <JFButton id="btnConnect" buttonText="Connect" width="200" />
-      <JFButton id="btnDiscover" buttonText="Auto Discover" width="300" />
-      <JFButton id="btnManualEntry" buttonText="Manual Entry" width="260" />
+    <LayoutGroup id="serverButtons" translation="[560, 410]" layoutDirection="horiz" itemSpacings="[20, 20]" focusable="false">
+      <JFButton id="btnConnect" buttonText="Connect" width="200" focusable="false" />
+      <JFButton id="btnDiscover" buttonText="Auto Discover" width="300" focusable="false" />
+      <JFButton id="btnManualEntry" buttonText="Manual Entry" width="260" focusable="false" />
     </LayoutGroup>
 
     <!-- Saved servers list -->
@@ -94,7 +102,8 @@
       font="font:SmallSystemFont"
       color="0xB0B0B0FF"
       focusedColor="0x00A4DCFF"
-      visible="false" />
+      visible="false"
+      focusable="false" />
 
     <!-- Auto-discovered servers -->
     <Label
@@ -115,7 +124,8 @@
       height="50"
       color="0x0F3460FF"
       translation="[560, 530]"
-      visible="false" />
+      visible="false"
+      focusable="false" />
 
     <LabelList
       id="discoveredServerList"
@@ -125,7 +135,7 @@
       color="0xB0B0B0FF"
       focusedColor="0x00A4DCFF"
       visible="false"
-      focusable="true" />
+      focusable="false" />
   </children>
 
   <script type="text/brightscript" uri="pkg:/components/config/SetServerScreen.bs" />

@@ -126,7 +126,7 @@ end function
 function onKeyEvent(key as String, press as Boolean) as Boolean
     ? "[UserSelect.onKeyEvent] key="; key; " press="; press
     if not m.top.visible then return false
-    if not press then return true
+    if not press then return false
 
     if key = "back" then
         scene = m.top.getScene()

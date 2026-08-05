@@ -20,7 +20,7 @@ function OnScreenShown() as Boolean
     if m.lastFocusNode <> invalid then
         m.lastFocusNode.setFocus(true)
     else
-        setFocus(true)
+        m.top.setFocus(true)
     end if
     return true
 end function

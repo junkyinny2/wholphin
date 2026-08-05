@@ -1,10 +1,14 @@
 ' Wholphin Roku - Async task for loading video playback content
 
+Library "pkg:/source/api/Items.bs"
+Library "pkg:/source/api/userauth.bs"
+
 sub Init()
     m.top.functionName = "loadVideoContent"
 end sub
 
 sub loadVideoContent()
+    print "[VCTASK] loadVideoContent START itemId="; m.top.itemId
     itemId = m.top.itemId
     if itemId = "" then
         m.top.loadStatus = "error"
@@ -18,9 +22,11 @@ sub loadVideoContent()
 
     playbackInfo = ItemPostPlaybackInfo(itemId, mediaSourceId, audioStreamIndex, subtitleStreamIndex, startTimeTicks)
     if playbackInfo = invalid then
+        print "[VCTASK] ItemPostPlaybackInfo returned invalid, lastNetworkError="; m.global.lastNetworkError
         m.top.loadStatus = "error"
         return
     end if
+    print "[VCTASK] ItemPostPlaybackInfo valid, MediaSources="; chainLookupReturn(playbackInfo, ["MediaSources"], []).Count()
 
     mediaSources = chainLookupReturn(playbackInfo, ["MediaSources"], [])
     if mediaSources = invalid or mediaSources.Count() = 0 then
@@ -46,18 +52,53 @@ sub loadVideoContent()
     mediaUrl = chainLookupReturn(mediaSource, ["DirectStreamUrl"], "")
     if mediaUrl = "" then
         mediaUrl = chainLookupReturn(mediaSource, ["TranscodingUrl"], "")
+        if mediaUrl <> "" then container = "mp4"
+    end if
+
+    if mediaUrl <> "" then
+        serverUrl = session.server.GetUrl()
+        if mediaUrl.StartsWith("http") = false then
+            mediaUrl = serverUrl + mediaUrl
+        end if
+        if container = "" then
+            containerParts = chainLookupReturn(mediaSource, ["Container"], "").Split(",")
+            if containerParts.Count() > 0 then container = containerParts[0].Trim()
+        end if
     end if
 
     if mediaUrl = "" then
         mediaSourceId = chainLookupReturn(mediaSource, ["Id"], "")
         container = chainLookupReturn(mediaSource, ["Container"], "")
-        mediaUrl = api.videos.GetStreamURL(itemId, container, startTimeTicks)
+        containerParts = container.Split(",")
+        container = ""
+        for each part in containerParts
+            test = part.Trim()
+            if test = "mp4" or test = "mkv" or test = "webm" or test = "hls" then
+                container = test
+                exit for
+            end if
+        end for
+        if container = "" then
+            if containerParts.Count() > 0 and containerParts[0] <> "" then
+                container = containerParts[0]
+            else
+                container = "mp4"
+            end if
+        end if
+        if container = "hls" then container = "mp4"
+        token = chainLookupReturn(m.global.session.user, ["accessToken"], "")
+        serverUrl = session.server.GetUrl()
+        streamRel = "/Videos/" + itemId + "/stream?Static=true&Container=" + container
+        if token <> "" then streamRel = streamRel + "&api_key=" + token
+        mediaUrl = serverUrl + streamRel
     end if
 
     if mediaUrl = "" then
+        print "[VCTASK] mediaUrl EMPTY after all sources"
         m.top.loadStatus = "error"
         return
     end if
+    print "[VCTASK] mediaUrl set, primaryContainer="; container; " playMethod="; chainLookupReturn(mediaSource, ["PlayMethod"], "")
 
     m.top.mediaSourceIdOut = chainLookupReturn(mediaSource, ["Id"], "")
     m.top.playMethod = chainLookupReturn(mediaSource, ["PlayMethod"], "")
@@ -70,36 +111,14 @@ sub loadVideoContent()
 
     content = CreateObject("roSGNode", "ContentNode")
     content.url = mediaUrl
-    content.streamformat = chainLookupReturn(mediaSource, ["Container"], "")
+    content.streamformat = container
 
-    ' Set up audio tracks
-    mediaStreams = chainLookupReturn(mediaSource, ["MediaStreams"], [])
-    audioTracks = []
-    subtitleTracks = []
-    for each stream in mediaStreams
-        streamType = chainLookupReturn(stream, ["Type"], "")
-        if streamType = "Audio" then
-            audioTracks.Push(stream)
-        else if streamType = "Subtitle" then
-            subtitleTracks.Push(stream)
-        end if
-    end for
+    ' The Video node manages audio/subtitle tracks natively via m.video.audioTrack /
+    ' m.video.subtitleTrack. Do NOT set ContentNode.AudioTracks/SubtitleTracks/Streams
+    ' with raw Jellyfin associative arrays - those fields are not valid on a ContentNode
+    ' and corrupt it, causing a fatal mediaplayer error (mediaplayer:6).
 
-    if audioTracks.Count() > 0 then
-        content.AudioTracks = audioTracks
-        if audioStreamIndex >= 0 and audioStreamIndex < audioTracks.Count() then
-            content.AudioTrackIndex = audioStreamIndex
-        else
-            content.AudioTrackIndex = 0
-        end if
-    end if
-
-    if subtitleTracks.Count() > 0 then
-        content.SubtitleTracks = subtitleTracks
-        content.SubtitleTrackIndex = subtitleStreamIndex
-    end if
-
-    content.Streams = mediaStreams
+    print "[VCTASK] setting m.top.content, url="; content.url; " format="; content.streamformat
 
     m.top.content = content
     m.top.loadStatus = "loaded"

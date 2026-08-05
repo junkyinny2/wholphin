@@ -24,7 +24,8 @@
       translation="[0, 0]"
       width="1920"
       height="1080"
-      loadDisplayMode="scaleToFit" />
+      loadDisplayMode="scaleToFit"
+      focusable="false" />
 
     <!-- Video player -->
     <Video
@@ -33,15 +34,12 @@
       width="1920"
       height="1080"
       enableUI="false"
-      showStatusMessage="false"
       visible="true" />
 
     <!-- Caption group for subtitles -->
     <Group
       id="captionGroup"
       translation="[0, 880]"
-      width="1920"
-      height="100"
       visible="true" />
 
     <!-- On-screen display overlay -->
@@ -54,14 +52,13 @@
     <Group
       id="nextUpBox"
       translation="[660, 340]"
-      width="600"
-      height="400"
       visible="false">
       <Rectangle
         id="nextUpBg"
         width="600"
         height="400"
-        color="0x16213EFF" />
+        color="0x16213EFF"
+        focusable="false" />
       <Label
         id="nextUpTitle"
         translation="[20, 20]"
@@ -76,7 +73,8 @@
         translation="[20, 60]"
         width="200"
         height="300"
-        loadDisplayMode="scaleToFit" />
+        loadDisplayMode="scaleToFit"
+        focusable="false" />
       <Label
         id="nextUpLabel"
         translation="[240, 60]"
@@ -106,7 +104,8 @@
         id="skipSegmentBg"
         width="200"
         height="50"
-        color="0x00A4DCFF" />
+        color="0x00A4DCFF"
+        focusable="false" />
       <Label
         id="skipSegmentLabel"
         translation="[10, 10]"
@@ -132,7 +131,8 @@
       width="1920"
       height="1080"
       color="0x00000080"
-      visible="false" />
+      visible="false"
+      focusable="false" />
     <Label
       id="bufferingLabel"
       translation="[860, 520]"

@@ -12,7 +12,8 @@
       id="versionBg"
       width="500"
       height="700"
-      color="0x16213EFF" />
+      color="0x16213EFF"
+      focusable="false" />
 
     <Label
       id="versionTitleLabel"
@@ -27,8 +28,6 @@
     <LabelList
       id="versionItemList"
       translation="[20, 70]"
-      width="460"
-      height="600"
       itemSize="[460, 60]"
       font="font:SmallSystemFont"
       color="0xB0B0B0FF"

@@ -6,4 +6,6 @@
     <field id="results" type="assocarray" />
   </interface>
 
+  <script type="text/brightscript" uri="pkg:/components/search/SearchTask.brs" />
+
 </component>

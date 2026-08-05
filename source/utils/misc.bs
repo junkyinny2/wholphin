@@ -217,3 +217,76 @@ end function
 function translateOrFallback(text as String) as String
     return translateText(text)
 end function
+
+' Minimal standard-alphabet Base64 decoder.
+' Roku BrightScript has no built-in base64 decode; this handles ECP content payloads.
+' NOTE: BrightScript AssociativeArrays are case-INsensitive, so a {} lookup table
+' collapses 'A'/'a' collisions. Use a roByteArray indexed by Asc(char) instead.
+function base64Decode(input as String) as String
+    if input = invalid or Len(input) = 0 then return ""
+
+    chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/"
+    table = CreateObject("roByteArray")
+    if table = invalid then return ""
+    for i = 1 to 64
+        table[ Asc(Mid(chars, i, 1)) ] = i - 1
+    end for
+
+    s = ""
+    n = Len(input)
+    i = 1
+    while i <= n
+        c0 = Mid(input, i, 1)
+        v0 = table[ Asc(c0) ]
+        if c0 = "=" or v0 = invalid then exit while
+
+        c1 = ""
+        if i + 1 <= n then c1 = Mid(input, i + 1, 1)
+        v1 = lookupVal(table, c1)
+        if c1 = "=" then
+            ' padding after 1st char: only 1 output byte from v0 and high bits of v1 (0)
+            s = s + Chr((v0 * 4) + 0)
+            exit while
+        end if
+        if v1 = invalid then v1 = 0
+
+        c2 = ""
+        if i + 2 <= n then c2 = Mid(input, i + 2, 1)
+        v2 = lookupVal(table, c2)
+        has2 = (c2 <> "=" and v2 <> invalid)
+
+        c3 = ""
+        if i + 3 <= n then c3 = Mid(input, i + 3, 1)
+        v3 = lookupVal(table, c3)
+        has3 = (c3 <> "=" and v3 <> invalid)
+
+        ' normalize invalid to 0 for arithmetic
+        if v1 = invalid then v1 = 0
+        if v2 = invalid then v2 = 0
+        if v3 = invalid then v3 = 0
+
+        b0 = (v0 * 4) + Int(v1 / 16)
+        b1 = ((v1 and 15) * 16) + Int(v2 / 4)
+        b2 = ((v2 and 3) * 64) + v3
+
+        s = s + Chr(b0)
+        if has2 then s = s + Chr(b1)
+        if has3 then s = s + Chr(b2)
+        i = i + 4
+    end while
+    return s
+end function
+
+' Look up a base64 char in the roByteArray table (returns invalid if not found)
+function lookupVal(table as Object, c as String) as Dynamic
+    if table = invalid or c = "" or Len(c) = 0 then return invalid
+    return table[ Asc(c) ]
+end function
+
+' Parse a JSON string into an AA/AA-tree. Returns invalid on failure.
+function parseJsonSafe(json as String) as Object
+    if json = invalid or Len(json) = 0 then return invalid
+    data = ParseJSON(json)
+    if data = invalid then return invalid
+    return data
+end function

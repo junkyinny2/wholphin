@@ -11,9 +11,11 @@
 
   <children>
     <Rectangle
+      id="signinBg"
       width="1920"
       height="1080"
-      color="0x1A1A2EFF" />
+      color="0x1A1A2EFF"
+      focusable="false" />
 
     <!-- Wholphin logo centred top -->
     <Poster
@@ -22,7 +24,8 @@
       width="400"
       height="150"
       loadDisplayMode="scaleToFit"
-      uri="pkg:/images/roku_logo.png" />
+      uri="pkg:/images/roku_logo.png"
+      focusable="false" />
 
     <Label
       id="signinTitle"
@@ -51,7 +54,8 @@
         id="usernameInputBg"
         width="600"
         height="50"
-        color="0x16213EFF" />
+        color="0x16213EFF"
+        focusable="false" />
       <Label
         id="usernameInputText"
         translation="[15, 10]"

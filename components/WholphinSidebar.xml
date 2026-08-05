@@ -17,14 +17,16 @@
       translation="[350, 0]"
       width="1570"
       height="1080"
-      color="0x000000AA" />
+      color="0x000000AA"
+      focusable="false" />
 
     <!-- Sidebar background -->
     <Rectangle
       id="sidebarBg"
       width="350"
       height="1080"
-      color="0x16213EFF" />
+      color="0x16213EFF"
+      focusable="false" />
     
     <!-- User section -->
     <Group id="userSection" translation="[20, 120]">
@@ -33,7 +35,8 @@
         width="60"
         height="60"
         loadDisplayMode="scaleToFit"
-        uri="" />
+        uri=""
+        focusable="false" />
       <Label
         id="sidebarUserName"
         translation="[80, 15]"

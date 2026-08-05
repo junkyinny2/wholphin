@@ -10,7 +10,8 @@
       id="filterDialogBg"
       width="500"
       height="600"
-      color="0x16213EFF" />
+      color="0x16213EFF"
+      focusable="false" />
 
     <Label
       id="filterDialogTitle"

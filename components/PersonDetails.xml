@@ -30,9 +30,9 @@
           <Text id="creditInfo" font="font:SmallestSystemFont" color="#BBBBBBFF" width="1120" visible="false" />
         </LayoutGroup>
 
-        <Group id="overviewGroup" width="1120" height="472">
-          <Rectangle id="dscrBorder" width="1120" height="472" color="0x00000000">
-            <Rectangle id="overviewBackground" translation="[4, 4]" width="1112" height="464" color="#55020B2A">
+        <Group id="overviewGroup">
+          <Rectangle id="dscrBorder" width="1120" height="472" color="0x00000000" focusable="false">
+            <Rectangle id="overviewBackground" translation="[4, 4]" width="1112" height="464" color="#55020B2A" focusable="false">
               <Text id="description" focusable="true"
                 height="420" width="1076" wrap="true" maxLines="11" translation="[18, 22]"
                 lineSpacing="5" font="font:SmallestSystemFont" color="#F2F2F2FF"
@@ -43,7 +43,7 @@
       </LayoutGroup>
 
       <Group id="posterColumn">
-        <Poster id="personImage" width="430" height="645" translation="[0, 10]" loadDisplayMode="scaleToZoom" failedBitmapUri="pkg:/images/baseline_person_white_48dp.png" />
+        <Poster id="personImage" width="430" height="645" translation="[0, 10]" loadDisplayMode="scaleToZoom" failedBitmapUri="pkg:/images/baseline_person_white_48dp.png" focusable="false" />
       </Group>
     </LayoutGroup>
     <ExtrasSlider id="personVideos" />

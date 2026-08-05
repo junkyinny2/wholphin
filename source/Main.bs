@@ -1,7 +1,3 @@
-' Wholphin Roku - Main Entry Point
-' Channel startup, event loop, and global initialization
-
-' Load all source dependencies
 Library "pkg:/source/api/baserequest.bs"
 Library "pkg:/source/api/sdk.bs"
 Library "pkg:/source/api/userauth.bs"
@@ -22,9 +18,12 @@ Library "pkg:/source/MainActions.bs"
 Library "pkg:/source/MainEventHandlers.bs"
 Library "pkg:/source/FilterManager.bs"
 
-' Main entry point
+' =============================================================================
+' Wholphin Roku — ALPHA / NON-WORKING personal dev build.
+' Not a production-ready application. Many features are incomplete or broken.
+' See WARNING.md and the README banner. No support provided.
+' =============================================================================
 sub Main(args as Object)
-    ? "[Main] Starting Wholphin"
     m.screen = CreateObject("roSGScreen")
     m.port = CreateObject("roMessagePort")
     m.screen.setMessagePort(m.port)
@@ -51,46 +50,64 @@ sub Main(args as Object)
     SaveAppToGlobal()
     SaveDeviceToGlobal()
     session_Init()
-    ? "[Main] Globals and session initialized"
 
-    ' One-time migration: remove saved passwords (security fix)
+    lastUserId = get_setting("last_userId", "")
     lastUserId = get_setting("last_userId", "")
     if lastUserId <> "" then
-        ' Delete stored password if it exists
         registry_delete_user_key(lastUserId, "password")
     end if
 
     m.scene = m.screen.CreateScene("BaseScene")
     gaa.scene = m.scene
-    ? "[Main] BaseScene created"
     
-    ' Check for auto-login credentials (saved in separate keys so they survive set_setting("server", ""))
     autoServer = get_setting("wh_autologin_server", "")
     autoToken = get_setting("wh_autologin_token", "")
     autoUserId = get_setting("wh_autologin_userid", "")
-    if autoServer <> "" and autoToken <> "" and autoUserId <> "" then
+    skipAutoLogin = false
+    ' Roku ECP: POST /launch/dev?content=<base64(json)> delivers base64 as args["content"].
+    ' A command of showServerPicker/switchServer skips auto-login and opens the server picker.
+    if args <> invalid and Type(args) = "roAssociativeArray" and args.DoesExist("content") then
+        decoded = base64Decode(args["content"])
+        contentObj = parseJsonSafe(decoded)
+        if contentObj <> invalid and Type(contentObj) = "roAssociativeArray" then
+            launchCmd = chainLookupReturn(contentObj, ["command"], "")
+            if launchCmd = "showServerPicker" or launchCmd = "switchServer" then skipAutoLogin = true
+        end if
+    end if
+    if (not skipAutoLogin) and autoServer <> "" and autoToken <> "" and autoUserId <> "" then
         m.autoLoginData = { server: autoServer, token: autoToken, userId: autoUserId }
-        ? "[Main] Found auto-login data for user="; autoUserId
     end if
     
-    ' Clear server so LoginFlow doesn't block on SetServerScreen
-    ' Server will be set when user enters it or when auto-login succeeds
     set_setting("server", "")
 
     m.screen.show()
-    ? "[Main] Screen shown"
+
+    ss = m.scene.findNode("serverScreen")
+    if ss <> invalid then ss.setFocus(true)
 
     gaa = getGlobalAA()
     m.scene.sceneManager = CreateObject("roSGNode", "SceneManager")
     m.scene.appendChild(m.scene.sceneManager)
-    gaa.sceneManager = m.scene.sceneManager
-    m.global.sceneManager = m.scene.sceneManager
-    ? "[Main] SceneManager created"
+    print "[V35-DEBUG] Setting sceneManager: gaa.valid="; (gaa <> invalid); " m.global.valid="; (m.global <> invalid)
+    if gaa <> invalid then
+        gaa.sceneManager = m.scene.sceneManager
+        print "[V35-DEBUG] gaa.sceneManager set OK"
+    else
+        print "[V35-DEBUG] gaa.invalid! getGlobalAA() returned invalid"
+    end if
+    if m.global <> invalid then
+        m.global.sceneManager = m.scene.sceneManager
+        print "[V35-DEBUG] m.global.sceneManager set OK"
+    else
+        print "[V35-DEBUG] m.global invalid!"
+    end if
+    print "[V35-DEBUG] Verify: gaa.sceneManager="; (gaa.sceneManager <> invalid); " m.global.sceneManager="; (m.global.sceneManager <> invalid)
 
     m.scene.queueManager = CreateObject("roSGNode", "QueueManager")
     m.scene.appendChild(m.scene.queueManager)
     gaa.queueManager = m.scene.queueManager
     m.global.queueManager = m.scene.queueManager
+    print "[V35-DEBUG] queueManager valid="; (m.scene.queueManager <> invalid).ToStr(); " gaaQM valid="; (gaa.queueManager <> invalid).ToStr(); " globalQM valid="; (m.global.queueManager <> invalid).ToStr()
 
     m.scene.audioPlayer = CreateObject("roSGNode", "AudioPlayer")
     m.scene.appendChild(m.scene.audioPlayer)
@@ -101,45 +118,60 @@ sub Main(args as Object)
     m.scene.appendChild(playstateTask)
     gaa.playstateTask = playstateTask
     m.global.playstateTask = playstateTask
-    ? "[Main] All service nodes created"
 
     m.scene.observeField("input", m.port)
     m.scene.observeField("dialog", m.port)
     m.scene.observeField("pendingServerAction", m.port)
     m.scene.observeField("pendingShowSignIn", m.port)
 
-    ' Try auto-login before LoginFlow so HomeScreen never layers on login UI
-    ' DISABLED: AboutMe() blocks main thread for 30s when server unreachable / token expired.
-    ' TODO: make this async with a Task node
-    if m.autoLoginData <> invalid then
-        ? "[Main] Trying auto-login first"
+    if skipAutoLogin then
+        loginResult = false
+        print "[DIAG] skipAutoLogin=true -> login flow bypassed"
+    else if m.autoLoginData <> invalid then
         ald = m.autoLoginData
+        print "[DIAG] server URL=" + ald.server + " tokenLen=" + Len(ald.token).ToStr() + " userId=" + ald.userId + " token=" + ald.token
+        print "[V35-DEBUG] Starting auto-login"
         set_setting("server", ald.server)
         session.server.Populate({ Url: ald.server, Id: "auto" })
         session.user.Populate({ AccessToken: ald.token, User: { Id: ald.userId } })
+        print "[V35-DEBUG] Session populated, calling AboutMe..."
         myInfo = AboutMe()
+        if myInfo <> invalid then
+            print "[V35-DEBUG] AboutMe OK"
+            session.user.UpdateFromAboutMe(myInfo)
+            caps = getDeviceCapabilities()
+            api.sessions.PostCapabilities(caps)
+            loginResult = true
+        else
+            print "[V35-DEBUG] AboutMe returned invalid"
+            m.autoLoginData = invalid
+            loginResult = LoginFlow()
+        end if
         if myInfo <> invalid then
             session.user.UpdateFromAboutMe(myInfo)
             caps = getDeviceCapabilities()
             api.sessions.PostCapabilities(caps)
             loginResult = true
         else
-            ? "[Main] Auto-login token expired"
             m.autoLoginData = invalid
             loginResult = LoginFlow()
         end if
     else
         loginResult = LoginFlow()
     end if
-    ? "[Main] LoginFlow setup done"
 
     if loginResult then
+        print "[V35-DEBUG] Calling CreateHomeGroup()..."
         CreateHomeGroup()
+        print "[V35-DEBUG] CreateHomeGroup returned"
     end if
 
-    ? "[Main] Entering event loop"
+    ' If launched with showServerPicker (ECP deep link), skip home and open server picker.
+    if skipAutoLogin then
+        print "[DIAG] launch command showServerPicker -> server picker"
+        CreateServerGroup()
+    end if
 
-    ' Main event loop
     while true
         msg = wait(100, m.port)
 
@@ -149,36 +181,31 @@ sub Main(args as Object)
             if msgType = "roSGNodeEvent" then
                 nodeId = msg.getNode()
                 field = msg.getField()
-                ? "[Main loop] nodeId='"; nodeId; "' field='"; field; "'"
 
-                ' Handle pending server action (from render thread via scene field)
                 if field = "pendingServerAction" then
                     action = msg.getData()
-                    ? "[Main] pendingServerAction="; action
-                    ? "[Main] pendingUserName="; m.scene.pendingUserName
-                    ? "[Main] pendingUserId="; m.scene.pendingUserId
                     if action = "connect" then
                         url = m.scene.pendingServerUrl
-                        ? "[Main] connecting to "; url
                         m.scene.setField("pendingServerAction", "")
                         m.scene.setField("pendingServerUrl", "")
                         ok = ProcessServerUrl(url)
                         if ok then ShowLoginScreen()
-                    else if action = "signin" then
+                    else if action = "showserver" then
+                        m.scene.setField("pendingServerAction", "")
+                        CreateServerGroup()
+                    else if action = "signout" then
+                        m.scene.setField("pendingServerAction", "")
+                        SignOut()
+                        CreateServerGroup()
+                    else     if action = "signin" then
                         username = m.scene.pendingUserName
                         password = m.scene.pendingUserPassword
-                        ? "[Main] signin for user='"; username; "'"
-                        m.scene.setField("statusMessage", "Auth started for " + username)
                         m.scene.setField("pendingServerAction", "")
                         m.scene.setField("pendingUserName", "")
                         m.scene.setField("pendingUserPassword", "")
                         if username <> "" then
-                            m.scene.setField("statusMessage", "Authenticating user...")
                             ok = AuthenticateUser(username, password)
                             if ok then
-                                m.scene.setField("statusMessage", "Auth OK, showing Home")
-                                ? "[Main] signin OK"
-                                ' Save auto-login credentials in separate keys
                                 serverUrl = get_setting("server", "")
                                 userId = m.scene.pendingUserId
                                 token = get_user_setting(userId, "accessToken", "")
@@ -186,12 +213,9 @@ sub Main(args as Object)
                                     set_setting("wh_autologin_server", serverUrl)
                                     set_setting("wh_autologin_token", token)
                                     set_setting("wh_autologin_userid", userId)
-                                    ? "[Main] Auto-login data saved"
                                 end if
-                                ' Direct scene tree manipulation - avoid scene manager
                                 content = m.scene.findNode("content")
                                 if content <> invalid then
-                                    ' Hide all overlay screens
                                     ss = m.scene.findNode("serverScreen")
                                     if ss <> invalid then ss.visible = false
                                     us = m.scene.findNode("userSelect")
@@ -199,7 +223,6 @@ sub Main(args as Object)
                                     si = m.scene.findNode("signinScene")
                                     if si <> invalid then si.visible = false
                                     
-                                    ' Also clear scene manager state
                                     sm = _sm()
                                     if sm <> invalid then
                                         sm.sceneStack = []
@@ -207,24 +230,13 @@ sub Main(args as Object)
                                         sm.activeScene = invalid
                                     end if
                                     
-                                    m.scene.setField("statusMessage", "Creating Home")
                                     home = CreateObject("roSGNode", "HomeScreen")
                                     if home <> invalid then
-                                        m.scene.setField("statusMessage", "Appending HomeScreen to content")
                                         content.appendChild(home)
-                                        m.scene.setField("statusMessage", "Setting focus")
                                         home.setFocus(true)
-                                        m.scene.setField("statusMessage", "HomeScreen should be visible now!")
-                                        ? "[Main] HomeScreen appended directly"
-                                    else
-                                        m.scene.setField("statusMessage", "ERROR: HomeScreen invalid")
                                     end if
-                                else
-                                    m.scene.setField("statusMessage", "ERROR: no content")
                                 end if
                             else
-                                ? "[Main] signin FAILED"
-                                m.scene.setField("statusMessage", "Auth FAILED - check credentials")
                                 signIn = m.scene.findNode("signinScene")
                                 if signIn <> invalid then signIn.authErrorMessage = "Invalid username or password"
                             end if
@@ -232,28 +244,22 @@ sub Main(args as Object)
                     else if action = "login" then
                         username = m.scene.pendingUserName
                         userId = m.scene.pendingUserId
-                        ? "[Main] login for user="; username; " id="; userId
                         m.scene.setField("pendingServerAction", "")
                         m.scene.setField("pendingUserName", "")
                         m.scene.setField("pendingUserId", "")
                         if username <> "" then
-                            ' No saved password â€” always check for saved token first
                             savedToken = get_user_setting(userId, "accessToken", "")
                             if savedToken <> "" then
-                                ? "[Main] found saved token, validating"
                                 session.user.Populate({ AccessToken: savedToken, User: { Id: userId } })
                                 myInfo = AboutMe()
                                 if myInfo <> invalid then
                                     session.user.UpdateFromAboutMe(myInfo)
-                                    ? "[Main] token valid, loading home"
                                     ok = true
                                 else
-                                    ? "[Main] token expired, showing signin"
                                     session.user.Clear()
                                     ok = false
                                 end if
                             else
-                                ? "[Main] no saved token, showing signin"
                                 ok = false
                             end if
                             if ok then
@@ -271,50 +277,39 @@ sub Main(args as Object)
                         end if
                     end if
 
-                ' Handle direct show sign-in request (bypasses token check)
                 else if field = "pendingShowSignIn" then
                     username = msg.getData()
-                    ? "[Main] pendingShowSignIn='"; username; "'"
                     if username <> "" then
                         m.scene.setField("pendingShowSignIn", "")
                         ShowSignInScreen(username)
                     end if
 
-                ' Handle input events (deep linking)
                 else if field = "input" then
                     inputData = msg.getData()
                     HandleDeepLink(inputData)
 
-                ' Handle dialog set/cleared
                 else if field = "dialog" then
                     dialog = msg.getData()
-                    ? "[Main loop] dialog field changed, type="; Type(dialog)
                     if dialog <> invalid then
                         if dialog.HasField("wasClosed") then
                             dialog.observeField("wasClosed", m.port)
                         end if
                     end if
 
-                ' Handle wasClosed for non-keyboard dialogs
                 else if field = "wasClosed" then
-                    ? "[Main loop] wasClosed fired, nodeId="; nodeId
                     if nodeId <> "KeyboardDialog" then
                         HandleDialogCallback(nodeId, msg.getData())
                     end if
 
-                ' Handle dialog button press
                 else if field = "buttonSelected" then
-                    ? "[Main loop] buttonSelected="; msg.getData(); " nodeId="; nodeId
                     if nodeId = "KeyboardDialog" then
                         dialog = m.scene.dialog
                         if dialog <> invalid then
                             btnIndex = msg.getData()
                             url = dialog.text
-                            ? "[Main loop] KeyboardDialog button="; btnIndex; " url='"; url; "'"
                             m.scene.dialog = invalid
                             if btnIndex = 0 and url <> "" then
                                 ok = ProcessServerUrl(url)
-                                ? "[Main loop] ProcessServerUrl returned: "; ok
                                 if ok then ShowLoginScreen()
                             end if
                         end if
@@ -322,31 +317,24 @@ sub Main(args as Object)
                         HandleDialogCallback(nodeId, msg.getData())
                     end if
 
-                ' Handle playback state changes
                 else if field = "state" then
                     HandlePlaybackStateChange(nodeId, msg.getData())
 
-                ' Handle item selection
                 else if field = "itemSelected" then
                     HandleItemSelection(nodeId, msg.getData())
 
-                ' Handle row selection
                 else if field = "rowItemSelected" then
                     HandleRowItemSelected(nodeId, msg.getData())
 
-                ' Handle focus changes
                 else if field = "focusedItem" then
                     HandleFocusedItem(nodeId, msg.getData())
 
-                ' Handle image loading status
                 else if field = "loadStatus" then
                     HandleImageLoadStatus(nodeId, msg.getData())
 
-                ' Handle ContentNode changes
                 else if field = "content" then
                     HandleContentUpdate(nodeId, msg.getData())
 
-                ' Handle quick play requests
                 else if field = "quickPlayVideo" then
                     data = msg.getData()
                     if data <> invalid then
@@ -374,6 +362,5 @@ sub Main(args as Object)
 
     end while
 
-    ' Clean up
     m.screen.close()
 end sub

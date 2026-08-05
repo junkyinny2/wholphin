@@ -14,7 +14,8 @@
       translation="[25, 0]"
       width="150"
       height="150"
-      loadDisplayMode="scaleToFit" />
+      loadDisplayMode="scaleToFit"
+      focusable="false" />
 
     <!-- User name -->
     <Label
@@ -36,7 +37,8 @@
       width="30"
       height="30"
       uri="pkg:/images/icons/lock.png"
-      visible="false" />
+      visible="false"
+      focusable="false" />
   </children>
 
   <script type="text/brightscript" uri="pkg:/components/login/UserItem.bs" />

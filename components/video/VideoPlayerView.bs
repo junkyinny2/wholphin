@@ -40,7 +40,11 @@ sub Init()
 end sub
 
 function startPlayback() as Void
+    print "[PLAYER] startPlayback entered"
+    if m.playbackStarted = true then return
+    m.playbackStarted = true
     item = m.top.videoItem
+    print "[PLAYER] videoItem valid="; (item <> invalid).ToStr(); " id="; chainLookupReturn(item, ["id"], "")
     if item = invalid then return
 
     itemId = chainLookupReturn(item, ["id"], "")
@@ -58,14 +62,17 @@ function startPlayback() as Void
     task.startTimeTicks = startTimeTicks
     task.observeField("content", "onLoadVideoContent")
     task.observeField("loadStatus", "onLoadVideoContent")
+    m.loadVideoTask = task
     task.control = "RUN"
 end function
 
 function onLoadVideoContent() as Void
-    task = m.top.lastEventNode
+    task = m.loadVideoTask
+    if task = invalid then task = m.top.lastEventNode
     if task = invalid then return
 
     content = task.content
+    print "[VCTASK] onLoadVideoContent, content valid="; (content <> invalid).ToStr(); " loadStatus="; task.loadStatus
     if content = invalid then
         showError(translateText("Failed to load video content"))
         return
@@ -89,6 +96,7 @@ end function
 
 function onVideoStateChange() as Void
     state = m.video.state
+    print "[VCTASK] onVideoStateChange state="; state
     m.top.playerState = state
 
     if state = "playing" then
@@ -291,12 +299,14 @@ function seekForward(seconds as Integer) as Void
     position = m.video.position + seconds
     dur = m.video.duration
     if position > dur then position = dur
+    ? "[VideoPlayer] seekForward to "; position
     m.video.seek = position
 end function
 
 function seekBackward(seconds as Integer) as Void
     position = m.video.position - seconds
     if position < 0 then position = 0
+    ? "[VideoPlayer] seekBackward to "; position
     m.video.seek = position
 end function
 
@@ -334,13 +344,66 @@ function onBackPressed() as Boolean
         return true
     end if
 
-    if m.video.state = "playing" then
-        m.video.control = "pause"
+    if m.video.state = "playing" or m.video.state = "paused" then
+        m.video.control = "stop"
     end if
 
     reportPlaybackStopped()
     PopCurrentScene()
     return true
+end function
+
+function onKeyEvent(key as String, press as Boolean) as Boolean
+    ? "[VideoPlayer] key="; key; " press="; press
+    if not press then return false
+
+    ' Dedicated transport keys from the Roku remote
+    if key = "play" then
+        m.osd.callFunc("restartHideTimer")
+        if m.video.state = "playing" then
+            m.video.control = "pause"
+        else if m.video.state = "paused" or m.video.state = "none" or m.video.state = "buffering" then
+            m.video.control = "play"
+        end if
+        return true
+    else if key = "pause" then
+        m.osd.callFunc("restartHideTimer")
+        m.video.control = "pause"
+        return true
+    else if key = "back" then
+        return onBackPressed()
+    else if key = "Rev" or key = "rewind" then
+        m.osd.callFunc("restartHideTimer")
+        seekBackward(10)
+        return true
+    else if key = "Fwd" or key = "fastforward" then
+        m.osd.callFunc("restartHideTimer")
+        seekForward(30)
+        return true
+    end if
+
+    if key = "OK" then
+        m.osd.callFunc("show")
+        togglePlayPause()
+        return true
+    end if
+
+    if key = "left" then
+        m.osd.callFunc("restartHideTimer")
+        seekBackward(10)
+        return true
+    else if key = "right" then
+        m.osd.callFunc("restartHideTimer")
+        seekForward(30)
+        return true
+    end if
+
+    if key = "up" or key = "down" then
+        m.osd.callFunc("show")
+        return true
+    end if
+
+    return false
 end function
 
 function onPlaybackTimer() as Void

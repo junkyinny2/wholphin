@@ -13,6 +13,9 @@
     <field id="subtitleTracks" type="array" value="" />
     <field id="currentAudioIndex" type="int" value="-1" />
     <field id="currentSubtitleIndex" type="int" value="-1" />
+    <function name="show" />
+    <function name="hide" />
+    <function name="restartHideTimer" />
   </interface>
 
   <children>
@@ -22,7 +25,8 @@
       translation="[0, 0]"
       width="1920"
       height="80"
-      color="0x00000080" />
+      color="0x00000080"
+      focusable="false" />
 
     <Label
       id="osdTitle"
@@ -61,7 +65,8 @@
       translation="[0, 980]"
       width="1920"
       height="100"
-      color="0x00000080" />
+      color="0x00000080"
+      focusable="false" />
 
     <!-- Timeline progress bar -->
     <Rectangle
@@ -69,14 +74,16 @@
       translation="[30, 995]"
       width="1860"
       height="4"
-      color="0xFFFFFF30" />
+      color="0xFFFFFF30"
+      focusable="false" />
 
     <Rectangle
       id="osdProgressFill"
       translation="[30, 995]"
       width="0"
       height="4"
-      color="0x00A4DCFF" />
+      color="0x00A4DCFF"
+      focusable="false" />
 
     <Label
       id="osdCurrentTime"

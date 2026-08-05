@@ -7,6 +7,7 @@
     width="1920"
     height="1080"
     uri="file://images/background.jpg"
+    focusable="false"
   />
 
   <!-- Hero Section -->
@@ -23,6 +24,7 @@
       width="1920"
       height="450"
       uri="file://images/hero_backdrop.jpg"
+      focusable="false"
     />
     <Rectangle
       id="gradientOverlay"
@@ -30,6 +32,7 @@
       width="1920"
       height="450"
       blendColor="0xAA000000"
+      focusable="false"
     />
     <Label
       id="heroTitle"

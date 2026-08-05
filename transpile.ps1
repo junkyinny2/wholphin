@@ -226,6 +226,19 @@ $libInjections = @{
         'pkg:/source/api/Items.brs'
         'pkg:/source/api/userauth.brs'
     )
+    'LoadItemsTask2.xml' = @(
+        'pkg:/source/api/sdk.brs'
+        'pkg:/source/api/baserequest.brs'
+        'pkg:/source/api/Image.brs'
+        'pkg:/source/api/Items.brs'
+        'pkg:/source/api/userauth.brs'
+    )
+    'SearchTask.xml' = @(
+        'pkg:/source/api/sdk.brs'
+        'pkg:/source/api/baserequest.brs'
+        'pkg:/source/api/Image.brs'
+        'pkg:/source/api/Items.brs'
+    )
     'AudioPlayerView.xml' = @(
         'pkg:/source/api/sdk.brs'
         'pkg:/source/api/baserequest.brs'
@@ -233,10 +246,21 @@ $libInjections = @{
         'pkg:/source/api/Items.brs'
     )
     'VideoPlayerView.xml' = @(
+        'pkg:/source/ShowScenes.brs'
+        'pkg:/source/utils/globals.brs'
+        'pkg:/source/utils/config.brs'
+        'pkg:/source/MainActions.brs'
+        'pkg:/source/utils/quickplay.brs'
         'pkg:/source/api/sdk.brs'
         'pkg:/source/api/baserequest.brs'
         'pkg:/source/api/Image.brs'
         'pkg:/source/api/Items.brs'
+    )
+    'LoadVideoContentTask.xml' = @(
+        'pkg:/source/api/sdk.brs'
+        'pkg:/source/api/Items.brs'
+        'pkg:/source/api/baserequest.brs'
+        'pkg:/source/utils/deviceCapabilities.brs'
     )
     'SetServerScreen.xml' = @(
         'pkg:/source/ShowScenes.brs'
@@ -266,6 +290,82 @@ $libInjections = @{
         'pkg:/source/ShowScenes.brs'
         'pkg:/source/MainEventHandlers.brs'
         'pkg:/source/api/userauth.brs'
+    )
+    'MovieDetails.xml' = @(
+        'pkg:/source/utils/globals.brs'
+        'pkg:/source/utils/config.brs'
+        'pkg:/source/MainActions.brs'
+        'pkg:/source/utils/quickplay.brs'
+        'pkg:/source/ShowScenes.brs'
+        'pkg:/source/MainEventHandlers.brs'
+        'pkg:/source/api/sdk.brs'
+        'pkg:/source/api/Items.brs'
+        'pkg:/source/api/userauth.brs'
+    )
+    'TVSeriesDetails.xml' = @(
+        'pkg:/source/utils/globals.brs'
+        'pkg:/source/utils/config.brs'
+        'pkg:/source/MainActions.brs'
+        'pkg:/source/utils/quickplay.brs'
+        'pkg:/source/ShowScenes.brs'
+        'pkg:/source/MainEventHandlers.brs'
+        'pkg:/source/api/sdk.brs'
+        'pkg:/source/api/Items.brs'
+        'pkg:/source/api/userauth.brs'
+    )
+    'TVSeasonDetails.xml' = @(
+        'pkg:/source/MainActions.brs'
+        'pkg:/source/utils/quickplay.brs'
+        'pkg:/source/api/sdk.brs'
+        'pkg:/source/api/Items.brs'
+    )
+    'AlbumView.xml' = @(
+        'pkg:/source/MainActions.brs'
+        'pkg:/source/utils/quickplay.brs'
+        'pkg:/source/api/sdk.brs'
+        'pkg:/source/api/Items.brs'
+    )
+    'ArtistView.xml' = @(
+        'pkg:/source/MainActions.brs'
+        'pkg:/source/utils/quickplay.brs'
+        'pkg:/source/api/sdk.brs'
+        'pkg:/source/api/Items.brs'
+    )
+    'VisualLibraryScene.xml' = @(
+        'pkg:/source/ShowScenes.brs'
+        'pkg:/source/MainActions.brs'
+        'pkg:/source/MainEventHandlers.brs'
+        'pkg:/source/api/sdk.brs'
+        'pkg:/source/api/Items.brs'
+    )
+    'MusicLibraryView.xml' = @(
+        'pkg:/source/ShowScenes.brs'
+        'pkg:/source/MainActions.brs'
+        'pkg:/source/api/sdk.brs'
+        'pkg:/source/api/Items.brs'
+    )
+    'LiveTVLibraryView.xml' = @(
+        'pkg:/source/ShowScenes.brs'
+        'pkg:/source/MainActions.brs'
+        'pkg:/source/utils/quickplay.brs'
+        'pkg:/source/api/sdk.brs'
+        'pkg:/source/api/Items.brs'
+    )
+    'OtherLibrary.xml' = @(
+        'pkg:/source/ShowScenes.brs'
+        'pkg:/source/utils/quickplay.brs'
+        'pkg:/source/api/sdk.brs'
+        'pkg:/source/api/Items.brs'
+    )
+    'AudioBookLibraryView.xml' = @(
+        'pkg:/source/ShowScenes.brs'
+        'pkg:/source/utils/quickplay.brs'
+        'pkg:/source/api/sdk.brs'
+        'pkg:/source/api/Items.brs'
+    )
+    'SettingsView.xml' = @(
+        'pkg:/source/ShowScenes.brs'
+        'pkg:/source/utils/globals.brs'
     )
 }
 # Inject common scripts into EVERY component XML that has a script tag

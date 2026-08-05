@@ -7,15 +7,13 @@ sub discoverServers()
     m.top.loadStatus = "running"
     discovered = []
 
-    ' Ports to scan (standard Jellyfin + custom)
-    scanPorts = ["8096", "8097", "9086", "9100"]
+    scanPorts = ["8096", "8097", "9086"]
 
-    ' Quick scan: common hostnames + specific IPs
-    quickIps = ["jellyfin", "jellyfin.local", "192.168.1.1", "192.168.1.10", "192.168.1.50", "192.168.1.196", "192.168.1.224"]
+    quickIps = ["jellyfin", "jellyfin.local", "192.168.1.1", "192.168.1.10", "192.168.1.50", "192.168.1.196", "192.168.1.224", "192.168.0.10", "10.0.0.100"]
     for each ip in quickIps
         for each port in scanPorts
             url = "http://" + ip + ":" + port
-            info = probeServer(url, 1000)
+            info = probeServer(url, 500)
             if info <> invalid then
                 ? "[ServerDiscoveryTask] FOUND: "; info.Name; " at "; info.Url
                 discovered.Push(info)
@@ -23,7 +21,6 @@ sub discoverServers()
         end for
     end for
 
-    ' If not found yet, scan full subnet on all ports
     localIp = getLocalIP()
     ? "[ServerDiscoveryTask] Local IP = "; localIp
     if discovered.Count() = 0 and localIp <> "" then
@@ -35,10 +32,11 @@ sub discoverServers()
                 ? "[ServerDiscoveryTask] Scanning subnet "; subnet; " on :"; port; "..."
                 for i = 1 to 254
                     url = "http://" + subnet + i.ToStr() + ":" + port
-                    info = probeServer(url, 400)
+                    info = probeServer(url, 150)
                     if info <> invalid then
                         ? "[ServerDiscoveryTask] FOUND: "; info.Name; " at "; info.Url
                         discovered.Push(info)
+                        exit for
                     end if
                 end for
             end for

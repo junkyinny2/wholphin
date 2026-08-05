@@ -12,7 +12,8 @@
       translation="[0, 0]"
       width="260"
       height="390"
-      loadDisplayMode="scaleToFit" />
+      loadDisplayMode="scaleToFit"
+      focusable="false" />
 
     <!-- Title -->
     <Label
@@ -60,7 +61,8 @@
       translation="[300, 280]"
       width="600"
       height="6"
-      color="0x444444FF" />
+      color="0x444444FF"
+      focusable="false" />
 
     <!-- Progress bar fill -->
     <Rectangle
@@ -68,7 +70,8 @@
       translation="[300, 280]"
       width="0"
       height="6"
-      color="0x00A4DCFF" />
+      color="0x00A4DCFF"
+      focusable="false" />
 
     <!-- Play button -->
     <Group
@@ -78,7 +81,8 @@
         id="playBtnBg"
         width="160"
         height="50"
-        color="0x00A4DCFF" />
+        color="0x00A4DCFF"
+        focusable="false" />
       <Label
         id="playBtnLabel"
         translation="[40, 10]"
@@ -99,7 +103,8 @@
         id="resumeBtnBg"
         width="160"
         height="50"
-        color="0x444444FF" />
+        color="0x444444FF"
+        focusable="false" />
       <Label
         id="resumeBtnLabel"
         translation="[30, 10]"

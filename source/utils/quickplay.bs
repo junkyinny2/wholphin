@@ -2,14 +2,54 @@
 
 namespace quickplay
 
+    function resolveQueueManager() as Object
+        gaa = getGlobalAA()
+        if gaa <> invalid then
+            if gaa.queueManager <> invalid then
+                print "[PLAY] resolveQueueManager: via getGlobalAA.queueManager"
+                return gaa.queueManager
+            end if
+            if gaa.scene <> invalid and gaa.scene.queueManager <> invalid then
+                print "[PLAY] resolveQueueManager: via getGlobalAA.scene.queueManager"
+                return gaa.scene.queueManager
+            end if
+        end if
+        if m <> invalid and m.global <> invalid and m.global.queueManager <> invalid then
+            print "[PLAY] resolveQueueManager: via m.global"
+            return m.global.queueManager
+        end if
+        if m <> invalid and m.top <> invalid then
+            scene = m.top.getScene()
+            if scene <> invalid and scene.queueManager <> invalid then
+                print "[PLAY] resolveQueueManager: via m.top.getScene()"
+                return scene.queueManager
+            end if
+        end if
+        print "[PLAY] resolveQueueManager: gaa.valid="; (gaa <> invalid).ToStr(); " gaa.scene.valid="; (gaa <> invalid and gaa.scene <> invalid).ToStr(); " m.valid="; (m <> invalid).ToStr(); " m.top.valid="; (m <> invalid and m.top <> invalid).ToStr()
+        return invalid
+    end function
+
+    function resolveScene() as Object
+        if m <> invalid and m.top <> invalid then
+            s = m.top.getScene()
+            if s <> invalid then return s
+        end if
+        gaa = getGlobalAA()
+        if gaa <> invalid and gaa.scene <> invalid then return gaa.scene
+        return invalid
+    end function
+
     function video(item as Object, mediaSourceId = "" as String, audioStreamIndex = -1 as Integer, subtitleStreamIndex = -1 as Integer, startTimeTicks = 0 as Integer) as Void
+        print "[PLAY] video() called itemType="; chainLookupReturn(item, ["type"], ""); " id="; chainLookupReturn(item, ["id"], "")
         videoData = CreateObject("roSGNode", "VideoData")
         videoData.id = item.id
         videoData.json = item.json
         videoData.title = item.title
         videoData.image = item.image
 
-        queueManager = m.global.queueManager
+        queueManager = quickplay.resolveQueueManager()
+        print "[PLAY] queueManager valid="; (queueManager <> invalid).ToStr()
+        if queueManager = invalid then return
         queueManager.callFunc("clear")
         queueManager.callFunc("push", videoData)
         queueManager.callFunc("setPlaybackOptions", {
@@ -19,8 +59,23 @@ namespace quickplay
             startTimeTicks:   startTimeTicks
         })
 
-        viewCreator = CreateObject("roSGNode", "ViewCreator")
-        viewCreator.callFunc("createVideoPlayerView")
+        player = CreateObject("roSGNode", "VideoPlayerView")
+        print "[PLAY] VideoPlayerView node valid="; (player <> invalid).ToStr()
+        sceneManager = invalid
+        scene = quickplay.resolveScene()
+        if scene <> invalid and scene.sceneManager <> invalid then sceneManager = scene.sceneManager
+        if sceneManager = invalid then
+            gaa = getGlobalAA()
+            if gaa <> invalid and gaa.scene <> invalid and gaa.scene.sceneManager <> invalid then sceneManager = gaa.scene.sceneManager
+        end if
+        print "[PLAY] sceneManager valid="; (sceneManager <> invalid).ToStr()
+        if player <> invalid then
+            print "[PLAY] videoData valid="; (videoData <> invalid).ToStr()
+            player.videoItem = videoData
+            if sceneManager <> invalid then sceneManager.callFunc("pushScene", player)
+            print "[PLAY] pushed VideoPlayerView, starting playback"
+            player.callFunc("startPlayback")
+        end if
     end function
 
     function audio(item as Object, startTimeTicks = 0 as Integer) as Void
@@ -30,7 +85,8 @@ namespace quickplay
         audioData.title = item.title
         audioData.image = item.image
 
-        queueManager = m.global.queueManager
+        queueManager = quickplay.resolveQueueManager()
+        if queueManager = invalid then return
         queueManager.callFunc("clear")
         queueManager.callFunc("push", audioData)
         queueManager.callFunc("setPlaybackOptions", {
@@ -38,11 +94,14 @@ namespace quickplay
         })
 
         viewCreator = CreateObject("roSGNode", "ViewCreator")
+        scene = quickplay.resolveScene()
+        if scene <> invalid then scene.appendChild(viewCreator)
         viewCreator.callFunc("createAudioPlayerView")
     end function
 
-    function album(albumItem as Object, startIndex = 0 as Integer) as Void
-        queueManager = m.global.queueManager
+function album(albumItem as Object, startIndex = 0 as Integer) as Void
+        queueManager = quickplay.resolveQueueManager()
+        if queueManager = invalid then return
         queueManager.callFunc("clear")
 
         data = api.items.GetChildren(albumItem.id)
@@ -65,6 +124,8 @@ namespace quickplay
         end if
 
         viewCreator = CreateObject("roSGNode", "ViewCreator")
+        scene = quickplay.resolveScene()
+        if scene <> invalid then scene.appendChild(viewCreator)
         viewCreator.callFunc("createAudioPlayerView")
     end function
 
@@ -126,8 +187,9 @@ namespace quickplay
         end if
     end function
 
-    function playlist(playlistItem as Object) as Void
-        queueManager = m.global.queueManager
+function playlist(playlistItem as Object) as Void
+        queueManager = quickplay.resolveQueueManager()
+        if queueManager = invalid then return
         queueManager.callFunc("clear")
 
         data = api.playlists.GetItems(playlistItem.id)
@@ -154,11 +216,14 @@ namespace quickplay
         end if
 
         viewCreator = CreateObject("roSGNode", "ViewCreator")
+        scene = quickplay.resolveScene()
+        if scene <> invalid then scene.appendChild(viewCreator)
         viewCreator.callFunc("createVideoPlayerView")
     end function
 
-    function folder(folderItem as Object) as Void
-        queueManager = m.global.queueManager
+function folder(folderItem as Object) as Void
+        queueManager = quickplay.resolveQueueManager()
+        if queueManager = invalid then return
         queueManager.callFunc("clear")
 
         data = api.items.GetByFolder(folderItem.id)
@@ -179,11 +244,14 @@ namespace quickplay
         end if
 
         viewCreator = CreateObject("roSGNode", "ViewCreator")
+        scene = quickplay.resolveScene()
+        if scene <> invalid then scene.appendChild(viewCreator)
         viewCreator.callFunc("createVideoPlayerView")
     end function
 
-    function audioBook(item as Object, startTimeTicks = 0 as Integer) as Void
-        queueManager = m.global.queueManager
+function audioBook(item as Object, startTimeTicks = 0 as Integer) as Void
+        queueManager = quickplay.resolveQueueManager()
+        if queueManager = invalid then return
         queueManager.callFunc("clear")
 
         data = api.items.GetChildren(item.id)
@@ -201,6 +269,8 @@ namespace quickplay
         end if
 
         viewCreator = CreateObject("roSGNode", "ViewCreator")
+        scene = quickplay.resolveScene()
+        if scene <> invalid then scene.appendChild(viewCreator)
         viewCreator.callFunc("createAudioPlayerView")
     end function
 
